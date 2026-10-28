@@ -17,6 +17,8 @@ export interface Timing {
   hoverOpenMs: number | null;
   hoverGraceMs: number;
   peekHoldMs: number;
+  /** After files are dropped, the panel shows them this long before closing. */
+  dropHoldMs: number;
 }
 
 export const TIMING: Timing = {
@@ -26,6 +28,7 @@ export const TIMING: Timing = {
   hoverOpenMs: 0,
   hoverGraceMs: 350,
   peekHoldMs: 2200,
+  dropHoldMs: 2000,
 };
 
 export interface IslandController {
@@ -33,6 +36,10 @@ export interface IslandController {
   pointerLeave(): void;
   press(): void;
   showPeek(id: string): void;
+  /** Files dragged from another app entered, left, or were dropped. */
+  dragEnter(): void;
+  dragLeave(): void;
+  dragDrop(): void;
   /** Forget the pointer, e.g. once the island is hidden and cannot see it leave. */
   resetPointer(): void;
   dispose(): void;
@@ -49,6 +56,7 @@ export function createIslandController(
   let open: Timer | null = null;
   let grace: Timer | null = null;
   let peek: Timer | null = null;
+  let dropHold: Timer | null = null;
 
   const clear = (t: Timer | null) => {
     if (t !== null) clearTimeout(t);
@@ -79,6 +87,8 @@ export function createIslandController(
   return {
     pointerEnter() {
       grace = clear(grace);
+      // The pointer takes over from the post-drop timer.
+      dropHold = clear(dropHold);
       if (hovered) {
         // Back within the grace period: carry on towards opening.
         scheduleOpen();
@@ -107,6 +117,27 @@ export function createIslandController(
       dispatch({ type: "press" });
     },
 
+    dragEnter() {
+      dropHold = clear(dropHold);
+      grace = clear(grace);
+      dispatch({ type: "drag.enter" });
+    },
+
+    dragLeave() {
+      dispatch({ type: "drag.leave" });
+    },
+
+    dragDrop() {
+      dispatch({ type: "drag.drop" });
+      // A drag produces no pointer events: unless the pointer shows up on
+      // the island, close once the new items have been seen.
+      dropHold = clear(dropHold);
+      dropHold = setTimeout(() => {
+        dropHold = null;
+        if (!hovered) dispatch({ type: "close" });
+      }, timing.dropHoldMs);
+    },
+
     showPeek(id) {
       peek = clear(peek);
       dispatch({ type: "peek.show", id });
@@ -128,6 +159,7 @@ export function createIslandController(
       open = clear(open);
       grace = clear(grace);
       peek = clear(peek);
+      dropHold = clear(dropHold);
     },
   };
 }

@@ -28,11 +28,11 @@
         "skipTaskbar": true,
         "focus": false,
         "visible": false,
-        "dragDropEnabled": false
+        "dragDropEnabled": true
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: http://quiera-art.localhost quiera-art:; connect-src 'self' ipc: http://ipc.localhost https://lrclib.net"
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: http://quiera-art.localhost quiera-art: http://quiera-thumb.localhost quiera-thumb:; connect-src 'self' ipc: http://ipc.localhost https://lrclib.net"
     }
   },
   "bundle": {

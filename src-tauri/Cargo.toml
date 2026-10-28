@@ -24,6 +24,10 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 # Small blocking HTTP client (rustls) for word-synced lyrics.
 ureq = { version = "3.5", features = ["json"] }
+tauri-plugin-opener = "2.7"
+# Dragging shelf items out to other apps.
+tauri-plugin-drag = "2.1"
+png = "0.18"
 
 # Same version as Tauri's own dependency, so HWND types match.
 [target.'cfg(windows)'.dependencies]

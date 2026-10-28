@@ -6,12 +6,14 @@ mod island;
 mod media;
 mod process;
 mod system_events;
+mod thumbnail;
 mod webview;
 
 pub use island::{prepare_island_window, set_island_region, show_island_window};
 pub use media::start_media;
 pub use process::wait_for_process_exit;
 pub use system_events::start_system_watch;
+pub use thumbnail::file_thumbnail;
 pub use webview::watch_webview;
 
 use super::Capabilities;

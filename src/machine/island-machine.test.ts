@@ -101,3 +101,47 @@ describe("visibility", () => {
     expect(run({ type: "visibility", visible: false }, { type: "hover.start" }).hovered).toBe(false);
   });
 });
+
+describe("tabs", () => {
+  it("opens at home and switches tab while open", () => {
+    const s = run({ type: "press" }, { type: "tab.select", tab: "shelf" });
+    expect(s.tab).toBe("shelf");
+    expect(reduce(reduce(s, { type: "close" }), { type: "press" }).tab).toBe("home");
+  });
+
+  it("ignores a tab change while closed", () => {
+    expect(run({ type: "tab.select", tab: "shelf" }).tab).toBe("home");
+  });
+});
+
+describe("dragging files", () => {
+  it("opens on the shelf when files arrive", () => {
+    const s = run({ type: "drag.enter" });
+    expect(s).toMatchObject({ open: true, tab: "shelf", dragging: true });
+    expect(surfaceOf(s)).toBe("expanded");
+  });
+
+  it("closes when the files leave without being dropped", () => {
+    const s = run({ type: "drag.enter" }, { type: "drag.leave" });
+    expect(s).toMatchObject({ open: false, dragging: false });
+  });
+
+  it("stays open after a drop", () => {
+    const s = run({ type: "drag.enter" }, { type: "drag.drop" });
+    expect(s).toMatchObject({ open: true, dragging: false, tab: "shelf" });
+  });
+
+  it("stays open while dragging even if the pointer state ends", () => {
+    const s = run({ type: "hover.start" }, { type: "drag.enter" }, { type: "hover.end" });
+    expect(s.open).toBe(true);
+  });
+
+  it("is ignored while hidden, and hiding stops a drag", () => {
+    expect(run({ type: "visibility", visible: false }, { type: "drag.enter" }).open).toBe(false);
+    expect(run({ type: "drag.enter" }, { type: "visibility", visible: false }).dragging).toBe(false);
+  });
+
+  it("replaces a peek", () => {
+    expect(run({ type: "peek.show", id: "p" }, { type: "drag.enter" }).peek).toBeNull();
+  });
+});

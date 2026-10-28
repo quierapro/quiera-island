@@ -192,3 +192,28 @@ describe("open on hover", () => {
     expect(types()).toEqual(["hover.start"]);
   });
 });
+
+describe("dropping files", () => {
+  it("opens on drag enter and closes on leave", () => {
+    controller.dragEnter();
+    controller.dragLeave();
+    expect(types()).toEqual(["drag.enter", "drag.leave"]);
+  });
+
+  it("closes a while after the drop when the pointer is not on the island", () => {
+    controller.dragEnter();
+    controller.dragDrop();
+    vi.advanceTimersByTime(TIMING.dropHoldMs - 1);
+    expect(types()).toEqual(["drag.enter", "drag.drop"]);
+    vi.advanceTimersByTime(1);
+    expect(types()).toEqual(["drag.enter", "drag.drop", "close"]);
+  });
+
+  it("stays open when the pointer comes onto the island after the drop", () => {
+    controller.dragEnter();
+    controller.dragDrop();
+    controller.pointerEnter();
+    vi.advanceTimersByTime(TIMING.dropHoldMs + TIMING.hoverIntentMs);
+    expect(types()).toEqual(["drag.enter", "drag.drop", "hover.start"]);
+  });
+});

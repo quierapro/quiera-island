@@ -12,6 +12,7 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@crabnebula/tauri-plugin-drag": "2.1.0",
     "@tauri-apps/api": "^2.12.4",
     "motion": "^14.7.1",
     "react": "^19.3.1",

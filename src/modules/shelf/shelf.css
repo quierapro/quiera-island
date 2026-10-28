@@ -1,0 +1,164 @@
+.shelf {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 2px 16px 14px;
+  border-radius: 20px;
+  outline: 1.5px dashed transparent;
+  outline-offset: -6px;
+  transition: outline-color 0.2s ease;
+}
+
+.shelf--target {
+  outline-color: rgba(255, 255, 255, 0.35);
+}
+
+.shelf-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 22px;
+  padding: 0 4px;
+}
+
+.shelf-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+.shelf-clear {
+  padding: 3px 9px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-2);
+  font: 600 11px var(--font-ui);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.shelf-clear:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-1);
+}
+
+.shelf-row {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  mask-image: linear-gradient(to right, #000 92%, transparent);
+}
+
+.shelf-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: none;
+  width: 86px;
+  padding: 8px 4px 4px;
+  border-radius: 14px;
+  cursor: default;
+  transition: background-color 0.15s ease;
+}
+
+.shelf-tile:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.shelf-thumb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+}
+
+.shelf-thumb img {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+.shelf-thumb--image img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 12px;
+  corner-shape: squircle;
+}
+
+.shelf-remove {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 9px;
+  background: #3a3a40;
+  color: var(--text-1);
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  cursor: pointer;
+}
+
+.shelf-tile:hover .shelf-remove {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.shelf-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  width: 100%;
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 13px;
+  text-align: center;
+  word-break: break-word;
+}
+
+.shelf-size {
+  margin-top: 2px;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+}
+
+.shelf-empty {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: calc(100% - 14px);
+  margin: 0 14px 14px;
+  border: 1.5px dashed rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+}
+
+.shelf-empty--target {
+  border-color: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-1);
+}

@@ -3,5 +3,5 @@
   "identifier": "default",
   "description": "Permissions for the island window",
   "windows": ["island"],
-  "permissions": ["core:default"]
+  "permissions": ["core:default", "drag:default"]
 }

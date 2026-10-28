@@ -2,7 +2,7 @@
 
 An island at the top of your screen for media, quick controls and live activities. Built for Windows 11 first.
 
-> **Status: early development (step 4, media).** The pill shows what is playing (Spotify, browsers and other apps that publish to Windows media controls) with a player adapted from Bloom; it steps aside for fullscreen apps, follows display changes and recovers from web view crashes.
+> **Status: early development.** The pill shows the time at rest and what is playing (Spotify, browsers and other apps that publish to Windows media controls) with synced lyrics and a player adapted from Bloom. Files dropped on it are kept on a Shelf and can be dragged out again. It steps aside for fullscreen apps, follows display changes and recovers from web view crashes.
 
 ## Development
 

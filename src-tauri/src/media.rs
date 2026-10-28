@@ -83,11 +83,7 @@ pub fn artwork_key(art: &Artwork) -> String {
 /// The URL a web view loads a custom-protocol resource from (Windows web
 /// views see custom schemes as `http://<scheme>.localhost`).
 pub fn artwork_url(key: &str) -> String {
-    if cfg!(windows) {
-        format!("http://{ART_SCHEME}.localhost/{key}")
-    } else {
-        format!("{ART_SCHEME}://localhost/{key}")
-    }
+    crate::protocol::url(ART_SCHEME, key)
 }
 
 pub fn state_from(snapshot: &MediaSnapshot) -> MediaState {

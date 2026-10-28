@@ -35,3 +35,7 @@ pub fn start_media(
 ) -> Option<super::MediaControl> {
     None
 }
+
+pub fn file_thumbnail(_path: &std::path::Path, _size: u32) -> Option<Vec<u8>> {
+    None
+}

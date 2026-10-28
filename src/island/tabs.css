@@ -1,0 +1,48 @@
+.tabs {
+  display: flex;
+  gap: 4px;
+  height: 100%;
+  align-items: flex-end;
+  padding: 0 18px;
+}
+
+.tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  min-width: 34px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 13px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.tab:hover,
+.tab--active {
+  color: var(--text-1);
+}
+
+.tab-pill {
+  position: absolute;
+  inset: 0;
+  border-radius: 13px;
+  background: var(--fill-active);
+}
+
+.tab-icon,
+.tab-badge {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.tab-badge {
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
