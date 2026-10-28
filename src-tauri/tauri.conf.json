@@ -32,7 +32,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: http://quiera-art.localhost quiera-art: http://quiera-thumb.localhost quiera-thumb: http://quiera-clip.localhost quiera-clip:; connect-src 'self' ipc: http://ipc.localhost https://lrclib.net"
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: http://quiera-art.localhost quiera-art: http://quiera-thumb.localhost quiera-thumb: http://quiera-clip.localhost quiera-clip: http://quiera-notif.localhost quiera-notif:; connect-src 'self' ipc: http://ipc.localhost https://lrclib.net"
     }
   },
   "bundle": {

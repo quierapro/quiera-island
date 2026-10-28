@@ -37,6 +37,17 @@ pub fn write_clipboard(_content: &crate::clipboard::ClipContent) -> Result<(), S
     Err("not implemented on this platform yet".into())
 }
 
+pub fn start_notification_watch(
+    _handler: impl Fn(crate::notifications::NotificationEvent) + Send + 'static,
+) {
+}
+
+pub fn dismiss_notification(_id: u32) {}
+
+pub fn launch_app(_app_id: &str) -> Result<(), String> {
+    Err("not implemented on this platform yet".into())
+}
+
 /// Not implemented yet: a short pause instead of a real wait.
 pub fn wait_for_process_exit(_pid: u32, _timeout: std::time::Duration) {
     std::thread::sleep(std::time::Duration::from_secs(1));

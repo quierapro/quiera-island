@@ -20,7 +20,7 @@ pub const STATE_EVENT: &str = "media://state";
 pub const ART_SCHEME: &str = "quiera-art";
 
 /// Cover art as the media app provided it.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Artwork {
     pub bytes: Vec<u8>,
     pub mime: String,

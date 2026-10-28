@@ -21,6 +21,9 @@ import { TAB_BAR_HEIGHT, TabBar, tabShown } from "./TabBar";
 import { clipboardContentSize } from "../modules/clipboard/format";
 import { ClipboardView } from "../modules/clipboard/ClipboardView";
 import { startClipboard, useClipboard } from "../modules/clipboard/store";
+import { notificationsContentSize } from "../modules/notifications/format";
+import { NotificationsView } from "../modules/notifications/NotificationsView";
+import { startNotifications, useNotifications } from "../modules/notifications/store";
 import { SYSTEM_PEEK_PREFIX, useSystemPeek, useSystemPeeks } from "../modules/system/store";
 import { SystemPeekView, systemPeekSize } from "../modules/system/SystemPeekView";
 import { useIslandRegion } from "./region";
@@ -56,6 +59,7 @@ function viewFor(
     case "expanded":
       if (tab === "shelf") return { key: "expanded:shelf", content: <ShelfView dragging={dragging} /> };
       if (tab === "clipboard") return { key: "expanded:clipboard", content: <ClipboardView /> };
+      if (tab === "notifications") return { key: "expanded:notifications", content: <NotificationsView /> };
       return hasMedia ? { key: "expanded:media", content: <MediaExpanded /> } : { key: "expanded:clock", content: <ClockPanel /> };
   }
 }
@@ -139,6 +143,8 @@ export function Island() {
   const shelfItems = useShelf();
   useEffect(() => startClipboard(), []);
   const clipItems = useClipboard();
+  useEffect(() => startNotifications(), []);
+  const notifItems = useNotifications();
 
   const surface = surfaceOf(state);
   const lyrics = useLyrics(media.state);
@@ -146,7 +152,9 @@ export function Island() {
   // The tab bar shows once another tab than home is offered.
   const showTabs =
     surface === "expanded" &&
-    (tabShown("shelf", state.tab, shelfItems.length) || tabShown("clipboard", state.tab, clipItems.length));
+    (tabShown("shelf", state.tab, shelfItems.length) ||
+      tabShown("clipboard", state.tab, clipItems.length) ||
+      tabShown("notifications", state.tab, notifItems.length));
   let size = mediaSize(surface, media.state, lyricsKind(lyrics));
   if (surface === "peek" && state.peek?.id.startsWith(SYSTEM_PEEK_PREFIX)) size = systemPeekSize(systemPeek);
   if (surface === "expanded") {
@@ -155,7 +163,9 @@ export function Island() {
         ? [...shelfContentSize(shelfItems.length), 26]
         : state.tab === "clipboard"
           ? [...clipboardContentSize(clipItems.length), 26]
-          : hasMedia
+          : state.tab === "notifications"
+            ? [...notificationsContentSize(notifItems.length), 26]
+            : hasMedia
           ? (size ?? CLOCK_PANEL_SIZE)
           : CLOCK_PANEL_SIZE;
     size = showTabs ? [Math.max(w, 300), h + TAB_BAR_HEIGHT, r] : [w, h, r];
@@ -198,6 +208,7 @@ export function Island() {
                 hasMedia={hasMedia}
                 shelfCount={shelfItems.length}
                 clipboardCount={clipItems.length}
+                notificationCount={notifItems.length}
                 onSelect={(tab) => dispatch({ type: "tab.select", tab })}
               />
             </motion.div>

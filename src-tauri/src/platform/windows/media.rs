@@ -246,7 +246,7 @@ impl Properties {
     }
 }
 
-fn read_artwork(
+pub(super) fn read_artwork(
     thumbnail: &windows::Storage::Streams::IRandomAccessStreamReference,
 ) -> windows::core::Result<Artwork> {
     let stream = thumbnail.OpenReadAsync()?.join()?;

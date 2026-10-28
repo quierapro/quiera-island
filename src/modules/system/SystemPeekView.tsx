@@ -2,6 +2,7 @@ import { motion } from "motion/react";
 import type { SystemPeek } from "../../ipc/peeks";
 import type { Size } from "../../island/geometry";
 import { CheckIcon, LinkIcon } from "../clipboard/icons";
+import { AppIcon } from "../notifications/NotificationsView";
 import { useSystemPeek } from "./store";
 import "./system.css";
 
@@ -18,6 +19,8 @@ export function systemPeekSize(peek: SystemPeek | null): Size {
       return [290, 38, 19];
     case "copied":
       return [300, 40, 20];
+    case "notification":
+      return [400, 60, 26];
     default:
       return [240, 38, 19];
   }
@@ -182,6 +185,22 @@ function Copied({ content, preview, thumbnail }: { content: string; preview: str
   );
 }
 
+/** A notification arrived: who, then what. Hovering opens the full list. */
+function Notification({ app, title, body, icon }: { app: string; title: string; body: string; icon: string | null }) {
+  return (
+    <div className="notif-peek">
+      <AppIcon item={{ app, icon }} size={34} />
+      <div className="notif-content">
+        <div className="notif-meta">
+          <span className="notif-app">{app}</span>
+        </div>
+        {title && <div className="notif-title">{title}</div>}
+        {body && <div className="notif-peek-body">{body.replace(/\s+/g, " ")}</div>}
+      </div>
+    </div>
+  );
+}
+
 /** The peek for whatever the system just announced. */
 export function SystemPeekView() {
   const peek = useSystemPeek();
@@ -197,5 +216,7 @@ export function SystemPeekView() {
       return <Volume level={peek.level} muted={peek.muted} />;
     case "copied":
       return <Copied content={peek.content} preview={peek.preview} thumbnail={peek.thumbnail} />;
+    case "notification":
+      return <Notification app={peek.app} title={peek.title} body={peek.body} icon={peek.icon} />;
   }
 }

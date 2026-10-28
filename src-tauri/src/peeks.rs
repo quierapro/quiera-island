@@ -46,6 +46,15 @@ pub enum SystemPeek {
         preview: String,
         thumbnail: Option<String>,
     },
+    /// A notification arrived.
+    #[serde(rename_all = "camelCase")]
+    Notification {
+        id: u32,
+        app: String,
+        title: String,
+        body: String,
+        icon: Option<String>,
+    },
 }
 
 /// A raw power reading from the platform.
@@ -78,8 +87,11 @@ pub fn start(handle: &AppHandle) {
 
 /// Shows a peek on the island.
 pub fn announce(app: &AppHandle, peek: SystemPeek) {
-    // Volume changes come in bursts, copies are private: not logged.
-    if !matches!(peek, SystemPeek::Volume { .. } | SystemPeek::Copied { .. }) {
+    // Volume changes come in bursts; copies and notifications are private.
+    if !matches!(
+        peek,
+        SystemPeek::Volume { .. } | SystemPeek::Copied { .. } | SystemPeek::Notification { .. }
+    ) {
         log::info!("system peek: {}", kind_name(&peek));
     }
     if let Err(e) = app.emit(PEEK_EVENT, peek) {
@@ -95,6 +107,7 @@ fn kind_name(peek: &SystemPeek) -> &'static str {
         SystemPeek::CapsLock { .. } => "caps lock",
         SystemPeek::Volume { .. } => "volume",
         SystemPeek::Copied { .. } => "copied",
+        SystemPeek::Notification { .. } => "notification",
     }
 }
 

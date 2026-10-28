@@ -2,6 +2,7 @@ mod clipboard;
 mod island;
 mod lyrics;
 mod media;
+mod notifications;
 mod peeks;
 mod platform;
 mod protocol;
@@ -61,6 +62,9 @@ pub fn run() {
         .register_uri_scheme_protocol(media::ART_SCHEME, |_ctx, request| {
             media::serve_artwork(request.uri().path())
         })
+        .register_uri_scheme_protocol(notifications::ICON_SCHEME, |_ctx, request| {
+            notifications::serve_icon(request.uri().path())
+        })
         .register_uri_scheme_protocol(clipboard::CLIP_SCHEME, |_ctx, request| {
             clipboard::serve_thumbnail(request.uri().path())
         })
@@ -79,6 +83,7 @@ pub fn run() {
             media::start(app.handle());
             peeks::start(app.handle());
             clipboard::start(app.handle());
+            notifications::start(app.handle());
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -104,6 +109,11 @@ pub fn run() {
             media::media_set_shuffle,
             media::media_set_repeat,
             lyrics::lyrics_word_synced,
+            notifications::notifications_items,
+            notifications::notification_open,
+            notifications::notification_dismiss,
+            notifications::notifications_clear,
+            notifications::open_link,
             clipboard::clipboard_items,
             clipboard::clipboard_copy,
             clipboard::clipboard_pin,

@@ -2,6 +2,7 @@ import { motion } from "motion/react";
 import type { Tab } from "../machine/island-machine";
 import { NoteIcon } from "../modules/media/icons";
 import { ClipboardIcon } from "../modules/clipboard/icons";
+import { BellIcon } from "../modules/notifications/icons";
 import { TrayIcon } from "../modules/shelf/icons";
 import "./tabs.css";
 
@@ -22,6 +23,7 @@ interface TabBarProps {
   hasMedia: boolean;
   shelfCount: number;
   clipboardCount: number;
+  notificationCount: number;
   onSelect(tab: Tab): void;
 }
 
@@ -31,9 +33,10 @@ export function tabShown(id: Tab, current: Tab, count: number): boolean {
 }
 
 /** Icon tabs above the open panel; the active one sits on a soft pill. */
-export function TabBar({ tab, hasMedia, shelfCount, clipboardCount, onSelect }: TabBarProps) {
+export function TabBar({ tab, hasMedia, shelfCount, clipboardCount, notificationCount, onSelect }: TabBarProps) {
   const tabs: { id: Tab; label: string; icon: React.ReactNode; badge?: number }[] = [
     { id: "home" as Tab, label: hasMedia ? "Lecture" : "Heure", icon: hasMedia ? <NoteIcon size={17} /> : <ClockIcon /> },
+    { id: "notifications" as Tab, label: "Notifications", icon: <BellIcon size={17} />, badge: notificationCount },
     { id: "shelf" as Tab, label: "Shelf", icon: <TrayIcon size={18} />, badge: shelfCount },
     { id: "clipboard" as Tab, label: "Presse-papiers", icon: <ClipboardIcon size={17} />, badge: clipboardCount },
   ].filter((t) => tabShown(t.id, tab, t.badge ?? 0));

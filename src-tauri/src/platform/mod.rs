@@ -16,21 +16,24 @@ mod windows;
 
 #[cfg(target_os = "linux")]
 pub use linux::{
-    capabilities, file_thumbnail, prepare_island_window, set_island_region, show_island_window,
-    start_clipboard_watch, start_media, start_peek_watch, start_system_watch,
-    wait_for_process_exit, watch_file_drops, watch_webview, write_clipboard,
+    capabilities, dismiss_notification, file_thumbnail, launch_app, prepare_island_window,
+    set_island_region, show_island_window, start_clipboard_watch, start_media,
+    start_notification_watch, start_peek_watch, start_system_watch, wait_for_process_exit,
+    watch_file_drops, watch_webview, write_clipboard,
 };
 #[cfg(target_os = "macos")]
 pub use macos::{
-    capabilities, file_thumbnail, prepare_island_window, set_island_region, show_island_window,
-    start_clipboard_watch, start_media, start_peek_watch, start_system_watch,
-    wait_for_process_exit, watch_file_drops, watch_webview, write_clipboard,
+    capabilities, dismiss_notification, file_thumbnail, launch_app, prepare_island_window,
+    set_island_region, show_island_window, start_clipboard_watch, start_media,
+    start_notification_watch, start_peek_watch, start_system_watch, wait_for_process_exit,
+    watch_file_drops, watch_webview, write_clipboard,
 };
 #[cfg(target_os = "windows")]
 pub use windows::{
-    capabilities, file_thumbnail, prepare_island_window, set_island_region, show_island_window,
-    start_clipboard_watch, start_media, start_peek_watch, start_system_watch,
-    wait_for_process_exit, watch_file_drops, watch_webview, write_clipboard,
+    capabilities, dismiss_notification, file_thumbnail, launch_app, prepare_island_window,
+    set_island_region, show_island_window, start_clipboard_watch, start_media,
+    start_notification_watch, start_peek_watch, start_system_watch, wait_for_process_exit,
+    watch_file_drops, watch_webview, write_clipboard,
 };
 
 /// What the system tells the island about.

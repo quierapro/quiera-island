@@ -8,6 +8,7 @@ import { onSystemPeek, type SystemPeek } from "../../ipc/peeks";
 import type { IslandController } from "../../machine/controller";
 
 export const SYSTEM_PEEK_PREFIX = "system:";
+const NOTIFICATION_HOLD_MS = 5000;
 
 let current: SystemPeek | null = null;
 const listeners = new Set<() => void>();
@@ -28,7 +29,8 @@ export function useSystemPeeks(controller: IslandController): void {
     onSystemPeek((peek) => {
       current = peek;
       for (const l of listeners) l();
-      controller.showPeek(`${SYSTEM_PEEK_PREFIX}${peek.kind}`);
+      // A notification has more to read.
+      controller.showPeek(`${SYSTEM_PEEK_PREFIX}${peek.kind}`, peek.kind === "notification" ? NOTIFICATION_HOLD_MS : undefined);
     })
       .then((stop) => {
         if (live) unlisten = stop;

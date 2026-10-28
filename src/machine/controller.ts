@@ -35,7 +35,8 @@ export interface IslandController {
   pointerEnter(): void;
   pointerLeave(): void;
   press(): void;
-  showPeek(id: string): void;
+  /** Shows a peek for `holdMs` (the usual duration by default). */
+  showPeek(id: string, holdMs?: number): void;
   /** Files dragged from another app entered, left, or were dropped. */
   dragEnter(): void;
   dragLeave(): void;
@@ -138,13 +139,13 @@ export function createIslandController(
       }, timing.dropHoldMs);
     },
 
-    showPeek(id) {
+    showPeek(id, holdMs = timing.peekHoldMs) {
       peek = clear(peek);
       dispatch({ type: "peek.show", id });
       peek = setTimeout(() => {
         peek = null;
         dispatch({ type: "peek.expire", id });
-      }, timing.peekHoldMs);
+      }, holdMs);
     },
 
     resetPointer() {
