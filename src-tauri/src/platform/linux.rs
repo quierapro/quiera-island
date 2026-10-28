@@ -39,3 +39,5 @@ pub fn start_media(
 pub fn file_thumbnail(_path: &std::path::Path, _size: u32) -> Option<Vec<u8>> {
     None
 }
+
+pub fn start_peek_watch(_handler: impl Fn(crate::peeks::SystemPeek) + Send + Sync + 'static) {}

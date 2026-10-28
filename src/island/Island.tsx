@@ -18,6 +18,8 @@ import { shelfContentSize } from "../modules/shelf/format";
 import { ShelfView } from "../modules/shelf/ShelfView";
 import { startShelf, useShelf } from "../modules/shelf/store";
 import { TAB_BAR_HEIGHT, TabBar } from "./TabBar";
+import { SYSTEM_PEEK_PREFIX, useSystemPeek, useSystemPeeks } from "../modules/system/store";
+import { SystemPeekView, systemPeekSize } from "../modules/system/SystemPeekView";
 import { useIslandRegion } from "./region";
 import { BIRTH_IMPACT_MS, DURATIONS, REGION_HOLD_MS } from "./springs";
 import "./island.css";
@@ -31,7 +33,12 @@ const UNBORN: ShellTarget = { ...BIRTH, fill: 0 };
  * What a surface shows. The open panel shows the current tab: at home the
  * player, or the clock without music; or the shelf.
  */
-function viewFor(surface: Surface, tab: Tab, hasMedia: boolean, dragging: boolean): { key: string; content: ReactNode } {
+function viewFor(
+  surface: Surface,
+  state: { tab: Tab; dragging: boolean; peekId: string | null },
+  hasMedia: boolean,
+): { key: string; content: ReactNode } {
+  const { tab, dragging, peekId } = state;
   switch (surface) {
     case "hidden":
       return { key: surface, content: null };
@@ -40,7 +47,9 @@ function viewFor(surface: Surface, tab: Tab, hasMedia: boolean, dragging: boolea
     case "activity":
       return { key: surface, content: <MediaActivity /> };
     case "peek":
-      return { key: surface, content: <MediaPeek /> };
+      // Peeks of different kinds crossfade; a peek updated in place does not.
+      if (peekId?.startsWith(SYSTEM_PEEK_PREFIX)) return { key: `peek:${peekId}`, content: <SystemPeekView /> };
+      return { key: "peek:media", content: <MediaPeek /> };
     case "expanded":
       if (tab === "shelf") return { key: "expanded:shelf", content: <ShelfView dragging={dragging} /> };
       return hasMedia ? { key: "expanded:media", content: <MediaExpanded /> } : { key: "expanded:clock", content: <ClockPanel /> };
@@ -144,6 +153,8 @@ export function Island() {
   }, [controller]);
 
   useMediaActivity(controller, dispatch);
+  useSystemPeeks(controller);
+  const systemPeek = useSystemPeek();
   const media = useMedia();
   useEffect(() => startShelf(), []);
   const shelfItems = useShelf();
@@ -154,6 +165,7 @@ export function Island() {
   // The tab bar shows once the shelf has something, or while it is shown.
   const showTabs = surface === "expanded" && (shelfItems.length > 0 || state.tab === "shelf");
   let size = mediaSize(surface, media.state, lyricsKind(lyrics));
+  if (surface === "peek" && state.peek?.id.startsWith(SYSTEM_PEEK_PREFIX)) size = systemPeekSize(systemPeek);
   if (surface === "expanded") {
     const [w, h, r] =
       state.tab === "shelf"
@@ -170,7 +182,7 @@ export function Island() {
   const islandBox = targetBox(risen ? target : BIRTH, window.innerWidth);
   useIslandRegion(islandBox ? [islandBox, ...debugRects] : debugRects, REGION_HOLD_MS);
 
-  const view = viewFor(surface, state.tab, hasMedia, state.dragging);
+  const view = viewFor(surface, { tab: state.tab, dragging: state.dragging, peekId: state.peek?.id ?? null }, hasMedia);
   const content = risen ? view.content : null;
   const ease = [0.33, 1, 0.68, 1] as const;
 

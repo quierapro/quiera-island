@@ -17,17 +17,17 @@ mod windows;
 #[cfg(target_os = "linux")]
 pub use linux::{
     capabilities, file_thumbnail, prepare_island_window, set_island_region, show_island_window,
-    start_media, start_system_watch, wait_for_process_exit, watch_webview,
+    start_media, start_peek_watch, start_system_watch, wait_for_process_exit, watch_webview,
 };
 #[cfg(target_os = "macos")]
 pub use macos::{
     capabilities, file_thumbnail, prepare_island_window, set_island_region, show_island_window,
-    start_media, start_system_watch, wait_for_process_exit, watch_webview,
+    start_media, start_peek_watch, start_system_watch, wait_for_process_exit, watch_webview,
 };
 #[cfg(target_os = "windows")]
 pub use windows::{
     capabilities, file_thumbnail, prepare_island_window, set_island_region, show_island_window,
-    start_media, start_system_watch, wait_for_process_exit, watch_webview,
+    start_media, start_peek_watch, start_system_watch, wait_for_process_exit, watch_webview,
 };
 
 /// What the system tells the island about.

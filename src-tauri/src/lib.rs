@@ -1,6 +1,7 @@
 mod island;
 mod lyrics;
 mod media;
+mod peeks;
 mod platform;
 mod protocol;
 mod recovery;
@@ -71,6 +72,7 @@ pub fn run() {
             recovery::watch(app.handle());
             system::start(app.handle());
             media::start(app.handle());
+            peeks::start(app.handle());
             Ok(())
         })
         .on_window_event(|window, event| {
