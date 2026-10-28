@@ -47,7 +47,7 @@ export function mediaSize(
     return undefined;
   }
   if (surface === "expanded") {
-    if (!state) return [360, 64, 24];
+    if (!state) return undefined;
     return hasLyrics ? [650, 176, 30] : [400, 176, 30];
   }
   return undefined;
@@ -434,7 +434,7 @@ function Lyrics({ lines, clock, canSeek }: { lines: LyricLine[]; clock: MotionVa
 /** The open panel: player on the left, synced lyrics on the right. */
 export function MediaExpanded() {
   const { state, accent } = useMedia();
-  if (!state) return <NothingPlaying />;
+  if (!state) return null;
   return <Player state={state} accent={accent} />;
 }
 
@@ -461,20 +461,6 @@ function Player({ state, accent }: { state: MediaState; accent: string }) {
         </div>
       </div>
       {lines && <Lyrics key={trackKey(state)} lines={lines} clock={clock} canSeek={state.canSeek} />}
-    </div>
-  );
-}
-
-export function NothingPlaying() {
-  return (
-    <div className="media-nothing">
-      <span className="media-nothing-icon">
-        <NoteIcon size={20} />
-      </span>
-      <div className="media-text">
-        <span className="media-title">Rien en lecture</span>
-        <span className="media-artist">Lance Spotify, YouTube ou un autre lecteur</span>
-      </div>
     </div>
   );
 }

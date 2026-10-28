@@ -12,6 +12,7 @@ import { useMedia } from "../modules/media/store";
 import { useMediaActivity } from "../modules/media/useMediaActivity";
 import { lyricsKind, useLyrics } from "../modules/media/lyrics";
 import { MediaActivity, MediaExpanded, MediaPeek, mediaSize } from "../modules/media/views";
+import { CLOCK_PANEL_SIZE, ClockPanel, IdleClock } from "../modules/clock/Clock";
 import { useIslandRegion } from "./region";
 import { BIRTH_IMPACT_MS, DURATIONS, REGION_HOLD_MS } from "./springs";
 import "./island.css";
@@ -21,14 +22,21 @@ const RISEN: ShellTarget = { ...BIRTH, y: 0 };
 /** The bubble as it appears: below the edge, not yet painted. */
 const UNBORN: ShellTarget = { ...BIRTH, fill: 0 };
 
-// Media is the only module so far; the module registry comes with the next one.
+// Media and clock are the only modules so far; the module registry comes
+// with the next one.
 const VIEWS: Record<Surface, (() => ReactNode) | null> = {
   hidden: null,
-  idle: null,
+  idle: IdleClock,
   activity: MediaActivity,
   peek: MediaPeek,
   expanded: MediaExpanded,
 };
+
+/** Which view a surface shows: without music, the open panel is the clock. */
+function viewFor(surface: Surface, hasMedia: boolean): { key: string; View: (() => ReactNode) | null } {
+  if (surface === "expanded" && !hasMedia) return { key: "expanded:clock", View: ClockPanel };
+  return { key: surface, View: VIEWS[surface] };
+}
 
 /**
  * How content enters. Blur is costly on large areas (measured: frames of
@@ -105,14 +113,17 @@ export function Island() {
 
   const surface = surfaceOf(state);
   const lyrics = useLyrics(media.state);
-  const size = mediaSize(surface, media.state, lyricsKind(lyrics));
+  const hasMedia = Boolean(media.state);
+  const size =
+    surface === "expanded" && !hasMedia ? CLOCK_PANEL_SIZE : mediaSize(surface, media.state, lyricsKind(lyrics));
   const target = risen ? targetFor(surface, state.hovered, size) : RISEN;
   const viewSize = targetFor(surface, false, size);
 
   const islandBox = targetBox(risen ? target : BIRTH, window.innerWidth);
   useIslandRegion(islandBox ? [islandBox, ...debugRects] : debugRects, REGION_HOLD_MS);
 
-  const View = risen ? VIEWS[surface] : null;
+  const view = viewFor(surface, hasMedia);
+  const View = risen ? view.View : null;
   const ease = [0.33, 1, 0.68, 1] as const;
 
   return (
@@ -130,7 +141,7 @@ export function Island() {
         <AnimatePresence initial={false}>
           {View && (
             <motion.div
-              key={surface}
+              key={view.key}
               className="island-view"
               style={{ width: viewSize.width, height: viewSize.height, x: "-50%" }}
               initial={{ opacity: 0, y: 4, scale: ENTER[surface].scale, filter: `blur(${ENTER[surface].blur}px)` }}

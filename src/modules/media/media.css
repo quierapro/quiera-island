@@ -121,8 +121,7 @@
 /* ---- Activity and peek ---- */
 
 .media-activity,
-.media-peek,
-.media-nothing {
+.media-peek {
   box-sizing: border-box;
   display: flex;
   align-items: center;
@@ -133,22 +132,6 @@
 
 .media-activity {
   justify-content: space-between;
-}
-
-.media-nothing {
-  padding: 0 22px;
-  gap: 12px;
-}
-
-.media-nothing-icon {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  background: var(--card);
-  color: var(--text-2);
-  flex: none;
 }
 
 /* ---- Compact pill: the word being sung ---- */
