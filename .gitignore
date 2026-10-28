@@ -1,0 +1,24 @@
+# Dependencies and builds
+node_modules
+dist
+dist-ssr
+*.local
+
+# Logs
+logs
+*.log
+pnpm-debug.log*
+
+# Rust / Tauri
+src-tauri/target/
+src-tauri/gen/schemas
+
+# Editors and OS
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+Thumbs.db
+
+# Local tool folders that do not belong to the project
+.sixth/

@@ -1,0 +1,36 @@
+# Quiera
+
+An island at the top of your screen for media, quick controls and live activities. Built for Windows 11 first.
+
+> **Status: early development (step 3, system robustness).** The pill springs between its states (placeholder content), steps aside for fullscreen apps, follows display changes and recovers from web view crashes.
+
+## Development
+
+Requirements: Windows 11, [Rust](https://rustup.rs) stable, Node.js 20+, pnpm 10.
+
+```sh
+pnpm install
+pnpm tauri dev      # run the app
+pnpm test           # frontend unit tests (Vitest)
+pnpm build          # typecheck + frontend build
+cd src-tauri
+cargo test          # backend unit tests
+cargo clippy --all-targets -- -D warnings
+```
+
+## Layout
+
+| Path | Contents |
+|---|---|
+| `src/` | Frontend (React, TypeScript) |
+| `src-tauri/src/` | Backend (Rust) |
+| `src-tauri/src/platform/` | Everything OS-specific, one module per platform |
+| `docs/` | Design and planning documents (French) |
+
+The design documents explain the choices behind the project:
+[analysis and plan](docs/01-analyse-et-plan.md) and
+[decisions, design and features](docs/02-decisions-design-fonctionnalites.md).
+
+## License
+
+GPL-3.0-or-later. See [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

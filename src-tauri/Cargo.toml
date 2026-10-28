@@ -1,0 +1,46 @@
+[package]
+name = "quiera"
+version = "0.1.0"
+description = "An island at the top of your screen for media, quick controls and live activities."
+authors = ["Quiera contributors"]
+license = "GPL-3.0-or-later"
+edition = "2024"
+
+[lib]
+# The `_lib` suffix keeps the lib name distinct from the bin name, which
+# Cargo needs on Windows (rust-lang/cargo#8519).
+name = "quiera_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2.12", features = ["tray-icon"] }
+tauri-plugin-log = "2.10"
+tauri-plugin-single-instance = "2.5"
+log = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Same version as Tauri's own dependency, so HWND types match.
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.62", features = [
+	"Win32_Foundation",
+	"Win32_Graphics_Gdi",
+	"Win32_System_LibraryLoader",
+	"Win32_System_RemoteDesktop",
+	"Win32_System_Threading",
+	"Win32_UI_Accessibility",
+	"Win32_UI_Shell",
+	"Win32_UI_WindowsAndMessaging",
+] }
+# Same version as wry's, for the WebView2 failure events.
+webview2-com = "0.39"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true

@@ -1,0 +1,34 @@
+/* Design tokens. Values come from docs/02-decisions-design-fonctionnalites.md §3. */
+:root {
+  /* Exterior (Bloom-style shell) */
+  --shell-compact: rgba(0, 0, 0, 0.82);
+  --shell-expanded: rgba(0, 0, 0, 0.94);
+  --shell-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  --flare-size: 13px;
+  --radius-compact: 18px;
+  --radius-expanded: 28px;
+
+  /* Interior */
+  --ink: #000000;
+  --card: #121214;
+  --card-hover: #1a1a1d;
+  --text-1: #ffffff;
+  --text-2: rgba(255, 255, 255, 0.62);
+  --text-3: rgba(255, 255, 255, 0.36);
+  --fill-active: rgba(255, 255, 255, 0.12);
+  --accent: #ffffff;
+  --danger: #ff6b5e;
+
+  --font-ui: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+}
+
+/* The island window is transparent: only the shell paints. */
+html,
+body {
+  margin: 0;
+  background: transparent;
+  overflow: hidden;
+  user-select: none;
+  cursor: default;
+}

@@ -1,0 +1,52 @@
+.debug-panel {
+  position: fixed;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: #1b1b1f;
+  color: var(--text-1);
+  font: 12px/1.2 var(--font-ui);
+  pointer-events: auto;
+}
+
+.debug-state {
+  display: flex;
+  gap: 8px;
+  color: var(--text-2);
+}
+
+.debug-state b {
+  color: var(--text-1);
+}
+
+.debug-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.debug-buttons button {
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: #2c2c32;
+  color: var(--text-1);
+  font: inherit;
+  cursor: pointer;
+}
+
+.debug-buttons button:hover {
+  background: #3a3a42;
+}
+
+.debug-outline {
+  position: fixed;
+  box-sizing: border-box;
+  border: 1px dashed #ff5ccd;
+  pointer-events: none;
+}

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Placeholder app icon: an island pill with artwork and activity bars. -->
+  <rect width="1024" height="1024" rx="232" fill="#0b0b0c"/>
+  <rect x="192" y="402" width="640" height="220" rx="110" fill="#f3f3f4"/>
+  <rect x="262" y="452" width="120" height="120" rx="34" fill="#0b0b0c"/>
+  <rect x="640" y="462" width="26" height="100" rx="13" fill="#0b0b0c"/>
+  <rect x="690" y="432" width="26" height="160" rx="13" fill="#0b0b0c"/>
+  <rect x="740" y="477" width="26" height="70" rx="13" fill="#0b0b0c"/>
+</svg>

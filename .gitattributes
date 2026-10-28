@@ -1,0 +1,9 @@
+# Store text with LF line endings whatever the platform.
+* text=auto eol=lf
+
+# Windows-only scripts keep CRLF.
+*.ps1 text eol=crlf
+
+*.png binary
+*.ico binary
+*.icns binary
