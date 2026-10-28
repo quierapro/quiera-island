@@ -18,25 +18,29 @@ export interface ShellTarget {
   y: number;
 }
 
-const COMPACT_FILL = 0.82;
-const EXPANDED_FILL = 0.94;
+/** Opaque black: true OLED black, and the content reads the same on any wallpaper. */
+const COMPACT_FILL = 1;
+const EXPANDED_FILL = 1;
 
-const SIZES: Record<Exclude<Surface, "hidden">, [width: number, height: number, radius: number]> = {
-  idle: [190, 30, 15],
-  activity: [230, 30, 15],
-  peek: [340, 44, 20],
+export type Size = [width: number, height: number, radius: number];
+
+const SIZES: Record<Exclude<Surface, "hidden">, Size> = {
+  idle: [124, 34, 17],
+  activity: [200, 34, 17],
+  peek: [340, 46, 22],
   expanded: [600, 196, 28],
 };
 
 /** Hovering a compact island grows it slightly: "I see you". */
 const HOVER_GROWTH = { width: 10, height: 2, radius: 1 };
 
-export function targetFor(surface: Surface, hovered: boolean): ShellTarget {
+/** `size` lets the module on screen ask for its own dimensions. */
+export function targetFor(surface: Surface, hovered: boolean, size?: Size): ShellTarget {
   if (surface === "hidden") {
     const [width, height, radius] = SIZES.idle;
     return { width, height, topRadius: 0, bottomRadius: radius, flares: 1, fill: COMPACT_FILL, y: -(height + 4) };
   }
-  const [width, height, radius] = SIZES[surface];
+  const [width, height, radius] = size ?? SIZES[surface];
   const grow = hovered && surface !== "expanded";
   return {
     width: width + (grow ? HOVER_GROWTH.width : 0),

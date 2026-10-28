@@ -2,7 +2,7 @@
 
 An island at the top of your screen for media, quick controls and live activities. Built for Windows 11 first.
 
-> **Status: early development (step 3, system robustness).** The pill springs between its states (placeholder content), steps aside for fullscreen apps, follows display changes and recovers from web view crashes.
+> **Status: early development (step 4, media).** The pill shows what is playing (Spotify, browsers and other apps that publish to Windows media controls) with a player adapted from Bloom; it steps aside for fullscreen apps, follows display changes and recovers from web view crashes.
 
 ## Development
 

@@ -1,0 +1,375 @@
+/* ---- Shared ---- */
+
+.media-art {
+  position: relative;
+  flex: none;
+  overflow: hidden;
+  background: #26262b;
+  corner-shape: squircle;
+  perspective: 600px;
+}
+
+.media-art img,
+.media-art-none {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.media-art-none {
+  display: grid;
+  place-items: center;
+  color: var(--text-3);
+}
+
+.media-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.media-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.1px;
+  line-height: 1.25;
+}
+
+.media-title--lg {
+  font-size: 15px;
+}
+
+.media-artist {
+  margin-top: 1px;
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25;
+}
+
+/* ---- Marquee (adapted from Bloom, GPL-3.0-only) ---- */
+
+.marquee {
+  width: 100%;
+  overflow: hidden;
+}
+
+.marquee--overflow {
+  mask-image: linear-gradient(to right, black calc(100% - 8px), transparent 100%);
+}
+
+.marquee-text {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.marquee--overflow .marquee-text {
+  animation: marquee-scroll var(--scroll-duration, 8s) cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
+}
+
+@keyframes marquee-scroll {
+  0%,
+  12% {
+    transform: translateX(0);
+  }
+  42%,
+  55% {
+    transform: translateX(var(--scroll-distance, -100%));
+  }
+  80%,
+  100% {
+    transform: translateX(0);
+  }
+}
+
+/* ---- Bars ---- */
+
+.media-bars {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+}
+
+.media-bars i {
+  width: 3px;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
+  transform: scaleY(0.25);
+  transition: transform 0.4s ease;
+}
+
+.media-bars--playing i {
+  animation: media-bar 0.9s ease-in-out infinite alternate;
+}
+
+.media-bars--playing i:nth-child(2) { animation-delay: -0.3s; }
+.media-bars--playing i:nth-child(3) { animation-delay: -0.6s; }
+.media-bars--playing i:nth-child(4) { animation-delay: -0.15s; }
+
+@keyframes media-bar {
+  from { transform: scaleY(0.3); }
+  to { transform: scaleY(1); }
+}
+
+/* ---- Activity and peek ---- */
+
+.media-activity,
+.media-peek,
+.media-nothing {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 16px;
+  gap: 10px;
+}
+
+.media-activity {
+  justify-content: space-between;
+}
+
+.media-nothing {
+  padding: 0 22px;
+  gap: 12px;
+}
+
+.media-nothing-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--text-2);
+  flex: none;
+}
+
+/* ---- Compact pill: the word being sung ---- */
+
+.media-word {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 18px;
+  overflow: hidden;
+  text-align: center;
+}
+
+.media-word-text {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- Expanded player ---- */
+
+.media-expanded {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: 100%;
+  padding: 18px 22px 20px;
+}
+
+.media-player {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-self: stretch;
+  flex: none;
+  width: 300px;
+}
+
+.media-expanded:not(:has(.lyrics)) .media-player {
+  flex: 1;
+  width: auto;
+}
+
+.media-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.media-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 14px;
+}
+
+.media-time {
+  min-width: 34px;
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+}
+
+.media-time--end {
+  text-align: right;
+}
+
+.media-track {
+  position: relative;
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.media-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: 2px;
+  background: var(--accent);
+  transform-origin: left center;
+}
+
+.media-seek {
+  position: absolute;
+  inset: -8px 0;
+  width: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.media-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 4px;
+}
+
+.media-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-1);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.media-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.media-btn:disabled {
+  color: var(--text-3);
+  cursor: default;
+}
+
+.media-btn--small {
+  color: var(--text-3);
+}
+
+.media-btn--on {
+  color: var(--text-1);
+}
+
+.media-btn--play {
+  width: 42px;
+  height: 36px;
+}
+
+.media-btn-glyph {
+  display: grid;
+  place-items: center;
+}
+
+.skip-wrap {
+  position: relative;
+  display: block;
+  width: 26px;
+  height: 22px;
+  overflow: hidden;
+}
+
+.skip-layer {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+/* ---- Synced lyrics ---- */
+
+.lyrics {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, transparent 0, #000 20%, #000 76%, transparent 100%);
+}
+
+.lyrics-track {
+  will-change: transform;
+}
+
+/* One phrase per row; long ones get a smaller font (see fitFontSize). */
+.lyric {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  color: rgba(255, 255, 255, 0.2);
+  filter: blur(1.4px);
+  transition: color 0.35s ease, filter 0.35s ease;
+}
+
+.lyric--seek {
+  cursor: pointer;
+}
+
+/* Current line: words not sung yet are dim, each turns white when sung. */
+.lyric[data-distance="0"] {
+  display: block;
+  line-height: 27px;
+  color: rgba(255, 255, 255, 0.38);
+  filter: none;
+}
+
+.lyric-word {
+  transition: color 0.22s ease-out;
+}
+
+.lyric-word--sung {
+  color: #fff;
+}
+
+.lyric[data-distance="1"] {
+  color: rgba(255, 255, 255, 0.42);
+  filter: blur(0.4px);
+}
+
+.lyric[data-distance="2"] {
+  color: rgba(255, 255, 255, 0.28);
+  filter: blur(0.9px);
+}
+
+.lyric--seek:hover:not([data-distance="0"]) {
+  color: rgba(255, 255, 255, 0.6);
+  filter: none;
+}

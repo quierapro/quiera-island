@@ -5,10 +5,13 @@ import type { IslandEvent } from "./island-machine";
 let events: IslandEvent[];
 let controller: ReturnType<typeof createIslandController>;
 
+// Most tests look at hover and peeks alone; opening on hover has its own block.
+const CLICK_ONLY = { ...TIMING, hoverOpenMs: null };
+
 beforeEach(() => {
   vi.useFakeTimers();
   events = [];
-  controller = createIslandController((e) => events.push(e));
+  controller = createIslandController((e) => events.push(e), CLICK_ONLY);
 });
 
 afterEach(() => {
@@ -115,6 +118,77 @@ describe("resetPointer", () => {
     events = [];
     controller.pointerEnter();
     vi.advanceTimersByTime(TIMING.hoverIntentMs);
+    expect(types()).toEqual(["hover.start"]);
+  });
+});
+
+describe("open on hover", () => {
+  it("opens with the hover itself by default: one motion, no step in between", () => {
+    controller.dispose();
+    controller = createIslandController((e) => events.push(e), TIMING);
+    controller.pointerEnter();
+    vi.advanceTimersByTime(TIMING.hoverIntentMs - 1);
+    expect(types()).toEqual([]);
+    vi.advanceTimersByTime(1);
+    expect(types()).toEqual(["hover.start", "press"]);
+  });
+
+  it("still ignores a pointer that only passes through", () => {
+    controller.dispose();
+    controller = createIslandController((e) => events.push(e), TIMING);
+    controller.pointerEnter();
+    vi.advanceTimersByTime(TIMING.hoverIntentMs - 10);
+    controller.pointerLeave();
+    vi.advanceTimersByTime(2000);
+    expect(types()).toEqual([]);
+  });
+
+  describe("with a delay", () => {
+    const DELAYED = { ...TIMING, hoverIntentMs: 120, hoverOpenMs: 260 };
+
+    beforeEach(() => {
+      controller.dispose();
+      controller = createIslandController((e) => events.push(e), DELAYED);
+    });
+
+    it("opens once the pointer has rested a little longer", () => {
+      controller.pointerEnter();
+      vi.advanceTimersByTime(120 + 260 - 1);
+      expect(types()).toEqual(["hover.start"]);
+      vi.advanceTimersByTime(1);
+      expect(types()).toEqual(["hover.start", "press"]);
+    });
+
+    it("does not open for a pointer that leaves before", () => {
+      controller.pointerEnter();
+      vi.advanceTimersByTime(120 + 50);
+      controller.pointerLeave();
+      vi.advanceTimersByTime(2000);
+      expect(types()).toEqual(["hover.start", "hover.end"]);
+    });
+
+    it("still opens after a short exit within the grace period", () => {
+      controller.pointerEnter();
+      vi.advanceTimersByTime(120 + 50);
+      controller.pointerLeave();
+      vi.advanceTimersByTime(100);
+      controller.pointerEnter();
+      vi.advanceTimersByTime(260);
+      expect(types()).toEqual(["hover.start", "press"]);
+    });
+
+    it("does not open a second time after a click", () => {
+      controller.pointerEnter();
+      vi.advanceTimersByTime(120);
+      controller.press();
+      vi.advanceTimersByTime(1000);
+      expect(types()).toEqual(["hover.start", "press"]);
+    });
+  });
+
+  it("can be turned off", () => {
+    controller.pointerEnter();
+    vi.advanceTimersByTime(5000);
     expect(types()).toEqual(["hover.start"]);
   });
 });

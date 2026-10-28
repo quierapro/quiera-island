@@ -4,16 +4,22 @@ import { BIRTH, targetBox, targetFor } from "./geometry";
 describe("targetFor", () => {
   it("grows from idle to activity to peek to expanded", () => {
     const widths = (["idle", "activity", "peek", "expanded"] as const).map((s) => targetFor(s, false).width);
-    expect(widths).toEqual([190, 230, 340, 600]);
+    expect(widths).toEqual([124, 200, 340, 600]);
   });
 
   it("grows a compact island slightly on hover, but not the open panel", () => {
-    expect(targetFor("idle", true)).toMatchObject({ width: 200, height: 32, bottomRadius: 16 });
+    expect(targetFor("idle", true)).toMatchObject({ width: 134, height: 36, bottomRadius: 18 });
     expect(targetFor("expanded", true)).toEqual(targetFor("expanded", false));
   });
 
-  it("darkens the fill when expanded", () => {
-    expect(targetFor("expanded", false).fill).toBeGreaterThan(targetFor("idle", false).fill);
+  it("is opaque black in every state (OLED)", () => {
+    for (const s of ["idle", "activity", "peek", "expanded"] as const) {
+      expect(targetFor(s, false).fill).toBe(1);
+    }
+  });
+
+  it("lets the module choose its size", () => {
+    expect(targetFor("expanded", false, [620, 176, 30])).toMatchObject({ width: 620, height: 176, bottomRadius: 30 });
   });
 
   it("hides above the screen edge", () => {
@@ -24,7 +30,7 @@ describe("targetFor", () => {
 
 describe("targetBox", () => {
   it("covers the idle silhouette centered in the window", () => {
-    expect(targetBox(targetFor("idle", false), 680)).toEqual({ x: 230, y: 0, width: 220, height: 32 });
+    expect(targetBox(targetFor("idle", false), 680)).toEqual({ x: 263, y: 0, width: 154, height: 36 });
   });
 
   it("reaches from the edge down to the birth bubble", () => {

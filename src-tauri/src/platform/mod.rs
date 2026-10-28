@@ -16,18 +16,18 @@ mod windows;
 
 #[cfg(target_os = "linux")]
 pub use linux::{
-    capabilities, prepare_island_window, set_island_region, show_island_window, start_system_watch,
-    wait_for_process_exit, watch_webview,
+    capabilities, prepare_island_window, set_island_region, show_island_window, start_media,
+    start_system_watch, wait_for_process_exit, watch_webview,
 };
 #[cfg(target_os = "macos")]
 pub use macos::{
-    capabilities, prepare_island_window, set_island_region, show_island_window, start_system_watch,
-    wait_for_process_exit, watch_webview,
+    capabilities, prepare_island_window, set_island_region, show_island_window, start_media,
+    start_system_watch, wait_for_process_exit, watch_webview,
 };
 #[cfg(target_os = "windows")]
 pub use windows::{
-    capabilities, prepare_island_window, set_island_region, show_island_window, start_system_watch,
-    wait_for_process_exit, watch_webview,
+    capabilities, prepare_island_window, set_island_region, show_island_window, start_media,
+    start_system_watch, wait_for_process_exit, watch_webview,
 };
 
 /// What the system tells the island about.
@@ -41,6 +41,40 @@ pub enum SystemEvent {
     TaskbarCreated,
     /// A fullscreen app took over the island's monitor, or left it.
     Fullscreen(bool),
+}
+
+/// A playback command for the current media session.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MediaCommand {
+    PlayPause,
+    Next,
+    Previous,
+    /// Position in ms from the start of the track.
+    Seek(u64),
+    SetShuffle(bool),
+    SetRepeat(RepeatMode),
+}
+
+/// Repeat setting of the media session (`"none"`, `"track"`, `"list"` in JSON).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RepeatMode {
+    None,
+    Track,
+    List,
+}
+
+/// Sends commands to the platform's media session.
+pub struct MediaControl(Box<dyn Fn(MediaCommand) + Send + Sync>);
+
+impl MediaControl {
+    pub fn new(send: impl Fn(MediaCommand) + Send + Sync + 'static) -> Self {
+        Self(Box::new(send))
+    }
+
+    pub fn send(&self, command: MediaCommand) {
+        (self.0)(command)
+    }
 }
 
 /// How the web view failed.

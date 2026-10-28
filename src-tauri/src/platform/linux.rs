@@ -29,3 +29,9 @@ pub fn watch_webview(
 pub fn wait_for_process_exit(_pid: u32, _timeout: std::time::Duration) {
     std::thread::sleep(std::time::Duration::from_secs(1));
 }
+
+pub fn start_media(
+    _on_update: impl Fn(Option<crate::media::MediaSnapshot>) + Send + 'static,
+) -> Option<super::MediaControl> {
+    None
+}

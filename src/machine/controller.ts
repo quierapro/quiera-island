@@ -6,18 +6,24 @@
  *   pass on the way to a tab bar does not wake it;
  * - hover grace: a short exit is forgiven, so the island does not flicker
  *   when the pointer grazes its edge;
+ * - open on hover: resting a little longer opens the panel, no click needed;
  * - peek duration.
  */
 import type { IslandEvent } from "./island-machine";
 
 export interface Timing {
   hoverIntentMs: number;
+  /** After hovering starts, the panel opens this much later; null: click only. */
+  hoverOpenMs: number | null;
   hoverGraceMs: number;
   peekHoldMs: number;
 }
 
 export const TIMING: Timing = {
-  hoverIntentMs: 120,
+  hoverIntentMs: 60,
+  // 0: the panel opens with the hover itself, in one motion (no "hovered"
+  // step in between).
+  hoverOpenMs: 0,
   hoverGraceMs: 350,
   peekHoldMs: 2200,
 };
@@ -40,6 +46,7 @@ export function createIslandController(
 ): IslandController {
   let hovered = false;
   let intent: Timer | null = null;
+  let open: Timer | null = null;
   let grace: Timer | null = null;
   let peek: Timer | null = null;
 
@@ -48,22 +55,42 @@ export function createIslandController(
     return null;
   };
 
+  const scheduleOpen = () => {
+    if (timing.hoverOpenMs === null || open !== null) return;
+    if (timing.hoverOpenMs === 0) {
+      // Same tick as hover.start: React renders both at once.
+      dispatch({ type: "press" });
+      return;
+    }
+    open = setTimeout(() => {
+      open = null;
+      dispatch({ type: "press" });
+    }, timing.hoverOpenMs);
+  };
+
   const startHover = () => {
     intent = clear(intent);
     if (hovered) return;
     hovered = true;
     dispatch({ type: "hover.start" });
+    scheduleOpen();
   };
 
   return {
     pointerEnter() {
       grace = clear(grace);
-      if (hovered || intent !== null) return;
+      if (hovered) {
+        // Back within the grace period: carry on towards opening.
+        scheduleOpen();
+        return;
+      }
+      if (intent !== null) return;
       intent = setTimeout(startHover, timing.hoverIntentMs);
     },
 
     pointerLeave() {
       intent = clear(intent);
+      open = clear(open);
       if (!hovered || grace !== null) return;
       grace = setTimeout(() => {
         grace = null;
@@ -76,6 +103,7 @@ export function createIslandController(
       // A click is the clearest intent there is: no need to wait for it.
       grace = clear(grace);
       startHover();
+      open = clear(open);
       dispatch({ type: "press" });
     },
 
@@ -90,12 +118,14 @@ export function createIslandController(
 
     resetPointer() {
       intent = clear(intent);
+      open = clear(open);
       grace = clear(grace);
       hovered = false;
     },
 
     dispose() {
       intent = clear(intent);
+      open = clear(open);
       grace = clear(grace);
       peek = clear(peek);
     },

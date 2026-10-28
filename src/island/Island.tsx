@@ -8,7 +8,10 @@ import type { RegionRect } from "../ipc/island";
 import { getFullscreen, onFullscreen } from "../ipc/system";
 import { BIRTH, targetBox, targetFor, type ShellTarget } from "./geometry";
 import { IslandShell } from "./IslandShell";
-import { ActivityPlaceholder, ExpandedPlaceholder, PeekPlaceholder } from "./placeholders";
+import { useMedia } from "../modules/media/store";
+import { useMediaActivity } from "../modules/media/useMediaActivity";
+import { lyricsKind, useLyrics } from "../modules/media/lyrics";
+import { MediaActivity, MediaExpanded, MediaPeek, mediaSize } from "../modules/media/views";
 import { useIslandRegion } from "./region";
 import { BIRTH_IMPACT_MS, DURATIONS, REGION_HOLD_MS } from "./springs";
 import "./island.css";
@@ -18,12 +21,13 @@ const RISEN: ShellTarget = { ...BIRTH, y: 0 };
 /** The bubble as it appears: below the edge, not yet painted. */
 const UNBORN: ShellTarget = { ...BIRTH, fill: 0 };
 
+// Media is the only module so far; the module registry comes with the next one.
 const VIEWS: Record<Surface, (() => ReactNode) | null> = {
   hidden: null,
   idle: null,
-  activity: ActivityPlaceholder,
-  peek: PeekPlaceholder,
-  expanded: ExpandedPlaceholder,
+  activity: MediaActivity,
+  peek: MediaPeek,
+  expanded: MediaExpanded,
 };
 
 /**
@@ -96,9 +100,14 @@ export function Island() {
     if (!state.visible) controller.resetPointer();
   }, [state.visible, controller]);
 
+  useMediaActivity(controller, dispatch);
+  const media = useMedia();
+
   const surface = surfaceOf(state);
-  const target = risen ? targetFor(surface, state.hovered) : RISEN;
-  const viewSize = targetFor(surface, false);
+  const lyrics = useLyrics(media.state);
+  const size = mediaSize(surface, media.state, lyricsKind(lyrics));
+  const target = risen ? targetFor(surface, state.hovered, size) : RISEN;
+  const viewSize = targetFor(surface, false, size);
 
   const islandBox = targetBox(risen ? target : BIRTH, window.innerWidth);
   useIslandRegion(islandBox ? [islandBox, ...debugRects] : debugRects, REGION_HOLD_MS);

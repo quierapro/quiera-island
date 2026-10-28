@@ -1,4 +1,6 @@
 mod island;
+mod lyrics;
+mod media;
 mod platform;
 mod recovery;
 mod system;
@@ -41,11 +43,15 @@ pub fn run() {
                 .timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal)
                 .build(),
         )
+        .register_uri_scheme_protocol(media::ART_SCHEME, |_ctx, request| {
+            media::serve_artwork(request.uri().path())
+        })
         .setup(|app| {
             tray::create(app)?;
             island::setup(app.handle())?;
             recovery::watch(app.handle());
             system::start(app.handle());
+            media::start(app.handle());
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -61,6 +67,14 @@ pub fn run() {
             get_capabilities,
             island::set_island_region,
             system::get_fullscreen,
+            media::get_media,
+            media::media_play_pause,
+            media::media_next,
+            media::media_previous,
+            media::media_seek,
+            media::media_set_shuffle,
+            media::media_set_repeat,
+            lyrics::lyrics_word_synced,
             dev_log,
             dev_bench_requested
         ])
