@@ -31,6 +31,12 @@ pub fn watch_file_drops(
 ) {
 }
 
+pub fn start_clipboard_watch(_handler: impl Fn(crate::clipboard::ClipContent) + Send + 'static) {}
+
+pub fn write_clipboard(_content: &crate::clipboard::ClipContent) -> Result<(), String> {
+    Err("not implemented on this platform yet".into())
+}
+
 /// Not implemented yet: a short pause instead of a real wait.
 pub fn wait_for_process_exit(_pid: u32, _timeout: std::time::Duration) {
     std::thread::sleep(std::time::Duration::from_secs(1));

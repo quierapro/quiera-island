@@ -203,3 +203,46 @@
   min-width: 22px;
   text-align: right;
 }
+
+/* ---- Copied ---- */
+
+.peek-copied {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  background: rgba(50, 215, 75, 0.16);
+  color: #32d74b;
+}
+
+.peek-snippet {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 15px;
+  color: var(--text-1);
+}
+
+.peek-snippet-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.peek-snippet svg {
+  flex: none;
+  color: var(--text-3);
+}
+
+.peek-thumb {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  object-fit: cover;
+  border-radius: 7px;
+}

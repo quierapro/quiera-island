@@ -19,7 +19,7 @@ export interface PeekState {
 }
 
 /** What the open panel shows: "home" is the player, or the clock without music. */
-export type Tab = "home" | "shelf";
+export type Tab = "home" | "shelf" | "clipboard";
 
 export interface IslandState {
   visible: boolean;

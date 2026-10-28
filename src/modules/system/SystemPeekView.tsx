@@ -1,6 +1,7 @@
 import { motion } from "motion/react";
 import type { SystemPeek } from "../../ipc/peeks";
 import type { Size } from "../../island/geometry";
+import { CheckIcon, LinkIcon } from "../clipboard/icons";
 import { useSystemPeek } from "./store";
 import "./system.css";
 
@@ -15,6 +16,8 @@ export function systemPeekSize(peek: SystemPeek | null): Size {
       return [220, 38, 19];
     case "volume":
       return [290, 38, 19];
+    case "copied":
+      return [300, 40, 20];
     default:
       return [240, 38, 19];
   }
@@ -155,6 +158,30 @@ function Volume({ level, muted }: { level: number; muted: boolean }) {
   );
 }
 
+/** Something was copied: a check, then what. */
+function Copied({ content, preview, thumbnail }: { content: string; preview: string; thumbnail: string | null }) {
+  return (
+    <div className="peek-row">
+      <motion.span
+        className="peek-copied"
+        initial={{ scale: 0.4 }}
+        animate={{ scale: 1 }}
+        transition={{ type: "spring", stiffness: 600, damping: 20 }}
+      >
+        <CheckIcon size={13} />
+      </motion.span>
+      <span className="peek-text">
+        <span className="peek-caption">Copié</span>
+        <span className="peek-snippet">
+          {content === "link" && <LinkIcon size={11} />}
+          <span className="peek-snippet-text">{preview}</span>
+        </span>
+      </span>
+      {thumbnail && <img className="peek-thumb" src={thumbnail} alt="" draggable={false} />}
+    </div>
+  );
+}
+
 /** The peek for whatever the system just announced. */
 export function SystemPeekView() {
   const peek = useSystemPeek();
@@ -168,5 +195,7 @@ export function SystemPeekView() {
       return <CapsLock on={peek.on} />;
     case "volume":
       return <Volume level={peek.level} muted={peek.muted} />;
+    case "copied":
+      return <Copied content={peek.content} preview={peek.preview} thumbnail={peek.thumbnail} />;
   }
 }

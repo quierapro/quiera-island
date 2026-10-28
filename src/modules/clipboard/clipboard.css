@@ -1,0 +1,215 @@
+.clip {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 2px 16px 14px;
+}
+
+.clip-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 22px;
+  padding: 0 4px;
+}
+
+.clip-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+.clip-clear {
+  padding: 3px 9px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-2);
+  font: 600 11px var(--font-ui);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.clip-clear:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-1);
+}
+
+.clip-row {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  padding-top: 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  mask-image: linear-gradient(to right, #000 92%, transparent);
+}
+
+.clip-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  box-sizing: border-box;
+  width: 136px;
+  height: 104px;
+  padding: 9px 10px 7px;
+  border-radius: 14px;
+  corner-shape: squircle;
+  background: #141417;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.clip-card:hover {
+  background: #1e1e22;
+}
+
+.clip-card--pinned {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.clip-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.clip-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 15px;
+  color: var(--text-1);
+  word-break: break-word;
+}
+
+.clip-link {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.clip-host {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-1);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.clip-host svg {
+  flex: none;
+  color: var(--text-3);
+}
+
+.clip-url {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: 10.5px;
+  line-height: 13px;
+  color: var(--text-3);
+  word-break: break-all;
+}
+
+.clip-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+.clip-foot {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 14px;
+  margin-top: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+}
+
+.clip-actions {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  display: flex;
+  gap: 3px;
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.clip-card:hover .clip-actions {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.clip-actions button {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: #3a3a40;
+  color: var(--text-1);
+  cursor: pointer;
+}
+
+.clip-actions button:hover {
+  background: #4a4a52;
+}
+
+.clip-actions .clip-action--on {
+  background: var(--text-1);
+  color: #000;
+}
+
+.clip-copied {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: inherit;
+  background: rgba(10, 10, 12, 0.86);
+  color: #32d74b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.clip-empty {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: calc(100% - 14px);
+  margin: 0 14px 14px;
+  border: 1.5px dashed rgba(255, 255, 255, 0.14);
+  border-radius: 18px;
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}

@@ -6,6 +6,7 @@
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
 
+use crate::clipboard::ClipKind;
 use crate::platform;
 
 pub const PEEK_EVENT: &str = "system://peek";
@@ -38,6 +39,13 @@ pub enum SystemPeek {
     /// Master volume, 0–100.
     #[serde(rename_all = "camelCase")]
     Volume { level: u8, muted: bool },
+    /// Something was copied: the start of the text, or the image.
+    #[serde(rename_all = "camelCase")]
+    Copied {
+        content: ClipKind,
+        preview: String,
+        thumbnail: Option<String>,
+    },
 }
 
 /// A raw power reading from the platform.
@@ -65,14 +73,18 @@ pub fn volume_percent(scalar: f32) -> u8 {
 
 pub fn start(handle: &AppHandle) {
     let handle = handle.clone();
-    platform::start_peek_watch(move |peek| {
-        if !matches!(peek, SystemPeek::Volume { .. }) {
-            log::info!("system peek: {}", kind_name(&peek));
-        }
-        if let Err(e) = handle.emit(PEEK_EVENT, peek) {
-            log::warn!("could not send a system peek: {e}");
-        }
-    });
+    platform::start_peek_watch(move |peek| announce(&handle, peek));
+}
+
+/// Shows a peek on the island.
+pub fn announce(app: &AppHandle, peek: SystemPeek) {
+    // Volume changes come in bursts, copies are private: not logged.
+    if !matches!(peek, SystemPeek::Volume { .. } | SystemPeek::Copied { .. }) {
+        log::info!("system peek: {}", kind_name(&peek));
+    }
+    if let Err(e) = app.emit(PEEK_EVENT, peek) {
+        log::warn!("could not send a system peek: {e}");
+    }
 }
 
 /// For the log: the kind only, never device names.
@@ -82,6 +94,7 @@ fn kind_name(peek: &SystemPeek) -> &'static str {
         SystemPeek::AudioDevice { .. } => "audio device",
         SystemPeek::CapsLock { .. } => "caps lock",
         SystemPeek::Volume { .. } => "volume",
+        SystemPeek::Copied { .. } => "copied",
     }
 }
 

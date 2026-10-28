@@ -17,7 +17,10 @@ import { shelfContentSize } from "../modules/shelf/format";
 import { ShelfView } from "../modules/shelf/ShelfView";
 import { startShelf, useShelf } from "../modules/shelf/store";
 import { useFileDrop } from "../modules/shelf/useFileDrop";
-import { TAB_BAR_HEIGHT, TabBar } from "./TabBar";
+import { TAB_BAR_HEIGHT, TabBar, tabShown } from "./TabBar";
+import { clipboardContentSize } from "../modules/clipboard/format";
+import { ClipboardView } from "../modules/clipboard/ClipboardView";
+import { startClipboard, useClipboard } from "../modules/clipboard/store";
 import { SYSTEM_PEEK_PREFIX, useSystemPeek, useSystemPeeks } from "../modules/system/store";
 import { SystemPeekView, systemPeekSize } from "../modules/system/SystemPeekView";
 import { useIslandRegion } from "./region";
@@ -52,6 +55,7 @@ function viewFor(
       return { key: "peek:media", content: <MediaPeek /> };
     case "expanded":
       if (tab === "shelf") return { key: "expanded:shelf", content: <ShelfView dragging={dragging} /> };
+      if (tab === "clipboard") return { key: "expanded:clipboard", content: <ClipboardView /> };
       return hasMedia ? { key: "expanded:media", content: <MediaExpanded /> } : { key: "expanded:clock", content: <ClockPanel /> };
   }
 }
@@ -133,19 +137,25 @@ export function Island() {
   const media = useMedia();
   useEffect(() => startShelf(), []);
   const shelfItems = useShelf();
+  useEffect(() => startClipboard(), []);
+  const clipItems = useClipboard();
 
   const surface = surfaceOf(state);
   const lyrics = useLyrics(media.state);
   const hasMedia = Boolean(media.state);
-  // The tab bar shows once the shelf has something, or while it is shown.
-  const showTabs = surface === "expanded" && (shelfItems.length > 0 || state.tab === "shelf");
+  // The tab bar shows once another tab than home is offered.
+  const showTabs =
+    surface === "expanded" &&
+    (tabShown("shelf", state.tab, shelfItems.length) || tabShown("clipboard", state.tab, clipItems.length));
   let size = mediaSize(surface, media.state, lyricsKind(lyrics));
   if (surface === "peek" && state.peek?.id.startsWith(SYSTEM_PEEK_PREFIX)) size = systemPeekSize(systemPeek);
   if (surface === "expanded") {
     const [w, h, r] =
       state.tab === "shelf"
         ? [...shelfContentSize(shelfItems.length), 26]
-        : hasMedia
+        : state.tab === "clipboard"
+          ? [...clipboardContentSize(clipItems.length), 26]
+          : hasMedia
           ? (size ?? CLOCK_PANEL_SIZE)
           : CLOCK_PANEL_SIZE;
     size = showTabs ? [Math.max(w, 300), h + TAB_BAR_HEIGHT, r] : [w, h, r];
@@ -187,6 +197,7 @@ export function Island() {
                 tab={state.tab}
                 hasMedia={hasMedia}
                 shelfCount={shelfItems.length}
+                clipboardCount={clipItems.length}
                 onSelect={(tab) => dispatch({ type: "tab.select", tab })}
               />
             </motion.div>
