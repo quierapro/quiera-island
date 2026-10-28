@@ -2,7 +2,6 @@ import { useEffect, useMemo, useReducer, useState, type ReactNode } from "react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { createIslandController } from "../machine/controller";
 import { initialState, reduce, surfaceOf, type Surface, type Tab } from "../machine/island-machine";
-import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { benchRequested, runBench } from "../dev/bench";
 import { DebugPanel } from "../dev/DebugPanel";
 import type { RegionRect } from "../ipc/island";
@@ -17,6 +16,7 @@ import { CLOCK_PANEL_SIZE, ClockPanel, IdleClock } from "../modules/clock/Clock"
 import { shelfContentSize } from "../modules/shelf/format";
 import { ShelfView } from "../modules/shelf/ShelfView";
 import { startShelf, useShelf } from "../modules/shelf/store";
+import { useFileDrop } from "../modules/shelf/useFileDrop";
 import { TAB_BAR_HEIGHT, TabBar } from "./TabBar";
 import { SYSTEM_PEEK_PREFIX, useSystemPeek, useSystemPeeks } from "../modules/system/store";
 import { SystemPeekView, systemPeekSize } from "../modules/system/SystemPeekView";
@@ -126,32 +126,7 @@ export function Island() {
     if (!state.visible) controller.resetPointer();
   }, [state.visible, controller]);
 
-  // Files dragged from another app over the island (Tauri's drop events;
-  // the files themselves are added to the shelf by the backend).
-  useEffect(() => {
-    let unlisten: (() => void) | undefined;
-    let live = true;
-    try {
-      getCurrentWebview()
-        .onDragDropEvent(({ payload }) => {
-          if (payload.type === "enter" && payload.paths.length > 0) controller.dragEnter();
-          else if (payload.type === "leave") controller.dragLeave();
-          else if (payload.type === "drop") controller.dragDrop();
-        })
-        .then((stop) => {
-          if (live) unlisten = stop;
-          else stop();
-        })
-        .catch(() => {});
-    } catch {
-      // Not running inside Tauri (plain browser preview).
-    }
-    return () => {
-      live = false;
-      unlisten?.();
-    };
-  }, [controller]);
-
+  useFileDrop(controller);
   useMediaActivity(controller, dispatch);
   useSystemPeeks(controller);
   const systemPeek = useSystemPeek();

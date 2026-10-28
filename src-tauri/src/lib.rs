@@ -70,6 +70,7 @@ pub fn run() {
             tray::create(app)?;
             island::setup(app.handle())?;
             recovery::watch(app.handle());
+            shelf::watch_drops(app.handle());
             system::start(app.handle());
             media::start(app.handle());
             peeks::start(app.handle());
@@ -79,18 +80,11 @@ pub fn run() {
             if window.label() != island::LABEL {
                 return;
             }
-            match event {
-                tauri::WindowEvent::ScaleFactorChanged { .. } => {
-                    if let Some(island) = window.app_handle().get_webview_window(island::LABEL)
-                        && let Err(e) = island::place(&island)
-                    {
-                        log::warn!("could not re-place the island after a scale change: {e}");
-                    }
-                }
-                tauri::WindowEvent::DragDrop(tauri::DragDropEvent::Drop { paths, .. }) => {
-                    shelf::add_paths(window.app_handle(), paths.clone());
-                }
-                _ => {}
+            if let tauri::WindowEvent::ScaleFactorChanged { .. } = event
+                && let Some(island) = window.app_handle().get_webview_window(island::LABEL)
+                && let Err(e) = island::place(&island)
+            {
+                log::warn!("could not re-place the island after a scale change: {e}");
             }
         })
         .invoke_handler(tauri::generate_handler![

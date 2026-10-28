@@ -25,6 +25,12 @@ pub fn watch_webview(
 ) {
 }
 
+pub fn watch_file_drops(
+    _window: &WebviewWindow,
+    _handler: impl Fn(Vec<std::path::PathBuf>) + Send + 'static,
+) {
+}
+
 /// Not implemented yet: a short pause instead of a real wait.
 pub fn wait_for_process_exit(_pid: u32, _timeout: std::time::Duration) {
     std::thread::sleep(std::time::Duration::from_secs(1));

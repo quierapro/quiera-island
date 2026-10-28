@@ -142,6 +142,23 @@ describe("lyricsQuery", () => {
   it("drops featured artists and the Topic suffix", () => {
     expect(lyricsQuery("Song ft. Someone", "Artist - Topic")).toEqual({ track: "Song", artist: "Artist" });
   });
+
+  it("keeps a music player's title and drops the version after the dash", () => {
+    const spotify = "SpotifyAB.SpotifyMusic_zpdnekdrzrea0!Spotify";
+    expect(lyricsQuery("Dancin - Krono Remix Slowed+Reverb", "Crimson Power", spotify)).toEqual({
+      track: "Dancin",
+      artist: "Crimson Power",
+    });
+    expect(lyricsQuery("Come Together - Remastered 2009", "The Beatles", spotify)).toEqual({
+      track: "Come Together",
+      artist: "The Beatles",
+    });
+    expect(lyricsQuery("Rock - Paper", "Band", spotify)).toEqual({ track: "Rock - Paper", artist: "Band" });
+  });
+
+  it("still splits a browser tab's title", () => {
+    expect(lyricsQuery("Daft Punk - Get Lucky", "DaftPunkVEVO", "MSEdge")).toEqual({ track: "Get Lucky", artist: "Daft Punk" });
+  });
 });
 
 describe("fitFontSize", () => {

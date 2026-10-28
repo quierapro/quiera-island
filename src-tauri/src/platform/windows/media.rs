@@ -111,6 +111,44 @@ fn bind(session: Session, tx: &Sender<Msg>) -> windows::core::Result<Bound> {
     Ok(Bound { session, tokens })
 }
 
+fn is_playing(session: &Session) -> bool {
+    session
+        .GetPlaybackInfo()
+        .and_then(|info| info.PlaybackStatus())
+        .is_ok_and(|status| status == Status::Playing)
+}
+
+/// The session to show. Windows' current one is not always right: it can
+/// stay on a paused video while music plays in another app. So what plays
+/// comes first, and while nothing plays the island stays where it was.
+fn pick(manager: &Manager, sessions: &[Session], bound: Option<&Session>) -> Option<Session> {
+    let current = manager.GetCurrentSession().ok();
+    current
+        .iter()
+        .chain(bound)
+        .chain(sessions)
+        .find(|s| is_playing(s))
+        .or_else(|| bound.filter(|b| sessions.contains(b)))
+        .cloned()
+        .or(current)
+}
+
+/// Play and pause in every session, so music starting behind a paused
+/// video is noticed. Re-subscribed only when the sessions change.
+fn watch_all(sessions: &[Session], watched: &mut Vec<(Session, i64)>, tx: &Sender<Msg>) {
+    if watched.len() == sessions.len() && watched.iter().zip(sessions).all(|((w, _), s)| w == s) {
+        return;
+    }
+    for (session, token) in watched.drain(..) {
+        let _ = session.RemovePlaybackInfoChanged(token);
+    }
+    for session in sessions {
+        if let Ok(token) = session.PlaybackInfoChanged(&post(tx, Msg::Rebind)) {
+            watched.push((session.clone(), token));
+        }
+    }
+}
+
 fn run(
     tx: Sender<Msg>,
     rx: Receiver<Msg>,
@@ -125,6 +163,7 @@ fn run(
     log::info!("media watcher started");
 
     let mut bound: Option<Bound> = None;
+    let mut watched = Vec::new();
     // Title, artist and cover, re-read only when the app says they changed.
     let mut properties = Properties::default();
     let _ = tx.send(Msg::Rebind);
@@ -132,7 +171,12 @@ fn run(
     for msg in rx {
         match msg {
             Msg::Rebind => {
-                let current = manager.GetCurrentSession().ok();
+                let sessions: Vec<Session> = manager
+                    .GetSessions()
+                    .map(|list| list.into_iter().collect())
+                    .unwrap_or_default();
+                watch_all(&sessions, &mut watched, &tx);
+                let current = pick(&manager, &sessions, bound.as_ref().map(|b| &b.session));
                 let same = match (&bound, &current) {
                     (Some(b), Some(c)) => b.session == *c,
                     (None, None) => true,

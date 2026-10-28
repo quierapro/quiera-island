@@ -32,6 +32,10 @@ Fichiers déposés sur l'île, gardés pour plus tard et glissés ailleurs. Les 
 - [oui] « Vider » : le Shelf est vide, la barre d'onglets disparaît.
 - [oui] Supprimer un fichier du disque puis rouvrir le Shelf : sa tuile disparaît.
 
+## Corrigé le 29/10/2026
+
+Depuis WebView2 156, le moteur web pose sa propre cible de dépôt devant celle de Tauri et refusait tous les fichiers (l'île ne s'ouvrait plus). La page reçoit maintenant le dépôt elle-même et transmet les fichiers au backend par `chrome.webview.postMessageWithAdditionalObjects`, qui donne leur vrai chemin (`platform/windows/file_drop.rs`). Vérifié à la main par l'utilisateur.
+
 ## Limites connues
 
 - Seuls les **fichiers** sont acceptés : un texte sélectionné glissé depuis une page n'est pas reçu (Tauri ne transmet que des chemins). À traiter avec le presse-papiers.

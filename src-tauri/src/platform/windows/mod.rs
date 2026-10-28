@@ -1,6 +1,7 @@
 //! Windows implementation: the primary target. Features are switched on here
 //! as each development step lands and passes its checks.
 
+mod file_drop;
 mod fullscreen;
 mod island;
 mod media;
@@ -10,6 +11,7 @@ mod system_events;
 mod thumbnail;
 mod webview;
 
+pub use file_drop::watch_file_drops;
 pub use island::{prepare_island_window, set_island_region, show_island_window};
 pub use media::start_media;
 pub use peeks::start_peek_watch;

@@ -186,17 +186,27 @@ export function wordsSung(line: LyricLine | undefined, positionMs: number): numb
 const NOISE =
   /\s*[([](?:official|lyrics?|audio|video|clip|visuali[sz]er|hd|4k|remaster(?:ed)?|live|explicit|paroles)[^)\]]*[)\]]/gi;
 
+/** Players that know the real title and artist (not a browser tab). */
+const MUSIC_APP = /spotify|applemusic|itunes|deezer|tidal|amazon.*music|zunemusic|foobar|musicbee|aimp|winamp|qobuz/i;
+
+/** "Song - Remastered 2011", "Song - Radio Edit": the version, not the title. */
+const VERSION =
+  /\s+[-–—]\s+[^-–—]*\b(?:remaster(?:ed)?|remix|mix|edit|version|live|mono|stereo|acoustic|slowed|sped up|reverb|demo)\b.*$/i;
+
 /**
  * What to search for. Browsers report YouTube videos as "Artist - Title
- * (Official Video)" by the channel, so the title is cleaned and split.
+ * (Official Video)" by the channel, so the title is cleaned and split. Music
+ * players use " - " for the version instead ("Song - Remix"): it is dropped.
  */
-export function lyricsQuery(title: string, artist: string): { track: string; artist: string } {
+export function lyricsQuery(title: string, artist: string, appId = ""): { track: string; artist: string } {
   let track = title.replace(NOISE, "").trim();
   let who = artist.replace(/\s*-\s*topic$/i, "").replace(/vevo$/i, "").trim();
-  const dash = track.match(/^(.+?)\s+[-–—]\s+(.+)$/);
+  const dash = MUSIC_APP.test(appId) ? null : track.match(/^(.+?)\s+[-–—]\s+(.+)$/);
   if (dash) {
     who = dash[1].trim();
     track = dash[2].trim();
+  } else {
+    track = track.replace(VERSION, "").trim();
   }
   track = track.replace(/\s+[([]?(?:feat\.?|ft\.?)\s.*$/i, "").trim();
   return { track, artist: who };
@@ -221,8 +231,9 @@ async function fetchWordSynced(track: string, artist: string, durationMs: number
 }
 
 async function fetchLyrics(state: MediaState): Promise<LyricLine[] | null> {
-  const { track, artist } = lyricsQuery(state.title, state.artist);
-  if (!track) return null;
+  const { track, artist } = lyricsQuery(state.title, state.artist, state.appId);
+  // Without an artist (a film, a podcast app) there is no song to look up.
+  if (!track || !artist) return null;
   const wordSynced = await fetchWordSynced(track, artist, state.durationMs);
   if (wordSynced) return wordSynced;
   const seconds = state.durationMs ? Math.round(state.durationMs / 1000) : null;
@@ -238,7 +249,11 @@ async function fetchLyrics(state: MediaState): Promise<LyricLine[] | null> {
 
   const search = new URLSearchParams({ track_name: track, artist_name: artist });
   const found = await fetch(`https://lrclib.net/api/search?${search}`, { headers: HEADERS });
-  if (!found.ok) return null;
+  if (!found.ok) {
+    // A server error is temporary: worth asking again later.
+    if (found.status >= 500 || found.status === 429) throw new Error(`lrclib ${found.status}`);
+    return null;
+  }
   const list = (await found.json()) as LrclibTrack[];
   const close = (t: LrclibTrack) => seconds === null || Math.abs(t.duration - seconds) <= 3;
   const hit = list.find((t) => t.syncedLyrics && close(t));
@@ -249,29 +264,39 @@ async function fetchLyrics(state: MediaState): Promise<LyricLine[] | null> {
 const cache = new Map<string, LyricLine[] | null>();
 const pending = new Map<string, Promise<LyricLine[] | null>>();
 
+/** After a network or server error, the next try. */
+const RETRY_MS = 30_000;
+
 /** The synced lyrics of the current track: undefined while loading, null if none. */
 export function useLyrics(state: MediaState | null | undefined): LyricLine[] | null | undefined {
   const key = state ? trackKey(state) : null;
-  const [, rerender] = useState(0);
+  const [attempt, rerender] = useState(0);
 
   useEffect(() => {
     if (!key || !state || cache.has(key)) return;
     let live = true;
+    let retry: ReturnType<typeof setTimeout> | undefined;
     let request = pending.get(key);
     if (!request) {
-      request = fetchLyrics(state).catch(() => null);
+      request = fetchLyrics(state);
       pending.set(key, request);
+      // Only an answer is remembered; a failure is asked again.
+      request
+        .then((lines) => void cache.set(key, lines && lines.length > 0 ? lines : null), () => {})
+        .finally(() => pending.delete(key));
     }
-    request.then((lines) => {
-      cache.set(key, lines && lines.length > 0 ? lines : null);
-      pending.delete(key);
-      if (live) rerender((n) => n + 1);
-    });
+    request.then(
+      () => live && rerender((n) => n + 1),
+      () => {
+        if (live) retry = setTimeout(() => rerender((n) => n + 1), RETRY_MS);
+      },
+    );
     return () => {
       live = false;
+      clearTimeout(retry);
     };
-    // Only a new track triggers a request; position updates do not.
-  }, [key]);
+    // Only a new track (or a retry) triggers a request; position updates do not.
+  }, [key, attempt]);
 
   if (!key) return null;
   return cache.has(key) ? cache.get(key) : undefined;

@@ -181,6 +181,15 @@ pub fn add_paths(app: &AppHandle, paths: Vec<PathBuf>) {
     changed(app);
 }
 
+/// Receives the files dropped on the island.
+pub fn watch_drops(app: &AppHandle) {
+    let Some(window) = app.get_webview_window(crate::island::LABEL) else {
+        return;
+    };
+    let handle = app.clone();
+    platform::watch_file_drops(&window, move |paths| add_paths(&handle, paths));
+}
+
 fn item_path(id: u32) -> Result<PathBuf, String> {
     shelf()
         .get(id)
