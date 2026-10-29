@@ -137,6 +137,7 @@ fn changed(app: &AppHandle) {
 
 fn on_event(app: &AppHandle, event: NotificationEvent) {
     match event {
+        NotificationEvent::Added(_) if !crate::settings::get().notifications.enabled => {}
         NotificationEvent::Added(raw) => {
             let item = store().add(raw);
             changed(app);
@@ -161,6 +162,12 @@ fn on_event(app: &AppHandle, event: NotificationEvent) {
             }
         }
     }
+}
+
+/// Empties the list (the notifications stay in Windows' centre).
+pub fn clear_all(app: &AppHandle) {
+    store().entries.clear();
+    changed(app);
 }
 
 pub fn start(app: &AppHandle) {

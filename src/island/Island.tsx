@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useReducer, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useReducer, useState, type ReactNode, lazy, Suspense } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { createIslandController } from "../machine/controller";
 import { initialState, reduce, surfaceOf, type Surface, type Tab } from "../machine/island-machine";
 import { benchRequested, runBench } from "../dev/bench";
-import { DebugPanel } from "../dev/DebugPanel";
-import type { RegionRect } from "../ipc/island";
+// Development only: loaded on demand, so neither it nor its CSS ships.
+const DebugPanel = import.meta.env.DEV ? lazy(() => import("../dev/DebugPanel").then((m) => ({ default: m.DebugPanel }))) : null;
 import { getFullscreen, onFullscreen } from "../ipc/system";
 import { BIRTH, targetBox, targetFor, type ShellTarget } from "./geometry";
 import { IslandShell } from "./IslandShell";
@@ -32,7 +32,9 @@ import { launcherSize } from "../modules/launcher/search";
 import { onLauncher } from "../ipc/launcher";
 import { SYSTEM_PEEK_PREFIX, useSystemPeek, useSystemPeeks } from "../modules/system/store";
 import { SystemPeekView, systemPeekSize } from "../modules/system/SystemPeekView";
+import { setIslandMemory, type RegionRect } from "../ipc/island";
 import { useIslandRegion } from "./region";
+import { useSettings } from "../settings/store";
 import { BIRTH_IMPACT_MS, DURATIONS, REGION_HOLD_MS } from "./springs";
 import "./island.css";
 
@@ -79,6 +81,9 @@ function viewFor(
  * 50–95 ms on the 600 × 196 panel with software rendering), so the panel
  * scales in instead; small compact content keeps the blur.
  */
+/** A closed island this long asks for low memory. */
+const LOW_MEMORY_AFTER_MS = 4000;
+
 const ENTER: Record<Surface, { blur: number; scale: number }> = {
   hidden: { blur: 0, scale: 1 },
   idle: { blur: 0, scale: 1 },
@@ -93,7 +98,11 @@ export function Island() {
   const controller = useMemo(() => createIslandController(dispatch), []);
   useEffect(() => () => controller.dispose(), [controller]);
 
-  const reducedMotion = useReducedMotion() ?? false;
+  const settings = useSettings();
+  const systemReduced = useReducedMotion() ?? false;
+  const motionSetting = settings.general.motion;
+  const reducedMotion = motionSetting === "reduced" || (motionSetting === "system" && systemReduced);
+  useEffect(() => controller.setOpenOnHover(settings.general.openOnHover), [controller, settings.general.openOnHover]);
   const [timeScale, setTimeScale] = useState(1);
   const [birth, setBirth] = useState(0);
   const [risen, setRisen] = useState(reducedMotion);
@@ -122,10 +131,12 @@ export function Island() {
 
   // A fullscreen app on the island's monitor hides it. Listen first, then
   // ask, so a change between the two is not missed.
+  // Unless the settings keep it on screen.
+  const hideInFullscreen = settings.general.hideInFullscreen;
   useEffect(() => {
     let live = true;
     let unlisten: (() => void) | undefined;
-    const apply = (fullscreen: boolean) => dispatch({ type: "visibility", visible: !fullscreen });
+    const apply = (fullscreen: boolean) => dispatch({ type: "visibility", visible: !(fullscreen && hideInFullscreen) });
     onFullscreen((on) => live && apply(on))
       .then((stop) => {
         if (live) unlisten = stop;
@@ -138,7 +149,7 @@ export function Island() {
       live = false;
       unlisten?.();
     };
-  }, []);
+  }, [hideInFullscreen]);
 
   // A hidden island cannot see the pointer leave.
   useEffect(() => {
@@ -183,6 +194,19 @@ export function Island() {
   const outputsOpen = useOutputsOpen();
 
   const surface = surfaceOf(state);
+
+  // A closed island asks WebView2 to keep its memory low; it is back to
+  // normal as soon as the island opens (and the switch costs nothing seen).
+  const roomy = surface === "expanded" || surface === "launcher";
+  useEffect(() => {
+    if (roomy) {
+      setIslandMemory(false);
+      return;
+    }
+    const timer = setTimeout(() => setIslandMemory(true), LOW_MEMORY_AFTER_MS);
+    return () => clearTimeout(timer);
+  }, [roomy]);
+
   const lyrics = useLyrics(media.state);
   const hasMedia = Boolean(media.state);
   // The controls are always offered: the open panel always has its tabs.
@@ -281,8 +305,9 @@ export function Island() {
         </AnimatePresence>
       </IslandShell>
 
-      {import.meta.env.DEV && (
-        <DebugPanel
+      {DebugPanel && (
+        <Suspense fallback={null}>
+          <DebugPanel
           state={state}
           surface={surface}
           controller={controller}
@@ -292,7 +317,8 @@ export function Island() {
           onRebirth={() => setBirth((b) => b + 1)}
           islandBox={islandBox}
           onRects={setDebugRects}
-        />
+          />
+        </Suspense>
       )}
     </div>
   );

@@ -53,16 +53,25 @@ export function mediaSize(
   return undefined;
 }
 
+/** Playback clock updates, at most this often. */
+const CLOCK_INTERVAL_MS = 1000 / 30;
+
 /**
- * Playback position in ms as a motion value, advanced every frame while
+ * Playback position in ms as a motion value, advanced up to 30 times a second while
  * playing (no React render per frame).
  */
 function usePlaybackClock(state: MediaState): MotionValue<number> {
   const clock = useMotionValue(positionAt(state, Date.now()) ?? 0);
   useEffect(() => {
     let frame = 0;
-    const tick = () => {
-      clock.set(positionAt(state, Date.now()) ?? 0);
+    let last = 0;
+    const tick = (now: number = performance.now()) => {
+      // 30 updates a second follow words and the progress bar closely
+      // enough; every frame of a fast screen would only cost redraws.
+      if (now - last >= CLOCK_INTERVAL_MS) {
+        last = now;
+        clock.set(positionAt(state, Date.now()) ?? 0);
+      }
       if (state.playing) frame = requestAnimationFrame(tick);
     };
     tick();

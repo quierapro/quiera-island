@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { closeLauncher, getLauncherApps, launchApp, openFile, searchFiles, type FileHit, type LauncherApp } from "../../ipc/launcher";
 import { openLink } from "../../ipc/notifications";
+import { openSettings } from "../../ipc/settings";
 import { arrivedLabel } from "../notifications/format";
 import { formatNumber } from "./calc";
 import { compose, MAX_ROWS, type Result } from "./results";
@@ -42,6 +43,15 @@ function SearchIcon() {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
       <circle cx="11" cy="11" r="6.5" />
       <path d="m16 16 4.5 4.5" />
+    </svg>
+  );
+}
+
+function GearIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1Z" />
     </svg>
   );
 }
@@ -99,6 +109,16 @@ function Row({ result, selected, copied }: { result: Result; selected: boolean; 
           <span className="launch-icon launch-icon--glyph">=</span>
           <span className="launch-title launch-title--big">{formatNumber(result.value)}</span>
           <span className="launch-hint">{copied ? "Copié ✓" : selected ? "Copier ↵" : "Calcul"}</span>
+        </>
+      );
+    case "settings":
+      return (
+        <>
+          <span className="launch-icon launch-icon--glyph">
+            <GearIcon />
+          </span>
+          <span className="launch-title">Réglages de Quiera</span>
+          <span className="launch-hint">{selected ? "Ouvrir ↵" : "Quiera"}</span>
         </>
       );
     case "web":
@@ -198,6 +218,11 @@ export function Launcher({ onRows }: { onRows(rows: number): void }) {
             setCopied(true);
             setTimeout(() => closeLauncher(true).catch(ignore), 500);
           })
+          .catch(ignore);
+        break;
+      case "settings":
+        openSettings()
+          .then(() => closeLauncher(false))
           .catch(ignore);
         break;
       case "web":

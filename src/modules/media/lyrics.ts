@@ -1,7 +1,8 @@
 /**
  * Synced lyrics. Two sources, in order:
  *
- * 1. NetEase Cloud Music, through the backend: real word timing ("yrc").
+ * 1. NetEase Cloud Music, through the backend, when chosen in the settings:
+ *    real word timing ("yrc").
  *    Unofficial API (see src-tauri/src/lyrics.rs).
  * 2. LRCLIB (https://lrclib.net, free, no key): line timing only, so each
  *    line is highlighted in two estimated halves.
@@ -9,7 +10,8 @@
  * Only the track's title, artist, album and duration are sent.
  */
 import { invoke } from "@tauri-apps/api/core";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { settingsNow, useSettings } from "../../settings/store";
 import type { MediaState } from "../../ipc/media";
 import { trackKey } from "./progress";
 
@@ -234,7 +236,7 @@ async function fetchLyrics(state: MediaState): Promise<LyricLine[] | null> {
   const { track, artist } = lyricsQuery(state.title, state.artist, state.appId);
   // Without an artist (a film, a podcast app) there is no song to look up.
   if (!track || !artist) return null;
-  const wordSynced = await fetchWordSynced(track, artist, state.durationMs);
+  const wordSynced = settingsNow().media.netease ? await fetchWordSynced(track, artist, state.durationMs) : null;
   if (wordSynced) return wordSynced;
   const seconds = state.durationMs ? Math.round(state.durationMs / 1000) : null;
 
@@ -268,7 +270,28 @@ const pending = new Map<string, Promise<LyricLine[] | null>>();
 const RETRY_MS = 30_000;
 
 /** The synced lyrics of the current track: undefined while loading, null if none. */
+/**
+ * Lines moved by `offsetMs` (positive: later), so a source a little ahead
+ * or behind the track can be set right.
+ */
+export function shiftLines(lines: LyricLine[], offsetMs: number): LyricLine[] {
+  if (offsetMs === 0) return lines;
+  return lines.map((line) => ({
+    ...line,
+    time: Math.max(0, line.time + offsetMs),
+    words: line.words.map((w) => ({ ...w, time: Math.max(0, w.time + offsetMs) })),
+  }));
+}
+
+/** The synced lyrics of the current track, as the settings want them. */
 export function useLyrics(state: MediaState | null | undefined): LyricLine[] | null | undefined {
+  const { lyrics, lyricsOffsetMs } = useSettings().media;
+  const lines = useTrackLyrics(lyrics ? state : null);
+  return useMemo(() => (lines ? shiftLines(lines, lyricsOffsetMs) : lines), [lines, lyricsOffsetMs]);
+}
+
+/** The synced lyrics of a track: undefined while loading, null if none. */
+function useTrackLyrics(state: MediaState | null | undefined): LyricLine[] | null | undefined {
   const key = state ? trackKey(state) : null;
   const [attempt, rerender] = useState(0);
 

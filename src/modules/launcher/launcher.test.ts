@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { calculate, formatNumber } from "./calc";
 import { launcherSize, normalize, rank, score } from "./search";
-import { compose, MAX_ROWS } from "./results";
+import { asksForSettings, compose, MAX_ROWS } from "./results";
 
 const apps = ["Visual Studio Code", "Spotify", "Steam", "Discord", "Discord Canary", "Paramètres", "Microsoft Edge", "Bloc-notes"].map(
   (name) => ({ key: name, name, icon: "" }),
@@ -97,5 +97,16 @@ describe("compose", () => {
 
   it("shows nothing for nothing", () => {
     expect(compose("  ", apps, files, {})).toEqual([]);
+  });
+});
+
+describe("asksForSettings", () => {
+  it("opens Quiera's settings from a few words", () => {
+    expect(asksForSettings("régl")).toBe(true);
+    expect(asksForSettings("Paramètres")).toBe(true);
+    expect(asksForSettings("settings")).toBe(true);
+    expect(asksForSettings("re")).toBe(false);
+    expect(asksForSettings("spotify")).toBe(false);
+    expect(compose("reglages", apps, [], {})[0].kind).toBe("settings");
   });
 });

@@ -3,11 +3,13 @@
 
 use tauri::WebviewWindow;
 use webview2_com::Microsoft::Web::WebView2::Win32::{
+    COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_LOW, COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_NORMAL,
     COREWEBVIEW2_PROCESS_FAILED_KIND, COREWEBVIEW2_PROCESS_FAILED_KIND_BROWSER_PROCESS_EXITED,
     COREWEBVIEW2_PROCESS_FAILED_KIND_RENDER_PROCESS_EXITED,
-    COREWEBVIEW2_PROCESS_FAILED_KIND_RENDER_PROCESS_UNRESPONSIVE,
+    COREWEBVIEW2_PROCESS_FAILED_KIND_RENDER_PROCESS_UNRESPONSIVE, ICoreWebView2_19,
 };
 use webview2_com::ProcessFailedEventHandler;
+use windows::core::Interface;
 
 use crate::platform::WebviewFailure;
 
@@ -57,4 +59,26 @@ pub fn watch_webview(window: &WebviewWindow, handler: impl Fn(WebviewFailure) + 
     if let Err(e) = result {
         log::warn!("cannot reach the web view: {e}");
     }
+}
+
+/// Low memory while the island is closed: WebView2 trims what it can (its
+/// caches, released graphics memory) and comes back on the next change.
+pub fn set_webview_memory_low(window: &WebviewWindow, low: bool) {
+    let level = if low {
+        COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_LOW
+    } else {
+        COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_NORMAL
+    };
+    let _ = window.with_webview(move |webview| {
+        // SAFETY: COM calls on the web view's own thread, inside with_webview.
+        unsafe {
+            if let Ok(core) = webview
+                .controller()
+                .CoreWebView2()
+                .and_then(|c| c.cast::<ICoreWebView2_19>())
+            {
+                let _ = core.SetMemoryUsageTargetLevel(level);
+            }
+        }
+    });
 }

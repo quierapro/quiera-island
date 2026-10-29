@@ -6,66 +6,108 @@
 //! that opens it.
 
 use std::ffi::c_void;
+use std::sync::Mutex;
 use std::sync::atomic::{AtomicIsize, Ordering};
+use std::sync::mpsc::{self, Sender};
+use std::time::Duration;
 
 use tauri::WebviewWindow;
-use windows::Win32::Foundation::HWND;
+use windows::Win32::Foundation::{HWND, LPARAM, WPARAM};
 use windows::Win32::Storage::FileSystem::{GetDriveTypeW, GetLogicalDrives};
 use windows::Win32::System::Com::{COINIT_APARTMENTTHREADED, CoInitializeEx, CoTaskMemFree};
+use windows::Win32::System::Threading::GetCurrentThreadId;
 use windows::Win32::UI::Input::KeyboardAndMouse::{
-    HOT_KEY_MODIFIERS, MOD_ALT, MOD_CONTROL, MOD_NOREPEAT, RegisterHotKey, VK_SPACE,
+    HOT_KEY_MODIFIERS, MOD_ALT, MOD_CONTROL, MOD_NOREPEAT, MOD_SHIFT, RegisterHotKey,
+    UnregisterHotKey, VK_SPACE,
 };
 use windows::Win32::UI::Shell::{
     BHID_EnumItems, FOLDERID_AppsFolder, IEnumShellItems, IShellItem, KF_FLAG_DEFAULT,
     SHGetKnownFolderItem, SIGDN, SIGDN_NORMALDISPLAY, SIGDN_PARENTRELATIVEPARSING,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
-    GetForegroundWindow, GetMessageW, IsWindow, MSG, SetForegroundWindow, WM_HOTKEY,
+    GetForegroundWindow, GetMessageW, IsWindow, MSG, PM_NOREMOVE, PeekMessageW, PostThreadMessageW,
+    SetForegroundWindow, WM_APP, WM_HOTKEY,
 };
 
-use crate::launcher::{LaunchApp, Shortcut};
+use crate::launcher::LaunchApp;
+use crate::settings::Shortcut;
 
-/// Alt+Space first (as PowerToys Run); Ctrl+Alt+Space when another app holds it.
-const SHORTCUTS: [(HOT_KEY_MODIFIERS, Shortcut); 2] = [
-    (MOD_ALT, Shortcut::AltSpace),
-    (
-        HOT_KEY_MODIFIERS(MOD_CONTROL.0 | MOD_ALT.0),
-        Shortcut::CtrlAltSpace,
-    ),
-];
+/// The keys of each shortcut.
+fn keys(shortcut: Shortcut) -> (HOT_KEY_MODIFIERS, u32) {
+    let space = u32::from(VK_SPACE.0);
+    match shortcut {
+        Shortcut::AltSpace => (MOD_ALT, space),
+        Shortcut::CtrlAltSpace => (HOT_KEY_MODIFIERS(MOD_CONTROL.0 | MOD_ALT.0), space),
+        Shortcut::CtrlShiftSpace => (HOT_KEY_MODIFIERS(MOD_CONTROL.0 | MOD_SHIFT.0), space),
+        Shortcut::AltQ => (MOD_ALT, u32::from(b'Q')),
+    }
+}
 
-/// Listens for the launcher's shortcut; `handler` runs on each press.
-/// Returns the shortcut taken, or None when every one is held elsewhere.
-pub fn start_launcher_hotkey(handler: impl Fn() + Send + 'static) -> Option<Shortcut> {
-    let (tx, rx) = std::sync::mpsc::channel();
+/// A change for the shortcut's thread: the shortcut to hold (None: none)
+/// and where to answer whether Windows gave it.
+type Request = (Option<Shortcut>, Sender<bool>);
+
+/// The shortcut thread: its request channel and its id, to wake it.
+static THREAD: Mutex<Option<(Sender<Request>, u32)>> = Mutex::new(None);
+
+/// Starts the thread that holds the launcher's shortcut; `handler` runs on
+/// each press. It holds none until `set_launcher_hotkey` says which.
+pub fn start_launcher_hotkey(handler: impl Fn() + Send + 'static) {
+    let (ready_tx, ready_rx) = mpsc::channel();
     let spawned = std::thread::Builder::new()
         .name("quiera-launcher-key".into())
         .spawn(move || {
-            // SAFETY: a thread hotkey (no window): WM_HOTKEY comes to this
-            // thread's queue, read by the loop below.
+            let (tx, rx) = mpsc::channel::<Request>();
+            // SAFETY: a thread hotkey (no window): WM_HOTKEY and the wake-up
+            // message come to this thread's queue, read by the loop below.
             unsafe {
-                let taken = SHORTCUTS.iter().find_map(|(modifiers, shortcut)| {
-                    RegisterHotKey(None, 1, *modifiers | MOD_NOREPEAT, u32::from(VK_SPACE.0))
-                        .ok()
-                        .map(|()| *shortcut)
-                });
-                let _ = tx.send(taken);
-                if taken.is_none() {
-                    return;
-                }
+                // Creates the queue before anyone posts to it.
                 let mut msg = MSG::default();
+                let _ = PeekMessageW(&mut msg, None, 0, 0, PM_NOREMOVE);
+                *THREAD.lock().unwrap_or_else(|e| e.into_inner()) =
+                    Some((tx, GetCurrentThreadId()));
+                let _ = ready_tx.send(());
                 while GetMessageW(&mut msg, None, 0, 0).as_bool() {
-                    if msg.message == WM_HOTKEY {
-                        handler();
+                    match msg.message {
+                        WM_HOTKEY => handler(),
+                        WM_APP => {
+                            for (shortcut, answer) in rx.try_iter() {
+                                let _ = UnregisterHotKey(None, 1);
+                                let held = shortcut.is_none_or(|s| {
+                                    let (modifiers, key) = keys(s);
+                                    RegisterHotKey(None, 1, modifiers | MOD_NOREPEAT, key).is_ok()
+                                });
+                                let _ = answer.send(held);
+                            }
+                        }
+                        _ => {}
                     }
                 }
             }
         });
     if let Err(e) = spawned {
         log::error!("could not start the launcher shortcut: {e}");
-        return None;
+        return;
     }
-    rx.recv().ok().flatten()
+    let _ = ready_rx.recv_timeout(Duration::from_secs(2));
+}
+
+/// Holds `shortcut` (or none). False when another app already holds it.
+pub fn set_launcher_hotkey(shortcut: Option<Shortcut>) -> bool {
+    let Some((tx, thread)) = THREAD.lock().unwrap_or_else(|e| e.into_inner()).clone() else {
+        return false;
+    };
+    let (answer_tx, answer_rx) = mpsc::channel();
+    if tx.send((shortcut, answer_tx)).is_err() {
+        return false;
+    }
+    // SAFETY: wakes the shortcut thread, which reads the request.
+    if unsafe { PostThreadMessageW(thread, WM_APP, WPARAM(0), LPARAM(0)) }.is_err() {
+        return false;
+    }
+    answer_rx
+        .recv_timeout(Duration::from_secs(2))
+        .unwrap_or(false)
 }
 
 /// The window that had the keyboard before the launcher took it.

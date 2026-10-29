@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeLine, fitFontSize, halfPhrases, lyricsKind, lyricsQuery, parseLrc, parseYrc, singingSpan, wordsSung } from "./lyrics";
+import { activeLine, fitFontSize, halfPhrases, lyricsKind, lyricsQuery, parseLrc, parseYrc, shiftLines, singingSpan, wordsSung } from "./lyrics";
 
 const timesAndText = (lrc: string) => parseLrc(lrc).map(({ time, text }) => ({ time, text }));
 
@@ -173,5 +173,15 @@ describe("fitFontSize", () => {
 
   it("never goes below the minimum", () => {
     expect(fitFontSize(2000, 280, 15, 11)).toBe(11);
+  });
+});
+
+describe("shiftLines", () => {
+  const lines = [{ time: 1000, text: "a b", words: [{ text: "a", time: 1000 }, { text: "b", time: 1500 }], wordSync: true }];
+
+  it("moves lines and their words, never before the start", () => {
+    expect(shiftLines(lines, 300)[0].words.map((w) => w.time)).toEqual([1300, 1800]);
+    expect(shiftLines(lines, -1200)[0].time).toBe(0);
+    expect(shiftLines(lines, 0)).toBe(lines);
   });
 });

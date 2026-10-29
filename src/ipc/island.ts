@@ -12,3 +12,8 @@ export interface RegionRect {
 export function setIslandRegion(rects: RegionRect[]): Promise<void> {
   return invoke("set_island_region", { rects });
 }
+
+/** Asks WebView2 to keep its memory low (the island is closed) or not. */
+export function setIslandMemory(low: boolean): void {
+  invoke("island_memory", { low }).catch(() => {});
+}

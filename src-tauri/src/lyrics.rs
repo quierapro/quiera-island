@@ -158,6 +158,9 @@ pub async fn lyrics_word_synced(
     artist: String,
     duration_ms: Option<u64>,
 ) -> Result<Option<String>, String> {
+    if !crate::settings::get().media.netease {
+        return Ok(None);
+    }
     tauri::async_runtime::spawn_blocking(move || fetch(&title, &artist, duration_ms))
         .await
         .map_err(|e| e.to_string())?

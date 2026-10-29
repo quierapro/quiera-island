@@ -1,6 +1,7 @@
 //! The Shelf: files dropped on the island, kept for later and dragged out
-//! again. Files are kept by reference (their path), never copied; the shelf
-//! lasts for the session.
+//! again. Files are kept by reference (their path), never copied. The shelf
+//! lasts for the session, or from one to the next when the settings say so
+//! (its paths in `shelf.json`).
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -164,6 +165,46 @@ fn changed(app: &AppHandle) {
     if let Err(e) = app.emit(CHANGED_EVENT, items) {
         log::warn!("could not send the shelf: {e}");
     }
+    persist(app);
+}
+
+fn saved_path(app: &AppHandle) -> Option<PathBuf> {
+    app.path()
+        .app_data_dir()
+        .ok()
+        .map(|dir| dir.join("shelf.json"))
+}
+
+/// Saves the shelf's paths when it is to be kept, and removes the file when
+/// it is not.
+pub fn persist(app: &AppHandle) {
+    let Some(file) = saved_path(app) else { return };
+    if !crate::settings::get().shelf.keep {
+        let _ = std::fs::remove_file(&file);
+        return;
+    }
+    let paths: Vec<String> = shelf().items().into_iter().map(|i| i.path).collect();
+    let saved = file
+        .parent()
+        .map_or(Ok(()), std::fs::create_dir_all)
+        .and_then(|()| std::fs::write(&file, serde_json::to_string(&paths).unwrap_or_default()));
+    if let Err(e) = saved {
+        log::warn!("could not keep the shelf: {e}");
+    }
+}
+
+/// Puts back the shelf of the last session, when it is kept. Files gone
+/// since are left out.
+pub fn restore(app: &AppHandle) {
+    if !crate::settings::get().shelf.keep {
+        return;
+    }
+    let Some(text) = saved_path(app).and_then(|f| std::fs::read_to_string(f).ok()) else {
+        return;
+    };
+    let paths: Vec<String> = serde_json::from_str(&text).unwrap_or_default();
+    // Saved newest first; added oldest first so the order comes back.
+    add_paths(app, paths.into_iter().rev().map(PathBuf::from).collect());
 }
 
 /// Puts dropped files on the shelf.

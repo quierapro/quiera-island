@@ -262,6 +262,8 @@ pub fn refresh() {
     let spawned = std::thread::Builder::new()
         .name("quiera-files".into())
         .spawn(|| {
+            // Nobody waits on it: it gives way to everything else.
+            platform::lower_thread_priority();
             let started = Instant::now();
             let mut index = walk(&platform::fixed_drives());
             index.built = Some(Instant::now());
@@ -284,12 +286,23 @@ pub fn refresh() {
 pub fn start() {
     std::thread::spawn(|| {
         std::thread::sleep(FIRST_WALK_DELAY);
-        refresh();
+        if crate::settings::get().launcher.index_files {
+            refresh();
+        }
     });
+}
+
+/// Drops the index (file search turned off): its memory goes back.
+pub fn clear() {
+    *INDEX.write().unwrap_or_else(|e| e.into_inner()) = Index::default();
+    GENERATION.fetch_add(1, Ordering::Relaxed);
 }
 
 /// Rebuilds the index if it is old (called when the launcher opens).
 pub fn refresh_if_stale() {
+    if !crate::settings::get().launcher.index_files {
+        return;
+    }
     let stale = INDEX
         .read()
         .unwrap_or_else(|e| e.into_inner())
@@ -365,6 +378,9 @@ pub struct FileHit {
 
 /// The best matches for `query`, best first.
 pub fn search(query: &str, limit: usize) -> Vec<FileHit> {
+    if !crate::settings::get().launcher.index_files {
+        return Vec::new();
+    }
     let query = fold(query.trim());
     if query.chars().count() < 2 {
         return Vec::new();

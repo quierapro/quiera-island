@@ -15,6 +15,7 @@ use tauri::{AppHandle, Emitter, Manager};
 
 use tauri_plugin_opener::OpenerExt;
 
+use crate::settings::{self, Shortcut};
 use crate::{files, island, platform, protocol};
 
 pub const OPEN_EVENT: &str = "launcher://open";
@@ -25,15 +26,6 @@ const ICON_SIZE: u32 = 32;
 const FOCUS_CHECK: Duration = Duration::from_millis(400);
 /// Apps are listed again after this long, to catch new installs.
 const APPS_FRESH_FOR: Duration = Duration::from_secs(60);
-
-/// The shortcut the launcher got.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
-pub enum Shortcut {
-    #[serde(rename = "Alt+Espace")]
-    AltSpace,
-    #[serde(rename = "Ctrl+Alt+Espace")]
-    CtrlAltSpace,
-}
 
 /// An app as the platform lists it.
 pub struct LaunchApp {
@@ -90,7 +82,7 @@ pub fn is_launchable(name: &str) -> bool {
 }
 
 fn open(app: &AppHandle) {
-    if OPEN.swap(true, Ordering::Relaxed) {
+    if !settings::get().launcher.enabled || OPEN.swap(true, Ordering::Relaxed) {
         return;
     }
     if let Some(window) = app.get_webview_window(island::LABEL) {
@@ -122,20 +114,37 @@ fn close(app: &AppHandle, restore: bool) {
 
 pub fn start(app: &AppHandle) {
     let handle = app.clone();
-    let shortcut = platform::start_launcher_hotkey(move || {
+    platform::start_launcher_hotkey(move || {
         if OPEN.load(Ordering::Relaxed) {
             close(&handle, true);
         } else {
             open(&handle);
         }
     });
-    match shortcut {
-        Some(s) => log::info!("launcher shortcut: {s:?}"),
-        None => log::warn!("launcher: every shortcut is taken by another app"),
-    }
-    *SHORTCUT.lock().unwrap_or_else(|e| e.into_inner()) = shortcut;
+    apply_shortcut();
 }
 
+/// Holds the shortcut the settings ask for, or the first free one when
+/// another app holds it; none when the launcher is off.
+pub fn apply_shortcut() {
+    let wanted = settings::get().launcher;
+    let held = if wanted.enabled {
+        std::iter::once(wanted.shortcut)
+            .chain(Shortcut::ALL.into_iter().filter(|s| *s != wanted.shortcut))
+            .find(|s| platform::set_launcher_hotkey(Some(*s)))
+    } else {
+        platform::set_launcher_hotkey(None);
+        None
+    };
+    match held {
+        Some(s) => log::info!("launcher shortcut: {s:?}"),
+        None if wanted.enabled => log::warn!("launcher: every shortcut is taken by another app"),
+        None => log::info!("launcher off"),
+    }
+    *SHORTCUT.lock().unwrap_or_else(|e| e.into_inner()) = held;
+}
+
+/// The shortcut held now (it may differ from the one chosen, when taken).
 #[tauri::command]
 pub fn launcher_shortcut() -> Option<Shortcut> {
     *SHORTCUT.lock().unwrap_or_else(|e| e.into_inner())
@@ -308,14 +317,6 @@ mod tests {
         assert!(
             is_launchable("Steam Uninstaller Helper Docs"),
             "only a leading word counts"
-        );
-    }
-
-    #[test]
-    fn shortcuts_read_as_people_type_them() {
-        assert_eq!(
-            serde_json::to_string(&Shortcut::AltSpace).unwrap(),
-            "\"Alt+Espace\""
         );
     }
 }

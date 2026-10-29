@@ -29,10 +29,25 @@ pub fn setup(handle: &AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
-/// Moves and sizes the window for the primary monitor's current scale.
+/// The monitor the settings name, or the primary one (also when the named
+/// one is unplugged).
+fn chosen_monitor(window: &WebviewWindow) -> tauri::Result<Option<tauri::Monitor>> {
+    if let Some(name) = crate::settings::get().general.screen {
+        let named = window
+            .available_monitors()?
+            .into_iter()
+            .find(|m| m.name().is_some_and(|n| *n == name));
+        if named.is_some() {
+            return Ok(named);
+        }
+    }
+    window.primary_monitor()
+}
+
+/// Moves and sizes the window for the chosen monitor's current scale.
 pub fn place(window: &WebviewWindow) -> tauri::Result<()> {
-    let Some(monitor) = window.primary_monitor()? else {
-        log::warn!("no primary monitor; island left where it is");
+    let Some(monitor) = chosen_monitor(window)? else {
+        log::warn!("no monitor; island left where it is");
         return Ok(());
     };
     let (pos, size) = (monitor.position(), monitor.size());
@@ -54,6 +69,48 @@ pub fn place(window: &WebviewWindow) -> tauri::Result<()> {
         monitor.scale_factor()
     );
     Ok(())
+}
+
+/// Asks the web view to keep its memory low while the island is closed.
+#[tauri::command]
+pub fn island_memory(window: WebviewWindow, low: bool) {
+    platform::set_webview_memory_low(&window, low);
+}
+
+/// Mirrors `Monitor` in `src/ipc/settings.ts`.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct MonitorInfo {
+    pub name: String,
+    pub width: u32,
+    pub height: u32,
+    pub primary: bool,
+}
+
+/// The monitors the island can go on.
+#[tauri::command]
+pub fn settings_monitors(app: AppHandle) -> Vec<MonitorInfo> {
+    let Some(window) = app.get_webview_window(LABEL) else {
+        return Vec::new();
+    };
+    let primary = window
+        .primary_monitor()
+        .ok()
+        .flatten()
+        .and_then(|m| m.name().cloned());
+    window
+        .available_monitors()
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|m| {
+            let name = m.name()?.clone();
+            Some(MonitorInfo {
+                primary: primary.as_ref() == Some(&name),
+                width: m.size().width,
+                height: m.size().height,
+                name,
+            })
+        })
+        .collect()
 }
 
 /// Limits drawing and hit-testing to `rects` (CSS pixels of the window).

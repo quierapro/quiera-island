@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import process from "node:process";
+import { resolve } from "node:path";
 
 const host = process.env.TAURI_DEV_HOST;
 
@@ -15,5 +16,14 @@ export default defineConfig({
     host: host || false,
     hmr: host ? { protocol: "ws", host, port: 1421 } : undefined,
     watch: { ignored: ["**/src-tauri/**"] },
+  },
+  build: {
+    // Two pages: the island, and the settings window (built only when opened).
+    rollupOptions: {
+      input: {
+        island: resolve(import.meta.dirname, "index.html"),
+        settings: resolve(import.meta.dirname, "settings.html"),
+      },
+    },
   },
 });

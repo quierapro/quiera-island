@@ -86,7 +86,25 @@ pub fn start(handle: &AppHandle) {
 }
 
 /// Shows a peek on the island.
+/// Whether the settings let this kind of peek show.
+fn wanted(peek: &SystemPeek) -> bool {
+    let settings = crate::settings::get();
+    match peek {
+        SystemPeek::Power { .. } => settings.peeks.power,
+        SystemPeek::AudioDevice { .. } => settings.peeks.audio_device,
+        SystemPeek::CapsLock { .. } => settings.peeks.caps_lock,
+        SystemPeek::Volume { .. } => settings.peeks.volume,
+        SystemPeek::Copied { .. } => settings.clipboard.enabled,
+        SystemPeek::Notification { .. } => {
+            settings.notifications.enabled && settings.notifications.peek
+        }
+    }
+}
+
 pub fn announce(app: &AppHandle, peek: SystemPeek) {
+    if !wanted(&peek) {
+        return;
+    }
     // Volume changes come in bursts; copies and notifications are private.
     if !matches!(
         peek,

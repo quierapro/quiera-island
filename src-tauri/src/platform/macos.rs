@@ -87,15 +87,23 @@ pub fn set_app_mute(_path: &std::path::Path, _muted: bool) -> Result<(), String>
     Err(NOT_YET.into())
 }
 
-pub fn start_launcher_hotkey(
-    _handler: impl Fn() + Send + 'static,
-) -> Option<crate::launcher::Shortcut> {
-    None
+pub fn start_launcher_hotkey(_handler: impl Fn() + Send + 'static) {}
+
+pub fn set_launcher_hotkey(_shortcut: Option<crate::settings::Shortcut>) -> bool {
+    false
+}
+
+pub fn set_autostart(_enabled: bool) -> Result<(), String> {
+    Err("not implemented on this platform yet".into())
 }
 
 pub fn focus_island(_window: &WebviewWindow) {}
 
 pub fn restore_focus() {}
+
+pub fn set_webview_memory_low(_window: &WebviewWindow, _low: bool) {}
+
+pub fn lower_thread_priority() {}
 
 pub fn install_crash_logger() {}
 

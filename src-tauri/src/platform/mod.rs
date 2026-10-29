@@ -17,32 +17,35 @@ mod windows;
 #[cfg(target_os = "linux")]
 pub use linux::{
     capabilities, dismiss_notification, file_thumbnail, fixed_drives, focus_island,
-    install_crash_logger, island_has_focus, launch_app, list_apps, notifications_quiet,
-    prepare_island_window, read_controls, restore_focus, set_app_mute, set_app_volume,
-    set_default_output, set_island_region, set_master_mute, set_master_volume, set_radio,
-    show_island_window, start_clipboard_watch, start_launcher_hotkey, start_media,
-    start_notification_watch, start_peek_watch, start_system_watch, wait_for_process_exit,
-    watch_file_drops, watch_webview, write_clipboard,
+    install_crash_logger, island_has_focus, launch_app, list_apps, lower_thread_priority,
+    notifications_quiet, prepare_island_window, read_controls, restore_focus, set_app_mute,
+    set_app_volume, set_autostart, set_default_output, set_island_region, set_launcher_hotkey,
+    set_master_mute, set_master_volume, set_radio, set_webview_memory_low, show_island_window,
+    start_clipboard_watch, start_launcher_hotkey, start_media, start_notification_watch,
+    start_peek_watch, start_system_watch, wait_for_process_exit, watch_file_drops, watch_webview,
+    write_clipboard,
 };
 #[cfg(target_os = "macos")]
 pub use macos::{
     capabilities, dismiss_notification, file_thumbnail, fixed_drives, focus_island,
-    install_crash_logger, island_has_focus, launch_app, list_apps, notifications_quiet,
-    prepare_island_window, read_controls, restore_focus, set_app_mute, set_app_volume,
-    set_default_output, set_island_region, set_master_mute, set_master_volume, set_radio,
-    show_island_window, start_clipboard_watch, start_launcher_hotkey, start_media,
-    start_notification_watch, start_peek_watch, start_system_watch, wait_for_process_exit,
-    watch_file_drops, watch_webview, write_clipboard,
+    install_crash_logger, island_has_focus, launch_app, list_apps, lower_thread_priority,
+    notifications_quiet, prepare_island_window, read_controls, restore_focus, set_app_mute,
+    set_app_volume, set_autostart, set_default_output, set_island_region, set_launcher_hotkey,
+    set_master_mute, set_master_volume, set_radio, set_webview_memory_low, show_island_window,
+    start_clipboard_watch, start_launcher_hotkey, start_media, start_notification_watch,
+    start_peek_watch, start_system_watch, wait_for_process_exit, watch_file_drops, watch_webview,
+    write_clipboard,
 };
 #[cfg(target_os = "windows")]
 pub use windows::{
     capabilities, dismiss_notification, file_thumbnail, fixed_drives, focus_island,
-    install_crash_logger, island_has_focus, launch_app, list_apps, notifications_quiet,
-    prepare_island_window, read_controls, restore_focus, set_app_mute, set_app_volume,
-    set_default_output, set_island_region, set_master_mute, set_master_volume, set_radio,
-    show_island_window, start_clipboard_watch, start_launcher_hotkey, start_media,
-    start_notification_watch, start_peek_watch, start_system_watch, wait_for_process_exit,
-    watch_file_drops, watch_webview, write_clipboard,
+    install_crash_logger, island_has_focus, launch_app, list_apps, lower_thread_priority,
+    notifications_quiet, prepare_island_window, read_controls, restore_focus, set_app_mute,
+    set_app_volume, set_autostart, set_default_output, set_island_region, set_launcher_hotkey,
+    set_master_mute, set_master_volume, set_radio, set_webview_memory_low, show_island_window,
+    start_clipboard_watch, start_launcher_hotkey, start_media, start_notification_watch,
+    start_peek_watch, start_system_watch, wait_for_process_exit, watch_file_drops, watch_webview,
+    write_clipboard,
 };
 
 /// What the system tells the island about.

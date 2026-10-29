@@ -1,3 +1,4 @@
+mod apply;
 mod clipboard;
 mod controls;
 mod files;
@@ -10,6 +11,7 @@ mod peeks;
 mod platform;
 mod protocol;
 mod recovery;
+mod settings;
 mod shelf;
 mod system;
 mod tray;
@@ -91,6 +93,7 @@ pub fn run() {
         )
         .setup(|app| {
             platform::install_crash_logger();
+            settings::load(app.handle());
             tray::create(app)?;
             island::setup(app.handle())?;
             recovery::watch(app.handle());
@@ -102,6 +105,7 @@ pub fn run() {
             notifications::start(app.handle());
             launcher::start(app.handle());
             files::start();
+            apply::at_start(app.handle());
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -127,6 +131,11 @@ pub fn run() {
             media::media_set_shuffle,
             media::media_set_repeat,
             lyrics::lyrics_word_synced,
+            settings::settings_get,
+            settings::settings_set,
+            settings::settings_open,
+            island::settings_monitors,
+            island::island_memory,
             launcher::launcher_shortcut,
             launcher::launcher_apps,
             launcher::launcher_launch,

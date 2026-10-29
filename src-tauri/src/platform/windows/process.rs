@@ -18,3 +18,15 @@ pub fn wait_for_process_exit(pid: u32, timeout: Duration) {
         let _ = CloseHandle(process);
     }
 }
+
+/// Background priority for the calling thread (CPU and disk), for work
+/// nobody waits on, like walking the drives.
+pub fn lower_thread_priority() {
+    // SAFETY: changes the calling thread's own priority.
+    unsafe {
+        let _ = windows::Win32::System::Threading::SetThreadPriority(
+            windows::Win32::System::Threading::GetCurrentThread(),
+            windows::Win32::System::Threading::THREAD_MODE_BACKGROUND_BEGIN,
+        );
+    }
+}

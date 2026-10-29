@@ -281,6 +281,9 @@ fn prepare(content: ClipContent, now: u64) -> Option<(u64, ClipItem, Data)> {
 }
 
 fn on_copy(app: &AppHandle, content: ClipContent) {
+    if !crate::settings::get().clipboard.enabled {
+        return;
+    }
     let now = now_ms();
     let Some((key, item, data)) = prepare(content, now) else {
         return;
@@ -307,6 +310,12 @@ fn on_copy(app: &AppHandle, content: ClipContent) {
     if let Some(peek) = peek {
         peeks::announce(app, peek);
     }
+}
+
+/// Forgets the whole history, pinned items too.
+pub fn clear_all(app: &AppHandle) {
+    history().entries.clear();
+    changed(app);
 }
 
 pub fn start(app: &AppHandle) {

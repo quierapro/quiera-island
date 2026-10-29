@@ -37,6 +37,8 @@ export interface IslandController {
   press(): void;
   /** Shows a peek for `holdMs` (the usual duration by default). */
   showPeek(id: string, holdMs?: number): void;
+  /** Off: hovering only grows the island; a click opens it. */
+  setOpenOnHover(on: boolean): void;
   /** Files dragged from another app entered, left, or were dropped. */
   dragEnter(): void;
   dragLeave(): void;
@@ -58,6 +60,7 @@ export function createIslandController(
   let grace: Timer | null = null;
   let peek: Timer | null = null;
   let dropHold: Timer | null = null;
+  let openDelay = timing.hoverOpenMs;
 
   const clear = (t: Timer | null) => {
     if (t !== null) clearTimeout(t);
@@ -65,8 +68,8 @@ export function createIslandController(
   };
 
   const scheduleOpen = () => {
-    if (timing.hoverOpenMs === null || open !== null) return;
-    if (timing.hoverOpenMs === 0) {
+    if (openDelay === null || open !== null) return;
+    if (openDelay === 0) {
       // Same tick as hover.start: React renders both at once.
       dispatch({ type: "press" });
       return;
@@ -74,7 +77,7 @@ export function createIslandController(
     open = setTimeout(() => {
       open = null;
       dispatch({ type: "press" });
-    }, timing.hoverOpenMs);
+    }, openDelay);
   };
 
   const startHover = () => {
@@ -137,6 +140,11 @@ export function createIslandController(
         dropHold = null;
         if (!hovered) dispatch({ type: "close" });
       }, timing.dropHoldMs);
+    },
+
+    setOpenOnHover(on) {
+      openDelay = on ? (timing.hoverOpenMs ?? 0) : null;
+      if (!on) open = clear(open);
     },
 
     showPeek(id, holdMs = timing.peekHoldMs) {
