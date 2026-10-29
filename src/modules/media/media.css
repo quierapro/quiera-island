@@ -177,6 +177,9 @@
 
 .media-expanded:not(:has(.lyrics)) .media-player {
   flex: 1;
+  /* Without it, a long title (a video's) widens the column past the panel
+     instead of scrolling in its marquee. */
+  min-width: 0;
   width: auto;
 }
 

@@ -1,16 +1,18 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import * as ctl from "../../ipc/controls";
 import type { Controls, RadioKind } from "../../ipc/controls";
-import { shownLevel } from "./format";
+import { levelAt, shownLevel } from "./format";
 import { BluetoothIcon, HeadphonesIcon, SpeakerIcon, WifiIcon } from "./icons";
-import { refreshControls, useControls } from "./store";
+import { refreshControls, setOutputsOpen, useControls, useOutputsOpen } from "./store";
 import "./controls.css";
 
 const ignore = () => {};
 /** Volume changes sent while dragging, at most this often. */
 const SEND_MS = 50;
+const spring = { type: "spring", stiffness: 520, damping: 38 } as const;
 
-const RADIOS: Record<RadioKind, { label: string; icon: React.ReactNode }> = {
+const RADIOS: Record<RadioKind, { label: string; icon: ReactNode }> = {
   wifi: { label: "Wi-Fi", icon: <WifiIcon size={17} /> },
   bluetooth: { label: "Bluetooth", icon: <BluetoothIcon size={17} /> },
 };
@@ -19,9 +21,11 @@ function Toggle({ kind, on }: { kind: RadioKind; on: boolean }) {
   const [pending, setPending] = useState<boolean | null>(null);
   const shown = pending ?? on;
   return (
-    <button
+    <motion.button
       className={`ctl-toggle ${shown ? "ctl-toggle--on" : ""}`}
       aria-pressed={shown}
+      whileTap={{ scale: 0.96 }}
+      transition={spring}
       onClick={(e) => {
         e.stopPropagation();
         setPending(!shown);
@@ -40,70 +44,93 @@ function Toggle({ kind, on }: { kind: RadioKind; on: boolean }) {
         <span className="ctl-toggle-label">{RADIOS[kind].label}</span>
         <span className="ctl-toggle-state">{shown ? "Activé" : "Désactivé"}</span>
       </span>
-    </button>
+    </motion.button>
   );
 }
 
-/** A volume slider that sends its value while dragged, without flooding. */
-function Slider({ level, label, onLevel }: { level: number; label: string; onLevel(level: number): void }) {
+/**
+ * A volume as a pill to drag anywhere on, filled to its level, with its
+ * label inside. Sends while dragging (without flooding) and on release.
+ */
+function PillSlider({
+  level,
+  muted,
+  label,
+  big = false,
+  onLevel,
+  children,
+}: {
+  level: number;
+  muted: boolean;
+  label: string;
+  big?: boolean;
+  onLevel(level: number): void;
+  children: ReactNode;
+}) {
   const [local, setLocal] = useState<{ level: number; at: number }>();
+  const [dragging, setDragging] = useState(false);
   const last = useRef(0);
-  const value = shownLevel(level, local, Date.now());
-  const send = (next: number, force: boolean) => {
+  const value = muted ? 0 : shownLevel(level, local, Date.now());
+
+  const set = (e: React.PointerEvent<HTMLDivElement>, force: boolean) => {
+    const box = e.currentTarget.getBoundingClientRect();
+    const next = levelAt(e.clientX, box.left, box.width);
     setLocal({ level: next, at: Date.now() });
     if (force || Date.now() - last.current >= SEND_MS) {
       last.current = Date.now();
       onLevel(next);
     }
   };
+
   return (
-    <input
-      className="ctl-slider"
-      type="range"
-      min={0}
-      max={100}
-      value={value}
+    <div
+      className={`ctl-pill ${big ? "ctl-pill--big" : ""} ${muted ? "ctl-pill--muted" : ""} ${dragging ? "ctl-pill--drag" : ""}`}
+      role="slider"
       aria-label={label}
-      style={{ "--fill": `${value}%` } as React.CSSProperties}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={value}
+      tabIndex={0}
       onClick={(e) => e.stopPropagation()}
-      onPointerDown={(e) => e.stopPropagation()}
-      onChange={(e) => send(Number(e.target.value), false)}
-      onPointerUp={(e) => send(Number((e.target as HTMLInputElement).value), true)}
-      onKeyUp={(e) => send(Number((e.target as HTMLInputElement).value), true)}
-    />
+      onPointerDown={(e) => {
+        e.stopPropagation();
+        e.currentTarget.setPointerCapture(e.pointerId);
+        setDragging(true);
+        set(e, false);
+      }}
+      onPointerMove={(e) => dragging && set(e, false)}
+      onPointerUp={(e) => {
+        if (!dragging) return;
+        setDragging(false);
+        set(e, true);
+      }}
+      onKeyDown={(e) => {
+        const step = e.key === "ArrowRight" || e.key === "ArrowUp" ? 5 : e.key === "ArrowLeft" || e.key === "ArrowDown" ? -5 : 0;
+        if (!step) return;
+        e.preventDefault();
+        const next = Math.min(Math.max(value + step, 0), 100);
+        setLocal({ level: next, at: Date.now() });
+        onLevel(next);
+      }}
+    >
+      <span className="ctl-pill-fill" style={{ width: `${value}%` }} />
+      <span className="ctl-pill-content">
+        {children}
+        <span className="ctl-pill-value">{muted ? "Coupé" : value}</span>
+      </span>
+    </div>
   );
 }
 
-function Outputs({ outputs }: { outputs: Controls["outputs"] }) {
-  const [chosen, setChosen] = useState<string | null>(null);
-  if (outputs.length === 0) return null;
+function OutputIcon({ form, size = 15 }: { form: string; size?: number }) {
+  return form === "headphones" || form === "headset" ? <HeadphonesIcon size={size} /> : <SpeakerIcon size={size} />;
+}
+
+function Chevron({ open }: { open: boolean }) {
   return (
-    <div className="ctl-outputs">
-      {outputs.map((o) => {
-        const active = chosen ? chosen === o.id : o.default;
-        return (
-          <button
-            key={o.id}
-            className={`ctl-output ${active ? "ctl-output--on" : ""}`}
-            title={o.name}
-            onClick={(e) => {
-              e.stopPropagation();
-              setChosen(o.id);
-              ctl
-                .setOutput(o.id)
-                .catch(ignore)
-                .finally(() => {
-                  refreshControls();
-                  setTimeout(() => setChosen(null), 1200);
-                });
-            }}
-          >
-            {o.form === "headphones" || o.form === "headset" ? <HeadphonesIcon size={14} /> : <SpeakerIcon size={14} />}
-            <span>{o.name}</span>
-          </button>
-        );
-      })}
-    </div>
+    <motion.svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" animate={{ rotate: open ? 180 : 0 }} transition={spring} aria-hidden="true">
+      <path d="m6 9 6 6 6-6" />
+    </motion.svg>
   );
 }
 
@@ -116,11 +143,89 @@ function AppIcon({ src, name }: { src: string; name: string }) {
   );
 }
 
+function OutputList({ outputs }: { outputs: Controls["outputs"] }) {
+  const [chosen, setChosen] = useState<string | null>(null);
+  return (
+    <div className="ctl-list">
+      {outputs.map((o) => {
+        const active = chosen ? chosen === o.id : o.default;
+        return (
+          <motion.button
+            key={o.id}
+            layout="position"
+            className={`ctl-output ${active ? "ctl-output--on" : ""}`}
+            title={o.name}
+            whileTap={{ scale: 0.98 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setChosen(o.id);
+              ctl
+                .setOutput(o.id)
+                .catch(ignore)
+                .finally(() => {
+                  refreshControls();
+                  setTimeout(() => {
+                    setChosen(null);
+                    setOutputsOpen(false);
+                  }, 350);
+                });
+            }}
+          >
+            <OutputIcon form={o.form} />
+            <span className="ctl-output-name">{o.name}</span>
+            {active && (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="m5 12.5 4.5 4.5L19 7.5" />
+              </svg>
+            )}
+          </motion.button>
+        );
+      })}
+    </div>
+  );
+}
+
+function AppList({ apps }: { apps: Controls["apps"] }) {
+  return (
+    <div className="ctl-list">
+      <AnimatePresence initial={false}>
+        {apps.map((a) => (
+          <motion.div
+            key={a.key}
+            layout="position"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={spring}
+          >
+            <PillSlider level={a.level} muted={a.muted} label={`Volume de ${a.name}`} onLevel={(l) => ctl.setAppVolume(a.key, l).catch(ignore)}>
+              <button
+                className="ctl-pill-icon"
+                title={a.muted ? `Réactiver ${a.name}` : `Couper ${a.name}`}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  ctl.setAppMute(a.key, !a.muted).catch(ignore).finally(refreshControls);
+                }}
+              >
+                <AppIcon src={a.icon} name={a.name} />
+              </button>
+              <span className="ctl-pill-label">{a.name}</span>
+            </PillSlider>
+          </motion.div>
+        ))}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 /** The Controls tab: radios, audio output, master and app volumes. */
 export function ControlsView() {
   const controls = useControls();
+  const outputsOpen = useOutputsOpen();
   if (!controls) return <div className="ctl" />;
   const { radios, outputs, volume, apps } = controls;
+  const current = outputs.find((o) => o.default);
 
   return (
     <div className="ctl">
@@ -130,49 +235,55 @@ export function ControlsView() {
         ))}
       </div>
 
-      <Outputs outputs={outputs} />
+      {outputs.length > 0 && (
+        <motion.button
+          className={`ctl-current ${outputsOpen ? "ctl-current--open" : ""}`}
+          whileTap={{ scale: 0.98 }}
+          transition={spring}
+          onClick={(e) => {
+            e.stopPropagation();
+            setOutputsOpen(!outputsOpen);
+          }}
+        >
+          {current && <OutputIcon form={current.form} />}
+          <span className="ctl-current-label">Sortie</span>
+          <span className="ctl-current-name">{current?.name ?? "Aucune"}</span>
+          <Chevron open={outputsOpen} />
+        </motion.button>
+      )}
 
       {volume && (
-        <div className="ctl-row">
+        <PillSlider big level={volume.level} muted={volume.muted} label="Volume" onLevel={(l) => ctl.setVolume(l).catch(ignore)}>
           <button
-            className={`ctl-mute ${volume.muted ? "ctl-mute--on" : ""}`}
+            className="ctl-pill-icon"
             aria-label={volume.muted ? "Réactiver le son" : "Couper le son"}
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
               ctl.setMute(!volume.muted).catch(ignore).finally(refreshControls);
             }}
           >
-            <SpeakerIcon size={16} muted={volume.muted} />
+            <SpeakerIcon size={17} muted={volume.muted} />
           </button>
-          <Slider level={volume.level} label="Volume" onLevel={(l) => ctl.setVolume(l).catch(ignore)} />
-          <span className="ctl-value">{volume.level}</span>
-        </div>
+          <span className="ctl-pill-label">Volume</span>
+        </PillSlider>
       )}
 
-      {apps.length > 0 && (
-        <>
-          <div className="ctl-caption">Applications</div>
-          <div className="ctl-apps">
-            {apps.map((a) => (
-              <div key={a.key} className={`ctl-row ${a.muted ? "ctl-row--muted" : ""}`}>
-                <button
-                  className="ctl-app"
-                  title={a.muted ? `Réactiver ${a.name}` : `Couper ${a.name}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    ctl.setAppMute(a.key, !a.muted).catch(ignore).finally(refreshControls);
-                  }}
-                >
-                  <AppIcon src={a.icon} name={a.name} />
-                </button>
-                <span className="ctl-app-name">{a.name}</span>
-                <Slider level={a.level} label={`Volume de ${a.name}`} onLevel={(l) => ctl.setAppVolume(a.key, l).catch(ignore)} />
-                <span className="ctl-value">{a.muted ? "—" : a.level}</span>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
+      <AnimatePresence mode="wait" initial={false}>
+        {outputsOpen ? (
+          <motion.div key="outputs" className="ctl-section" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.16 }}>
+            <div className="ctl-caption">Sorties audio</div>
+            <OutputList outputs={outputs} />
+          </motion.div>
+        ) : (
+          apps.length > 0 && (
+            <motion.div key="apps" className="ctl-section" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} transition={{ duration: 0.16 }}>
+              <div className="ctl-caption">Applications</div>
+              <AppList apps={apps} />
+            </motion.div>
+          )
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -26,7 +26,7 @@ import { NotificationsView } from "../modules/notifications/NotificationsView";
 import { startNotifications, useNotifications } from "../modules/notifications/store";
 import { ControlsView } from "../modules/controls/ControlsView";
 import { controlsContentSize } from "../modules/controls/format";
-import { useControls, useControlsRefresh } from "../modules/controls/store";
+import { useControls, useControlsRefresh, useOutputsOpen } from "../modules/controls/store";
 import { Launcher } from "../modules/launcher/Launcher";
 import { launcherSize } from "../modules/launcher/search";
 import { onLauncher } from "../ipc/launcher";
@@ -180,6 +180,7 @@ export function Island() {
   useEffect(() => startNotifications(), []);
   const notifItems = useNotifications();
   const controls = useControls();
+  const outputsOpen = useOutputsOpen();
 
   const surface = surfaceOf(state);
   const lyrics = useLyrics(media.state);
@@ -199,7 +200,7 @@ export function Island() {
           : state.tab === "notifications"
             ? [...notificationsContentSize(notifItems.length), 26]
             : state.tab === "controls"
-              ? [...controlsContentSize(controls?.apps.length ?? 0), 26]
+              ? [...controlsContentSize(controls?.apps.length ?? 0, outputsOpen), 26]
               : hasMedia
           ? (size ?? CLOCK_PANEL_SIZE)
           : CLOCK_PANEL_SIZE;
