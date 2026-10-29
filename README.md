@@ -13,6 +13,10 @@
 
 An island at the top of your screen for media, quick controls and live activities. Built for Windows 11 first.
 
+<p align="center">
+  <img src="docs/assets/demo.gif" alt="Quiera demo: idle clock, music with synced lyrics, launcher, notifications, controls and Shelf" width="720">
+</p>
+
 > **Status: early development.** The pill shows the time at rest and what is playing (Spotify, browsers and other apps that publish to Windows media controls) with synced lyrics and a player adapted from Bloom. Files dropped on it are kept on a Shelf and can be dragged out again. Short peeks announce the charger, a new audio output (with headphone battery when Windows knows it), Caps Lock and volume. A Clipboard tab keeps what you copied during the session (never written to disk; copies password managers mark private are skipped). Notifications show up on the island (quietly in Do not disturb), with links that open and a click that opens the app (Windows does not let other apps reply to or press a notification's buttons). A Controls tab toggles Wi-Fi and Bluetooth, switches the audio output and sets the master and per-app volumes. A launcher (Alt+Space) finds apps, files of every drive (by name or kind: "images", "videos"), computes and searches the web. Everything is set in a settings window (start with Windows, screen, hover, shortcut, lyrics, each module and peek), applied at once. It steps aside for fullscreen apps, follows display changes and recovers from web view crashes.
 
 ## Development
