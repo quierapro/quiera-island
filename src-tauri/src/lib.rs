@@ -1,5 +1,8 @@
 mod clipboard;
+mod controls;
+mod files;
 mod island;
+mod launcher;
 mod lyrics;
 mod media;
 mod notifications;
@@ -69,12 +72,25 @@ pub fn run() {
             clipboard::serve_thumbnail(request.uri().path())
         })
         .register_asynchronous_uri_scheme_protocol(
+            launcher::ICON_SCHEME,
+            |_ctx, request, responder| {
+                launcher::serve_icon(request.uri().path(), responder);
+            },
+        )
+        .register_asynchronous_uri_scheme_protocol(
+            controls::APP_ICON_SCHEME,
+            |_ctx, request, responder| {
+                controls::serve_icon(request.uri().path(), responder);
+            },
+        )
+        .register_asynchronous_uri_scheme_protocol(
             shelf::THUMB_SCHEME,
             |_ctx, request, responder| {
                 shelf::queue_thumbnail(request.uri().path().to_owned(), responder);
             },
         )
         .setup(|app| {
+            platform::install_crash_logger();
             tray::create(app)?;
             island::setup(app.handle())?;
             recovery::watch(app.handle());
@@ -84,6 +100,8 @@ pub fn run() {
             peeks::start(app.handle());
             clipboard::start(app.handle());
             notifications::start(app.handle());
+            launcher::start(app.handle());
+            files::start();
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -109,6 +127,19 @@ pub fn run() {
             media::media_set_shuffle,
             media::media_set_repeat,
             lyrics::lyrics_word_synced,
+            launcher::launcher_shortcut,
+            launcher::launcher_apps,
+            launcher::launcher_launch,
+            launcher::launcher_close,
+            launcher::launcher_files,
+            launcher::launcher_open_file,
+            controls::controls_state,
+            controls::controls_set_radio,
+            controls::controls_set_output,
+            controls::controls_set_volume,
+            controls::controls_set_mute,
+            controls::controls_set_app_volume,
+            controls::controls_set_app_mute,
             notifications::notifications_items,
             notifications::notification_open,
             notifications::notification_dismiss,

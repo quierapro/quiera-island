@@ -1,0 +1,239 @@
+.ctl {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  padding: 4px 16px 14px;
+}
+
+/* ---- Wi-Fi, Bluetooth ---- */
+
+.ctl-toggles {
+  display: flex;
+  gap: 8px;
+}
+
+.ctl-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  height: 48px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 16px;
+  corner-shape: squircle;
+  background: #141417;
+  color: var(--text-1);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.ctl-toggle:hover {
+  background: #1e1e22;
+}
+
+.ctl-toggle-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 15px;
+  background: #2a2a30;
+  color: var(--text-2);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.ctl-toggle--on .ctl-toggle-icon {
+  background: #0a84ff;
+  color: #fff;
+}
+
+.ctl-toggle-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.ctl-toggle-label {
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.ctl-toggle-state {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+/* ---- Outputs ---- */
+
+.ctl-outputs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  mask-image: linear-gradient(to right, #000 90%, transparent);
+}
+
+.ctl-output {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  max-width: 200px;
+  height: 28px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 14px;
+  background: #141417;
+  color: var(--text-2);
+  font: 600 11.5px var(--font-ui);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.ctl-output span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ctl-output:hover {
+  background: #1e1e22;
+  color: var(--text-1);
+}
+
+.ctl-output--on,
+.ctl-output--on:hover {
+  background: var(--text-1);
+  color: #000;
+}
+
+/* ---- Volumes ---- */
+
+.ctl-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 30px;
+}
+
+.ctl-row--muted .ctl-slider,
+.ctl-row--muted .ctl-app-name {
+  opacity: 0.4;
+}
+
+.ctl-mute,
+.ctl-app {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.ctl-mute:hover,
+.ctl-app:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.ctl-mute--on {
+  color: #ff453a;
+}
+
+.ctl-app-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  object-fit: contain;
+}
+
+.ctl-app-icon--letter {
+  display: grid;
+  place-items: center;
+  background: #2a2a30;
+  color: var(--text-1);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ctl-app-name {
+  flex: none;
+  width: 92px;
+  overflow: hidden;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--text-1);
+}
+
+.ctl-value {
+  flex: none;
+  width: 24px;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--text-3);
+}
+
+.ctl-caption {
+  margin: 2px 0 -6px 2px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-3);
+}
+
+.ctl-apps {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 110px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.ctl-slider {
+  flex: 1;
+  min-width: 0;
+  height: 18px;
+  margin: 0;
+  background: transparent;
+  appearance: none;
+  cursor: pointer;
+}
+
+.ctl-slider::-webkit-slider-runnable-track {
+  height: 5px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--text-1) var(--fill), rgba(255, 255, 255, 0.14) var(--fill));
+}
+
+.ctl-slider::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+  margin-top: -4.5px;
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  appearance: none;
+  transform: scale(0.85);
+  transition: transform 0.15s ease;
+}
+
+.ctl-slider:hover::-webkit-slider-thumb,
+.ctl-slider:active::-webkit-slider-thumb {
+  transform: scale(1);
+}

@@ -29,6 +29,7 @@ const SIZES: Record<Exclude<Surface, "hidden">, Size> = {
   activity: [200, 34, 17],
   peek: [340, 46, 22],
   expanded: [600, 196, 28],
+  launcher: [640, 58, 28],
 };
 
 /** Hovering a compact island grows it slightly: "I see you". */
@@ -41,14 +42,14 @@ export function targetFor(surface: Surface, hovered: boolean, size?: Size): Shel
     return { width, height, topRadius: 0, bottomRadius: radius, flares: 1, fill: COMPACT_FILL, y: -(height + 4) };
   }
   const [width, height, radius] = size ?? SIZES[surface];
-  const grow = hovered && surface !== "expanded";
+  const grow = hovered && surface !== "expanded" && surface !== "launcher";
   return {
     width: width + (grow ? HOVER_GROWTH.width : 0),
     height: height + (grow ? HOVER_GROWTH.height : 0),
     topRadius: 0,
     bottomRadius: radius + (grow ? HOVER_GROWTH.radius : 0),
     flares: 1,
-    fill: surface === "expanded" ? EXPANDED_FILL : COMPACT_FILL,
+    fill: surface === "expanded" || surface === "launcher" ? EXPANDED_FILL : COMPACT_FILL,
     y: 0,
   };
 }

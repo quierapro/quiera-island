@@ -10,7 +10,7 @@
  */
 import { primaryActivity, type Activity } from "./arbiter";
 
-export type Surface = "hidden" | "idle" | "activity" | "peek" | "expanded";
+export type Surface = "hidden" | "idle" | "activity" | "peek" | "expanded" | "launcher";
 
 export interface PeekState {
   id: string;
@@ -19,7 +19,7 @@ export interface PeekState {
 }
 
 /** What the open panel shows: "home" is the player, or the clock without music. */
-export type Tab = "home" | "shelf" | "clipboard" | "notifications";
+export type Tab = "home" | "controls" | "shelf" | "clipboard" | "notifications";
 
 /** The notification peek: opening the island over it leads to its tab. */
 export const NOTIFICATION_PEEK = "system:notification";
@@ -33,6 +33,8 @@ export interface IslandState {
   dragging: boolean;
   peek: PeekState | null;
   activities: Activity[];
+  /** The launcher's search bar is open (and has the keyboard). */
+  launcher: boolean;
 }
 
 export type IslandEvent =
@@ -48,7 +50,9 @@ export type IslandEvent =
   | { type: "tab.select"; tab: Tab }
   | { type: "drag.enter" }
   | { type: "drag.leave" }
-  | { type: "drag.drop" };
+  | { type: "drag.drop" }
+  | { type: "launcher.open" }
+  | { type: "launcher.close" };
 
 export const initialState: IslandState = {
   visible: true,
@@ -58,6 +62,7 @@ export const initialState: IslandState = {
   dragging: false,
   peek: null,
   activities: [],
+  launcher: false,
 };
 
 export function reduce(state: IslandState, event: IslandEvent): IslandState {
@@ -72,9 +77,16 @@ export function reduce(state: IslandState, event: IslandEvent): IslandState {
       return { ...state, hovered: false, open: state.dragging, peek };
     }
 
+    case "launcher.open":
+      // It replaces whatever shows, even over a fullscreen app.
+      return { ...state, launcher: true, open: false, peek: null, dragging: false };
+
+    case "launcher.close":
+      return state.launcher ? { ...state, launcher: false } : state;
+
     case "press": {
       // Opening starts at home, or on the notifications over a notification.
-      if (!state.visible || state.open) return state;
+      if (!state.visible || state.open || state.launcher) return state;
       const tab = state.peek?.id === NOTIFICATION_PEEK ? "notifications" : "home";
       return { ...state, open: true, tab, peek: null };
     }
@@ -100,7 +112,7 @@ export function reduce(state: IslandState, event: IslandEvent): IslandState {
 
     case "peek.show":
       // An open panel already shows everything; a peek would only flash over it.
-      if (!state.visible || state.open) return state;
+      if (!state.visible || state.open || state.launcher) return state;
       return { ...state, peek: { id: event.id, expired: false } };
 
     case "peek.expire":
@@ -126,6 +138,7 @@ export function reduce(state: IslandState, event: IslandEvent): IslandState {
 }
 
 export function surfaceOf(state: IslandState): Surface {
+  if (state.launcher) return "launcher";
   if (!state.visible) return "hidden";
   if (state.open) return "expanded";
   if (state.peek) return "peek";

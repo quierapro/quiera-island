@@ -34,6 +34,7 @@ arboard = "3.7"
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.62", features = [
 	"Devices_Enumeration",
+	"Devices_Radios",
 	"ApplicationModel",
 	"Foundation",
 	"Foundation_Collections",
@@ -46,9 +47,12 @@ windows = { version = "0.62", features = [
 	"Win32_Graphics_Gdi",
 	"Win32_Media_Audio",
 	"Win32_Media_Audio_Endpoints",
+	"Win32_Storage_FileSystem",
 	"Win32_System_Com",
 	"Win32_System_Com_StructuredStorage",
 	"Win32_System_DataExchange",
+	"Win32_System_Diagnostics_Debug",
+	"Win32_System_Kernel",
 	"Win32_System_LibraryLoader",
 	"Win32_System_Memory",
 	"Win32_System_Power",

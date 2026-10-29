@@ -15,7 +15,8 @@ use std::sync::mpsc::{self, Sender};
 use windows::Devices::Enumeration::{DeviceInformation, DeviceInformationKind};
 use windows::Foundation::IReference;
 use windows::Win32::Devices::FunctionDiscovery::{
-    PKEY_Device_ContainerId, PKEY_Device_FriendlyName, PKEY_DeviceInterface_FriendlyName,
+    PKEY_Device_ContainerId, PKEY_Device_DeviceDesc, PKEY_Device_FriendlyName,
+    PKEY_DeviceInterface_FriendlyName,
 };
 use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, PROPERTYKEY, WPARAM};
 use windows::Win32::Media::Audio::Endpoints::{
@@ -354,7 +355,18 @@ fn run_audio(handler: Handler) -> windows::core::Result<()> {
     }
 }
 
-fn describe(device: &IMMDevice) -> SystemPeek {
+/** An audio endpoint's names and form, as Windows lists them. */
+pub(super) struct EndpointLabel {
+    /// The device's own name ("WH-1000XM4", "Realtek(R) Audio").
+    pub short: String,
+    /// The endpoint's full name ("Headphones (WH-1000XM4 Stereo)").
+    pub full: String,
+    /// The endpoint's own description ("Headphones", "Voicemeeter Input").
+    pub desc: String,
+    pub form: DeviceForm,
+}
+
+pub(super) fn label_of(device: &IMMDevice) -> EndpointLabel {
     // SAFETY: property reads on a live device; strings are freed.
     unsafe {
         let store = device.OpenPropertyStore(STGM_READ).ok();
@@ -365,16 +377,30 @@ fn describe(device: &IMMDevice) -> SystemPeek {
             CoTaskMemFree(Some(raw.0 as *const _));
             text.filter(|t| !t.is_empty())
         };
-        // The device's own name ("WH-1000XM4") reads better than the
-        // endpoint's ("Headphones (WH-1000XM4 Stereo)").
-        let name = string(&PKEY_DeviceInterface_FriendlyName)
-            .or_else(|| string(&PKEY_Device_FriendlyName))
-            .unwrap_or_else(|| "Sortie audio".into());
+        let full = string(&PKEY_Device_FriendlyName).unwrap_or_else(|| "Sortie audio".into());
         let form = store
             .as_ref()
             .and_then(|s| s.GetValue(&PKEY_AudioEndpoint_FormFactor).ok())
             .and_then(|v| PropVariantToUInt32(&v).ok())
             .map_or(DeviceForm::Other, form_from);
+        EndpointLabel {
+            short: string(&PKEY_DeviceInterface_FriendlyName).unwrap_or_else(|| full.clone()),
+            desc: string(&PKEY_Device_DeviceDesc).unwrap_or_default(),
+            full,
+            form,
+        }
+    }
+}
+
+fn describe(device: &IMMDevice) -> SystemPeek {
+    // The device's own name ("WH-1000XM4") reads better than the
+    // endpoint's ("Headphones (WH-1000XM4 Stereo)").
+    let EndpointLabel {
+        short: name, form, ..
+    } = label_of(device);
+    // SAFETY: a property read on a live device.
+    unsafe {
+        let store = device.OpenPropertyStore(STGM_READ).ok();
         let container = store
             .as_ref()
             .and_then(|s| s.GetValue(&PKEY_Device_ContainerId).ok())

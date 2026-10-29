@@ -47,6 +47,16 @@ describe("opening and closing", () => {
     expect(run({ type: "peek.show", id: "p1" }, { type: "press" }).peek).toBeNull();
   });
 
+  it("lets the launcher take over, even hidden, and ignore presses and peeks", () => {
+    const open = run({ type: "press" }, { type: "launcher.open" });
+    expect(surfaceOf(open)).toBe("launcher");
+    expect(open.open).toBe(false);
+    expect(reduce(open, { type: "peek.show", id: "p1" }).peek).toBeNull();
+    expect(reduce(open, { type: "press" }).open).toBe(false);
+    expect(surfaceOf(run({ type: "visibility", visible: false }, { type: "launcher.open" }))).toBe("launcher");
+    expect(surfaceOf(reduce(open, { type: "launcher.close" }))).toBe("idle");
+  });
+
   it("opens on the notifications over a notification, at home otherwise", () => {
     expect(run({ type: "peek.show", id: NOTIFICATION_PEEK }, { type: "press" }).tab).toBe("notifications");
     expect(run({ type: "peek.show", id: "system:volume" }, { type: "press" }).tab).toBe("home");

@@ -48,6 +48,73 @@ pub fn launch_app(_app_id: &str) -> Result<(), String> {
     Err("not implemented on this platform yet".into())
 }
 
+pub fn notifications_quiet() -> bool {
+    false
+}
+
+pub fn read_controls() -> crate::controls::RawControls {
+    crate::controls::RawControls {
+        radios: Vec::new(),
+        outputs: Vec::new(),
+        master: None,
+        apps: Vec::new(),
+    }
+}
+
+const NOT_YET: &str = "not implemented on this platform yet";
+
+pub fn set_radio(_kind: crate::controls::RadioKind, _on: bool) -> Result<(), String> {
+    Err(NOT_YET.into())
+}
+
+pub fn set_default_output(_id: &str) -> Result<(), String> {
+    Err(NOT_YET.into())
+}
+
+pub fn set_master_volume(_level: u8) -> Result<(), String> {
+    Err(NOT_YET.into())
+}
+
+pub fn set_master_mute(_muted: bool) -> Result<(), String> {
+    Err(NOT_YET.into())
+}
+
+pub fn set_app_volume(_path: &std::path::Path, _level: u8) -> Result<(), String> {
+    Err(NOT_YET.into())
+}
+
+pub fn set_app_mute(_path: &std::path::Path, _muted: bool) -> Result<(), String> {
+    Err(NOT_YET.into())
+}
+
+pub fn start_launcher_hotkey(
+    _handler: impl Fn() + Send + 'static,
+) -> Option<crate::launcher::Shortcut> {
+    None
+}
+
+pub fn focus_island(_window: &WebviewWindow) {}
+
+pub fn restore_focus() {}
+
+pub fn install_crash_logger() {}
+
+/// For now, the home folder only.
+pub fn fixed_drives() -> Vec<std::path::PathBuf> {
+    std::env::var_os("HOME")
+        .map(std::path::PathBuf::from)
+        .into_iter()
+        .collect()
+}
+
+pub fn island_has_focus() -> bool {
+    true
+}
+
+pub fn list_apps() -> Vec<crate::launcher::LaunchApp> {
+    Vec::new()
+}
+
 /// Not implemented yet: a short pause instead of a real wait.
 pub fn wait_for_process_exit(_pid: u32, _timeout: std::time::Duration) {
     std::thread::sleep(std::time::Duration::from_secs(1));

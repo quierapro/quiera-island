@@ -16,8 +16,8 @@ use windows::UI::Notifications::Management::{
     UserNotificationListener, UserNotificationListenerAccessStatus,
 };
 use windows::UI::Notifications::{
-    KnownNotificationBindings, NotificationKinds, UserNotification,
-    UserNotificationChangedEventArgs,
+    KnownNotificationBindings, NotificationKinds, ToastNotificationManager, ToastNotificationMode,
+    UserNotification, UserNotificationChangedEventArgs,
 };
 use windows::Win32::System::Com::{COINIT_MULTITHREADED, CoInitializeEx};
 use windows::core::Interface;
@@ -187,6 +187,14 @@ fn shell_icon(app_id: &str) -> Option<Artwork> {
         bytes: png,
         mime: "image/png".into(),
     })
+}
+
+/// Whether Windows holds banners back (Do not disturb, focus): anything
+/// but the normal mode.
+pub fn notifications_quiet() -> bool {
+    ToastNotificationManager::GetDefault()
+        .and_then(|m| m.NotificationMode())
+        .is_ok_and(|mode| mode != ToastNotificationMode::Unrestricted)
 }
 
 /// Removes a notification from the notification centre.

@@ -3,6 +3,7 @@ import type { Tab } from "../machine/island-machine";
 import { NoteIcon } from "../modules/media/icons";
 import { ClipboardIcon } from "../modules/clipboard/icons";
 import { BellIcon } from "../modules/notifications/icons";
+import { SlidersIcon } from "../modules/controls/icons";
 import { TrayIcon } from "../modules/shelf/icons";
 import "./tabs.css";
 
@@ -27,15 +28,19 @@ interface TabBarProps {
   onSelect(tab: Tab): void;
 }
 
-/** Whether a tab is offered: home always; the others once they hold something, or while shown. */
+/** Tabs offered whatever they hold. */
+const ALWAYS: Tab[] = ["home", "controls"];
+
+/** Whether a tab is offered: home and controls always; the others once they hold something, or while shown. */
 export function tabShown(id: Tab, current: Tab, count: number): boolean {
-  return id === "home" || count > 0 || id === current;
+  return ALWAYS.includes(id) || count > 0 || id === current;
 }
 
 /** Icon tabs above the open panel; the active one sits on a soft pill. */
 export function TabBar({ tab, hasMedia, shelfCount, clipboardCount, notificationCount, onSelect }: TabBarProps) {
   const tabs: { id: Tab; label: string; icon: React.ReactNode; badge?: number }[] = [
     { id: "home" as Tab, label: hasMedia ? "Lecture" : "Heure", icon: hasMedia ? <NoteIcon size={17} /> : <ClockIcon /> },
+    { id: "controls" as Tab, label: "Contrôles", icon: <SlidersIcon size={17} /> },
     { id: "notifications" as Tab, label: "Notifications", icon: <BellIcon size={17} />, badge: notificationCount },
     { id: "shelf" as Tab, label: "Shelf", icon: <TrayIcon size={18} />, badge: shelfCount },
     { id: "clipboard" as Tab, label: "Presse-papiers", icon: <ClipboardIcon size={17} />, badge: clipboardCount },

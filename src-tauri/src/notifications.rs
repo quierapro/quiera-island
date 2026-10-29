@@ -140,6 +140,10 @@ fn on_event(app: &AppHandle, event: NotificationEvent) {
         NotificationEvent::Added(raw) => {
             let item = store().add(raw);
             changed(app);
+            // Do not disturb: kept in the tab, not announced.
+            if platform::notifications_quiet() {
+                return;
+            }
             peeks::announce(
                 app,
                 SystemPeek::Notification {
