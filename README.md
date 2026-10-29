@@ -1,3 +1,14 @@
+<div align="center">
+    <img src="https://quiera.eu/favicon.svg" width="90" height="90" />
+    <p>
+      <img src="https://img.shields.io/badge/Rust-stable-B7410E?logo=rust&logoColor=white" alt="Rust">
+      <img src="https://img.shields.io/badge/Platform-Windows-2A2470" alt="For Windows">
+      <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL_3.0-3B2F7E" alt="GPL-3.0 license"></a>
+    </p>
+  
+  [Website](https://quiera.eu/) • [Download](https://github.com/quierapro/quiera-island/releases/latest/download/Quiera-Setup-x64.exe) • [Support](https://github.com/quierapro/quiera-island/issues)
+</div>
+
 # Quiera
 
 An island at the top of your screen for media, quick controls and live activities. Built for Windows 11 first.
