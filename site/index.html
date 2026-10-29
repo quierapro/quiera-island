@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quiera : la Dynamic Island native pour Windows, gratuite et open source</title>
+    <meta name="description" content="Quiera ajoute une Dynamic Island en haut de l'écran de Windows : musique et paroles synchronisées, lanceur d'applis et de fichiers, notifications, contrôles rapides, Shelf et presse-papiers. Gratuit et open source." />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <meta name="application-name" content="Quiera" />
+    <meta name="author" content="Quiera" />
+    <meta name="theme-color" content="#212121" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f6f6f4" media="(prefers-color-scheme: light)" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Quiera" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:title" content="Quiera : la Dynamic Island native pour Windows" />
+    <meta property="og:description" content="Musique et paroles, lanceur, notifications, contrôles rapides, Shelf et presse-papiers, au sommet de votre écran Windows. Gratuit et open source." />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Quiera, la Dynamic Island native pour Windows" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Quiera : la Dynamic Island native pour Windows" />
+    <meta name="twitter:description" content="Musique et paroles, lanceur, notifications, contrôles rapides, Shelf et presse-papiers, au sommet de votre écran Windows." />
+
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="./favicon-48.png" type="image/png" sizes="48x48" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <link rel="manifest" href="./site.webmanifest" />
+
+    <noscript>
+      <style>
+        .reveal { opacity: 1 !important; transform: none !important; }
+      </style>
+    </noscript>
+    <script>
+      // The saved theme, applied before the page paints so it never flashes.
+      try {
+        var t = localStorage.getItem("quiera-theme");
+        if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

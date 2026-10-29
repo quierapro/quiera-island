@@ -1,0 +1,26 @@
+# Quiera
+
+> Quiera est une Dynamic Island native pour Windows 11 : une pilule noire en haut de l'écran qui affiche la musique en cours, les notifications et les événements du PC, et s'ouvre au survol. Gratuit, open source (GPL-3.0), sans compte ni télémétrie.
+
+## Fonctionnalités
+
+- Lecteur de musique universel : toute appli qui annonce sa lecture à Windows (Spotify, Deezer, YouTube dans le navigateur…), avec pochette, progression, aléatoire et répétition.
+- Paroles synchronisées mot à mot, depuis LRCLIB.
+- Lanceur façon Spotlight (Alt+Espace, modifiable) : applis, fichiers de tous les disques, calculs, recherche web ; « images », « vidéos », « musique », « documents » filtrent par type.
+- Notifications de Windows sur l'île ; un clic ouvre l'appli. Le mode Ne pas déranger est respecté.
+- Contrôles rapides : Wi-Fi, Bluetooth, volume général, sortie audio, volume par application.
+- Shelf : des fichiers glissés sur l'île, gardés sous la main.
+- Historique du presse-papiers, en mémoire seulement.
+- Aperçus système : chargeur, casque et sa batterie, Verr. Maj, volume.
+- Se cache pendant les jeux et vidéos en plein écran.
+
+## Plateformes
+
+- Windows 11 : disponible.
+- Linux et macOS : en préparation, pas encore disponibles.
+
+## Liens
+
+- Site : https://quiera.eu/
+- Code source : https://github.com/quierapro/quiera-island
+- Téléchargement : https://github.com/quierapro/quiera-island/releases/latest
