@@ -1,0 +1,8 @@
+# Vercel builds site/ only; it also reads the app's version from tauri.conf.json.
+/*
+!/site
+!/src-tauri
+/src-tauri/*
+!/src-tauri/tauri.conf.json
+/site/node_modules
+/site/dist

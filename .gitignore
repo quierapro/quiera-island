@@ -22,3 +22,6 @@ Thumbs.db
 
 # Local tool folders that do not belong to the project
 .sixth/
+
+.vercel
+.env*
