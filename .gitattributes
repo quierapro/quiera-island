@@ -7,3 +7,6 @@
 *.png binary
 *.ico binary
 *.icns binary
+
+# The installer notice is UTF-16 (accents in the installer): never converted.
+src-tauri/installer/notice.txt binary

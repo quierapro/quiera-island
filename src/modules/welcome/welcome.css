@@ -150,3 +150,40 @@
 .welcome-btn--main:hover {
   background: #e6e6e6;
 }
+
+.welcome-chips {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.welcome-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 11px;
+  background: #1c1c20;
+  color: var(--text-3);
+  font: 600 11px var(--font-ui);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.welcome-chip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.25);
+  transition: background-color 0.15s ease;
+}
+
+.welcome-chip--on {
+  color: var(--text-1);
+}
+
+.welcome-chip--on .welcome-chip-dot {
+  background: #32d74b;
+}

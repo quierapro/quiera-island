@@ -40,6 +40,46 @@ jobs:
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
+      # Authenticode signing by SignPath (free for open source), once the
+      # project is accepted: set the repository variables
+      # SIGNPATH_ORGANIZATION_ID and SIGNPATH_PROJECT_SLUG and the secret
+      # SIGNPATH_API_TOKEN. Until then these steps are skipped. Each request
+      # waits for its manual approval in SignPath.
+      - name: Collect the unsigned installer
+        id: unsigned
+        if: vars.SIGNPATH_ORGANIZATION_ID != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-installer
+          path: src-tauri/target/release/bundle/nsis/Quiera_*_x64-setup.exe
+      - name: Sign the installer with SignPath
+        if: vars.SIGNPATH_ORGANIZATION_ID != ''
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: release-signing
+          github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: signed
+      # Signing changes the file: the updater's signature is made again on it.
+      - name: Use the signed installer
+        if: vars.SIGNPATH_ORGANIZATION_ID != ''
+        shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          installer="src-tauri/target/release/bundle/nsis/Quiera_${version}_x64-setup.exe"
+          signed="$(find signed -name "$(basename "$installer")" | head -n 1)"
+          test -n "$signed"
+          cp "$signed" "$installer"
+          rm -f "$installer.sig"
+          pnpm tauri signer sign "$installer"
+          test -s "$installer.sig"
       # The installer also goes up as Quiera-Setup-x64.exe: the website links to
       # releases/latest/download/Quiera-Setup-x64.exe, whatever the version.
       - name: Publish the release
@@ -57,6 +97,11 @@ jobs:
           SIGNATURE="$(cat "$installer.sig")" \
           URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/Quiera-Setup-x64.exe" \
             node scripts/latest-json.mjs > latest.json
+          # The notes, then the links every release page carries.
+          {
+            cat "docs/releases/$GITHUB_REF_NAME.md"
+            printf '\n---\n[Code signing policy](https://quiera.eu/code-signing/) · [Confidentialité](https://quiera.eu/confidentialite/)\n'
+          } > notes.md
           gh release create "$GITHUB_REF_NAME" Quiera-Setup-x64.exe Quiera-Setup-x64.exe.sha256 latest.json \
             --title "Quiera $version" \
-            --notes-file "docs/releases/$GITHUB_REF_NAME.md"
+            --notes-file notes.md

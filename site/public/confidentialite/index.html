@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Confidentialité · Quiera</title>
+    <meta name="description" content="Ce que Quiera garde sur votre PC, et les seules choses qui passent par Internet : la recherche de paroles et la vérification des mises à jour." />
+    <link rel="canonical" href="https://quiera.eu/confidentialite/" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/legal.css" />
+  </head>
+  <body>
+    <main>
+      <a class="back" href="/">← Quiera</a>
+      <h1>Confidentialité</h1>
+      <p class="lead">Quiera fonctionne sur votre PC. Pas de compte, pas de publicité, pas de télémétrie : aucune statistique d'utilisation n'est envoyée.</p>
+
+      <h2>Ce qui passe par Internet</h2>
+      <ul>
+        <li>
+          <strong>Les paroles synchronisées.</strong> Pour trouver les paroles du morceau en cours, Quiera envoie son titre, son artiste,
+          son album et sa durée à <a href="https://lrclib.net">LRCLIB</a>, une base de paroles ouverte. Les paroles mot à mot de NetEase sont
+          une option, désactivée par défaut ; activée, la même recherche part aussi vers NetEase. Pour couper : Réglages › Musique ›
+          Paroles synchronisées.
+        </li>
+        <li>
+          <strong>Les mises à jour.</strong> Au démarrage, puis toutes les 6 heures, Quiera lit la liste des versions publiées sur GitHub.
+          Aucune donnée personnelle n'est envoyée ; comme pour toute page web, GitHub voit l'adresse IP de la requête
+          (<a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement">politique de GitHub</a>). Pour
+          couper : Réglages › À propos › Rechercher automatiquement.
+        </li>
+        <li>
+          <strong>Ce que vous demandez.</strong> Une recherche web lancée depuis le lanceur s'ouvre dans votre navigateur ; un lien d'une
+          notification aussi.
+        </li>
+      </ul>
+
+      <h2>Ce qui reste sur votre PC</h2>
+      <ul>
+        <li>Les notifications et l'historique du presse-papiers : gardés en mémoire seulement, effacés à la fermeture de Quiera.</li>
+        <li>Le Shelf : les chemins de vos fichiers (jamais copiés), enregistrés seulement si vous gardez le Shelf entre deux sessions.</li>
+        <li>L'index des fichiers du lanceur : les noms des fichiers, en mémoire.</li>
+        <li>Les réglages, dans le dossier de Quiera (<code>%APPDATA%\app.quiera</code>).</li>
+        <li>
+          Le journal (<code>%LOCALAPPDATA%\app.quiera\logs</code>) : des événements techniques, jamais le titre d'un morceau, le contenu
+          d'une notification ou de ce que vous copiez.
+        </li>
+      </ul>
+
+      <h2>Envoyer au téléphone</h2>
+      <p>
+        Quand vous le demandez, les fichiers passent directement du PC au téléphone par votre réseau local, à un lien qui ne marche que 10
+        minutes. Rien ne passe par Internet ni par un serveur de Quiera.
+      </p>
+
+      <h2 id="english">In English</h2>
+      <p>
+        Quiera runs on your PC, with no account, no advertising and no telemetry. Only two things go over the Internet: to find the lyrics of
+        the playing track, its title, artist, album and duration are sent to <a href="https://lrclib.net">LRCLIB</a> (and to NetEase only if
+        that option, off by default, is turned on); and Quiera reads the list of releases on GitHub at start and every six hours, sending no
+        personal data. Both can be turned off in the settings or in the welcome shown on first launch, and the installer shows this notice.
+        Notifications and the clipboard history stay in memory only; Shelf files are kept by path; sending files to a phone goes over the
+        local network only, when you ask.
+      </p>
+
+      <h2>Contact</h2>
+      <p>Une question : <a href="https://github.com/quierapro/quiera-island/issues">ouvrez une issue sur GitHub</a>.</p>
+    </main>
+  </body>
+</html>

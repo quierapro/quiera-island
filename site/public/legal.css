@@ -1,0 +1,86 @@
+/* The plain pages (code signing policy, privacy): the site's colours, no script. */
+:root {
+  --bg: #212121;
+  --text: #f3f3f3;
+  --text-2: #b4b4b8;
+  --line: rgba(255, 255, 255, 0.08);
+  --link: #a98bff;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f6f6f4;
+    --text: #18181a;
+    --text-2: #55555c;
+    --line: rgba(0, 0, 0, 0.09);
+    --link: #5b2bd6;
+    color-scheme: light;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.65 "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+main {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 48px 16px 80px;
+}
+
+h1 {
+  margin: 24px 0 8px;
+  font-size: clamp(30px, 6vw, 42px);
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+h2 {
+  margin: 36px 0 8px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  font-size: 20px;
+}
+
+.lead {
+  font-size: 18px;
+}
+
+p,
+li {
+  color: var(--text-2);
+}
+
+strong {
+  color: var(--text);
+}
+
+a {
+  color: var(--link);
+}
+
+code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--line);
+  font-size: 0.9em;
+  overflow-wrap: anywhere;
+}
+
+ul {
+  padding-left: 20px;
+}
+
+li + li {
+  margin-top: 8px;
+}
+
+.back {
+  color: var(--text-2);
+  font-weight: 600;
+  text-decoration: none;
+}

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Code signing policy · Quiera</title>
+    <meta name="description" content="How Quiera's Windows releases are built and signed, who approves them, and what the app sends over the network." />
+    <link rel="canonical" href="https://quiera.eu/code-signing/" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/legal.css" />
+  </head>
+  <body>
+    <main>
+      <a class="back" href="/">← Quiera</a>
+      <h1>Code signing policy</h1>
+      <p class="lead">
+        Free code signing provided by <a href="https://about.signpath.io">SignPath.io</a>, certificate by
+        <a href="https://signpath.org">SignPath Foundation</a>.
+      </p>
+
+      <h2>What is signed</h2>
+      <p>
+        The Windows installer of each Quiera release (<code>Quiera-Setup-x64.exe</code>), published on
+        <a href="https://github.com/quierapro/quiera-island/releases">GitHub Releases</a>. Every installer is built by
+        <a href="https://github.com/quierapro/quiera-island/blob/main/.github/workflows/release.yml">GitHub Actions</a> from the tagged
+        commit of the public repository, <a href="https://github.com/quierapro/quiera-island">quierapro/quiera-island</a>, and each
+        signing request is approved by hand before the release is published. Nothing built elsewhere is signed.
+      </p>
+
+      <h2>Team roles</h2>
+      <ul>
+        <li>
+          Committers and reviewers: <a href="https://github.com/quierapro">quierapro</a>. Changes from other people come as pull requests,
+          and each one is reviewed by a committer before it is merged.
+        </li>
+        <li>Approvers: <a href="https://github.com/quierapro">quierapro</a>.</li>
+      </ul>
+      <p>All team members use multi-factor authentication on GitHub and SignPath.</p>
+
+      <h2>Privacy</h2>
+      <p>
+        Quiera has no account, no advertising and no telemetry. It sends information over the network only for the features below; each
+        one can be turned off in its settings, and the installer shows this notice. The full policy is on the
+        <a href="/confidentialite/">privacy page</a>.
+      </p>
+      <ul>
+        <li>
+          <strong>Synced lyrics</strong>: the playing track's title, artist, album and duration go to
+          <a href="https://lrclib.net">LRCLIB</a> to find its lyrics (Settings › Music). Word-by-word lyrics from NetEase are off by
+          default.
+        </li>
+        <li>
+          <strong>Updates</strong>: Quiera reads the list of releases on GitHub at start and every six hours; no personal data is sent
+          (Settings › About). GitHub's privacy statement applies to that request.
+        </li>
+        <li>
+          <strong>Send to a phone</strong>: when the user asks, files go straight from the PC to the phone over the local network, never
+          through the Internet.
+        </li>
+      </ul>
+
+      <h2>Uninstalling</h2>
+      <p>Quiera uninstalls like any app: Windows Settings › Apps › Installed apps › Quiera › Uninstall.</p>
+    </main>
+  </body>
+</html>

@@ -70,6 +70,15 @@ The design documents explain the choices behind the project:
 [analysis and plan](docs/01-analyse-et-plan.md) and
 [decisions, design and features](docs/02-decisions-design-fonctionnalites.md).
 
+## Code signing policy
+
+Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+
+- Committers and reviewers: [quierapro](https://github.com/quierapro); pull requests from other people are reviewed before they are merged.
+- Approvers: [quierapro](https://github.com/quierapro).
+
+Installers are built by GitHub Actions from the tagged commit of this repository. Details, and what Quiera sends over the network (lyrics lookup, update check), are in the [code signing policy](https://quiera.eu/code-signing/) and the [privacy policy](https://quiera.eu/confidentialite/).
+
 ## License
 
 GPL-3.0-or-later. See [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

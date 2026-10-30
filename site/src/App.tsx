@@ -448,6 +448,10 @@ function Cta() {
               Voir le code sur GitHub
             </a>
           </div>
+          <p className="cta-signing">
+            Free code signing provided by <a href="https://about.signpath.io">SignPath.io</a>, certificate by{" "}
+            <a href="https://signpath.org">SignPath Foundation</a> · <a href="./code-signing/">Code signing policy</a>
+          </p>
         </div>
       </div>
     </section>
@@ -538,6 +542,8 @@ function Footer({ theme, onTheme, onScene }: { theme: Theme; onTheme(t: Theme): 
               <a href={REPO}>GitHub</a>
               <a href={`${REPO}/issues`}>Signaler un problème</a>
               <a href={`${REPO}/blob/main/LICENSE`}>Licence GPL-3.0</a>
+              <a href="./confidentialite/">Confidentialité</a>
+              <a href="./code-signing/">Code signing policy</a>
               <a href="#faq" onClick={(e) => scrollToId(e, "#faq")}>
                 Questions fréquentes
               </a>

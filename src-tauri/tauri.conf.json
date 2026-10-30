@@ -49,7 +49,14 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "createUpdaterArtifacts": true
+    "createUpdaterArtifacts": true,
+    "licenseFile": "installer/notice.txt",
+    "windows": {
+      "nsis": {
+        "languages": ["French"],
+        "installMode": "currentUser"
+      }
+    }
   },
   "plugins": {
     "updater": {

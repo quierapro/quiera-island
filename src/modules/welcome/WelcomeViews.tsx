@@ -39,13 +39,26 @@ interface Step {
   text: ReactNode;
   icon: ReactNode;
   tint: string;
+  /** Under the text: the privacy step's switches. */
+  extra?: ReactNode;
+}
+
+/** A setting as a small switch-like chip, for the privacy step. */
+function Chip({ on, label, onToggle }: { on: boolean; label: string; onToggle(): void }) {
+  return (
+    <button className={`welcome-chip ${on ? "welcome-chip--on" : ""}`} role="switch" aria-checked={on} onClick={onToggle}>
+      <span className="welcome-chip-dot" />
+      {label}
+    </button>
+  );
 }
 
 /** A first look at what the island does, then starting with Windows. */
 export function WelcomeTour() {
   const [step, setStep] = useState(0);
   const [shortcut, setShortcut] = useState<string | null>(null);
-  const startWithWindows = useSettings().general.startWithWindows;
+  const settings = useSettings();
+  const startWithWindows = settings.general.startWithWindows;
   useEffect(() => {
     getLauncherShortcut()
       .then(setShortcut)
@@ -100,6 +113,28 @@ export function WelcomeTour() {
       tint: "#ff9f0a",
     },
     {
+      title: "Ta vie privée",
+      text: "Seules sorties : le titre et l'artiste vers LRCLIB pour les paroles, et la liste des versions sur GitHub. Coupe ce que tu veux.",
+      icon: icon(<path d="M12 3 5 6v5c0 4.5 3 8.3 7 9.5 4-1.2 7-5 7-9.5V6l-7-3Z" />),
+      tint: "#5e5ce6",
+      extra: (
+        <span className="welcome-chips">
+          <Chip
+            label="Paroles"
+            on={settings.media.lyrics}
+            onToggle={() => updateSettings((s) => ({ ...s, media: { ...s.media, lyrics: !s.media.lyrics } })).catch(() => {})}
+          />
+          <Chip
+            label="Mises à jour"
+            on={settings.general.checkUpdates}
+            onToggle={() =>
+              updateSettings((s) => ({ ...s, general: { ...s.general, checkUpdates: !s.general.checkUpdates } })).catch(() => {})
+            }
+          />
+        </span>
+      ),
+    },
+    {
       title: "Au démarrage de Windows ?",
       text: "Quiera se lance avec ta session, sans fenêtre. Tu pourras changer d'avis dans les réglages.",
       icon: icon(<path d="M12 3v8M7.5 6.5a7 7 0 1 0 9 0" />),
@@ -113,7 +148,7 @@ export function WelcomeTour() {
     },
   ];
   const last = steps.length - 1;
-  const STARTUP = 4;
+  const STARTUP = 5;
   const current = steps[step];
   const next = () => setStep((s) => Math.min(last, s + 1));
   const startup = (on: boolean) => {
@@ -138,6 +173,7 @@ export function WelcomeTour() {
           <span className="welcome-text">
             <span className="welcome-title">{current.title}</span>
             <span className="welcome-desc">{current.text}</span>
+            {current.extra}
           </span>
         </motion.div>
       </AnimatePresence>
