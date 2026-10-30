@@ -2,6 +2,7 @@ import { useEffect, useMemo, useReducer, useState, type ReactNode, lazy, Suspens
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { createIslandController } from "../machine/controller";
 import { initialState, reduce, surfaceOf, type Surface, type Tab } from "../machine/island-machine";
+import { primaryActivity } from "../machine/arbiter";
 import { benchRequested, runBench } from "../dev/bench";
 // Development only: loaded on demand, so neither it nor its CSS ships.
 const DebugPanel = import.meta.env.DEV ? lazy(() => import("../dev/DebugPanel").then((m) => ({ default: m.DebugPanel }))) : null;
@@ -35,8 +36,15 @@ import { SystemPeekView, systemPeekSize } from "../modules/system/SystemPeekView
 import { setIslandMemory, type RegionRect } from "../ipc/island";
 import { useIslandRegion } from "./region";
 import { useSettings } from "../settings/store";
+import { startWelcome, useWelcome } from "../modules/welcome/store";
+import { WELCOME_PILL_SIZE, WELCOME_SIZE, WelcomePill, WelcomeTour } from "../modules/welcome/WelcomeViews";
 import { BIRTH_IMPACT_MS, DURATIONS, REGION_HOLD_MS } from "./springs";
 import "./island.css";
+
+/** The welcome's activity: above music, so a first launch is greeted. */
+const WELCOME = "welcome";
+/** The welcome pill appears once the island has settled after its birth. */
+const WELCOME_DELAY_MS = 1500;
 
 /** The bubble at the end of its rise, just before it meets the edge. */
 const RISEN: ShellTarget = { ...BIRTH, y: 0 };
@@ -49,11 +57,11 @@ const UNBORN: ShellTarget = { ...BIRTH, fill: 0 };
  */
 function viewFor(
   surface: Surface,
-  state: { tab: Tab; dragging: boolean; peekId: string | null },
+  state: { tab: Tab; dragging: boolean; peekId: string | null; welcome: boolean },
   hasMedia: boolean,
   onLauncherRows: (rows: number) => void,
 ): { key: string; content: ReactNode } {
-  const { tab, dragging, peekId } = state;
+  const { tab, dragging, peekId, welcome } = state;
   switch (surface) {
     case "launcher":
       return { key: "launcher", content: <Launcher onRows={onLauncherRows} /> };
@@ -62,7 +70,7 @@ function viewFor(
     case "idle":
       return { key: surface, content: <IdleClock /> };
     case "activity":
-      return { key: surface, content: <MediaActivity /> };
+      return welcome ? { key: "activity:welcome", content: <WelcomePill /> } : { key: surface, content: <MediaActivity /> };
     case "peek":
       // Peeks of different kinds crossfade; a peek updated in place does not.
       if (peekId?.startsWith(SYSTEM_PEEK_PREFIX)) return { key: `peek:${peekId}`, content: <SystemPeekView /> };
@@ -72,6 +80,7 @@ function viewFor(
       if (tab === "clipboard") return { key: "expanded:clipboard", content: <ClipboardView /> };
       if (tab === "notifications") return { key: "expanded:notifications", content: <NotificationsView /> };
       if (tab === "controls") return { key: "expanded:controls", content: <ControlsView /> };
+      if (welcome) return { key: "expanded:welcome", content: <WelcomeTour /> };
       return hasMedia ? { key: "expanded:media", content: <MediaExpanded /> } : { key: "expanded:clock", content: <ClockPanel /> };
   }
 }
@@ -193,6 +202,19 @@ export function Island() {
   const controls = useControls();
   const outputsOpen = useOutputsOpen();
 
+  // First launch: a welcome pill, then the tour when opened.
+  useEffect(() => startWelcome(), []);
+  const welcome = useWelcome();
+  useEffect(() => {
+    if (!welcome) {
+      dispatch({ type: "activity.clear", id: WELCOME });
+      return;
+    }
+    const timer = setTimeout(() => dispatch({ type: "activity.set", activity: { id: WELCOME, priority: 100 } }), WELCOME_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [welcome]);
+  const welcoming = welcome && primaryActivity(state.activities)?.id === WELCOME;
+
   const surface = surfaceOf(state);
 
   // A closed island asks WebView2 to keep its memory low; it is back to
@@ -215,6 +237,7 @@ export function Island() {
   let size = mediaSize(surface, media.state, lyricsKind(lyrics));
   if (surface === "peek" && state.peek?.id.startsWith(SYSTEM_PEEK_PREFIX)) size = systemPeekSize(systemPeek);
   if (surface === "launcher") size = launcherSize(launcherRows);
+  if (surface === "activity" && welcoming) size = WELCOME_PILL_SIZE;
   if (surface === "expanded") {
     const [w, h, r] =
       state.tab === "shelf"
@@ -225,9 +248,11 @@ export function Island() {
             ? [...notificationsContentSize(notifItems.length), 26]
             : state.tab === "controls"
               ? [...controlsContentSize(controls?.apps.length ?? 0, outputsOpen), 26]
-              : hasMedia
-          ? (size ?? CLOCK_PANEL_SIZE)
-          : CLOCK_PANEL_SIZE;
+              : welcoming
+                ? WELCOME_SIZE
+                : hasMedia
+                  ? (size ?? CLOCK_PANEL_SIZE)
+                  : CLOCK_PANEL_SIZE;
     size = showTabs ? [Math.max(w, 300), h + TAB_BAR_HEIGHT, r] : [w, h, r];
   }
   const target = risen ? targetFor(surface, state.hovered, size) : RISEN;
@@ -239,7 +264,7 @@ export function Island() {
 
   const view = viewFor(
     surface,
-    { tab: state.tab, dragging: state.dragging, peekId: state.peek?.id ?? null },
+    { tab: state.tab, dragging: state.dragging, peekId: state.peek?.id ?? null, welcome: welcoming },
     hasMedia,
     setLauncherRows,
   );

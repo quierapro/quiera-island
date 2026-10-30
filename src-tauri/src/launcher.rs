@@ -241,6 +241,12 @@ pub fn launcher_open_file(
     Ok(())
 }
 
+/// Opens the launcher from the island (the welcome's "Essayer").
+#[tauri::command]
+pub fn launcher_open(app: AppHandle) {
+    open(&app);
+}
+
 /// Closes the launcher; `restore` gives the keyboard back to the window
 /// that had it (not when something else was just opened).
 #[tauri::command]

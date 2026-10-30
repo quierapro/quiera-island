@@ -8,6 +8,7 @@
 //! old one: a crash mid-write never leaves half a file.
 
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{LazyLock, RwLock};
 
 use serde::{Deserialize, Serialize};
@@ -212,6 +213,9 @@ impl Settings {
 }
 
 static SETTINGS: LazyLock<RwLock<Settings>> = LazyLock::new(RwLock::default);
+/// No settings file at start: Quiera's first launch, which the island
+/// welcomes. The file is written when the welcome ends, so it is said once.
+static FIRST_LAUNCH: AtomicBool = AtomicBool::new(false);
 
 /// The settings in force.
 pub fn get() -> Settings {
@@ -294,8 +298,32 @@ pub async fn settings_open(app: AppHandle) {
 
 /// Loads the settings at start.
 pub fn load(app: &AppHandle) {
-    let settings = path(app).map(|p| read(&p)).unwrap_or_default();
+    let file = path(app);
+    FIRST_LAUNCH.store(
+        file.as_ref().is_some_and(|f| !f.exists()),
+        Ordering::Relaxed,
+    );
+    let settings = file.map(|p| read(&p)).unwrap_or_default();
     *SETTINGS.write().unwrap_or_else(|e| e.into_inner()) = settings;
+}
+
+/// Whether the island should welcome the user (first launch).
+#[tauri::command]
+pub fn welcome_needed() -> bool {
+    FIRST_LAUNCH.load(Ordering::Relaxed)
+}
+
+/// The welcome ended (finished or skipped): the settings file is written,
+/// so it does not come back.
+#[tauri::command]
+pub fn welcome_done(app: AppHandle) -> Result<(), String> {
+    FIRST_LAUNCH.store(false, Ordering::Relaxed);
+    match path(&app) {
+        Some(file) if !file.exists() => {
+            write(&file, &get()).map_err(|e| format!("could not save the settings: {e}"))
+        }
+        _ => Ok(()),
+    }
 }
 
 #[tauri::command]

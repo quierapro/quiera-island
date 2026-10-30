@@ -1,0 +1,152 @@
+/* ---- Pill ---- */
+
+.welcome-pill {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  padding: 0 16px;
+  white-space: nowrap;
+}
+
+.welcome-pill-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  background: #7136ff;
+  box-shadow: 0 0 10px rgba(113, 54, 255, 0.8);
+}
+
+.welcome-pill-text {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.welcome-pill-hint {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+/* ---- Tour ---- */
+
+.welcome {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 4px 18px 14px;
+}
+
+.welcome-body {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-height: 0;
+}
+
+.welcome-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  corner-shape: squircle;
+  color: #fff;
+}
+
+.welcome-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.welcome-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.welcome-desc {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-2);
+}
+
+.welcome-desc kbd {
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: #26262b;
+  color: var(--text-1);
+  font: 700 11px var(--font-ui);
+}
+
+.welcome-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 28px;
+}
+
+.welcome-dots {
+  display: flex;
+  gap: 5px;
+}
+
+.welcome-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.2);
+  transition: width 0.25s ease, background-color 0.25s ease;
+}
+
+.welcome-dots .welcome-dot--on {
+  width: 16px;
+  background: #fff;
+}
+
+.welcome-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.welcome-btn {
+  height: 28px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 10px;
+  background: #1c1c20;
+  color: var(--text-1);
+  font: 600 12px var(--font-ui);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.welcome-btn:hover {
+  background: #26262b;
+}
+
+.welcome-btn--quiet {
+  background: transparent;
+  color: var(--text-3);
+}
+
+.welcome-btn--quiet:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-2);
+}
+
+.welcome-btn--main {
+  background: #fff;
+  color: #000;
+}
+
+.welcome-btn--main:hover {
+  background: #e6e6e6;
+}
