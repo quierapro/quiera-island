@@ -1,8 +1,46 @@
+<div align="center">
+    <img src="https://quiera.eu/favicon.svg" width="90" height="90" />
+    <p>
+      <img src="https://img.shields.io/badge/Rust-stable-B7410E?logo=rust&logoColor=white" alt="Rust">
+      <img src="https://img.shields.io/badge/Platform-Windows-2A2470" alt="For Windows">
+      <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL_3.0-3B2F7E" alt="GPL-3.0 license"></a>
+    </p>
+  
+  [Website](https://quiera.eu/) • [Download](https://github.com/quierapro/quiera-island/releases/latest/download/Quiera-Setup-x64.exe) • [Support](https://github.com/quierapro/quiera-island/issues)
+</div>
+
 # Quiera
 
 An island at the top of your screen for media, quick controls and live activities. Built for Windows 11 first.
 
-> **Status: early development.** The pill shows the time at rest and what is playing (Spotify, browsers and other apps that publish to Windows media controls) with synced lyrics and a player adapted from Bloom. Files dropped on it are kept on a Shelf and can be dragged out again. Short peeks announce the charger, a new audio output (with headphone battery when Windows knows it), Caps Lock and volume. A Clipboard tab keeps what you copied during the session (never written to disk; copies password managers mark private are skipped). Notifications show up on the island (quietly in Do not disturb), with links that open and a click that opens the app (Windows does not let other apps reply to or press a notification's buttons). A Controls tab toggles Wi-Fi and Bluetooth, switches the audio output and sets the master and per-app volumes. A launcher (Alt+Space) finds apps, files of every drive (by name or kind: "images", "videos"), computes and searches the web. Everything is set in a settings window (start with Windows, screen, hover, shortcut, lyrics, each module and peek), applied at once. It steps aside for fullscreen apps, follows display changes and recovers from web view crashes.
+<p align="center">
+  <img src="docs/assets/demo.gif" alt="Quiera demo: idle clock, music with synced lyrics, launcher, notifications, controls and Shelf" width="720">
+</p>
+
+> [!NOTE]
+> **Early development.** Expect rough edges and breaking changes between releases.
+
+## Features
+
+**At a glance**
+- **Clock & media**: shows the time at rest and what is playing (Spotify, browsers and any app using Windows media controls), with synced lyrics and a player adapted from Bloom.
+- **Peeks**: short announcements for the charger, a new audio output (with headphone battery when Windows reports it), Caps Lock and volume.
+- **Notifications**: shown on the island (quietly in Do not disturb). Links open and a click opens the app.
+
+**Tabs**
+- **Shelf**: drop files on the island, drag them out again later.
+- **Clipboard**: keeps what you copied during the session. Never written to disk, and copies marked private by password managers are skipped.
+- **Controls**: Wi-Fi, Bluetooth, audio output, master and per-app volume.
+
+**Launcher** (<kbd>Alt</kbd>+<kbd>Space</kbd>)
+- Finds apps and files on every drive, by name or by kind ("images", "videos").
+- Computes and searches the web.
+
+**Behaves well**
+- Every setting applies at once: start with Windows, screen, hover, shortcut, lyrics, each module and peek.
+- Steps aside for fullscreen apps, follows display changes and recovers from web view crashes.
+
+> Windows does not let other apps reply to a notification or press its buttons, so Quiera can only open them.
 
 ## Development
 
