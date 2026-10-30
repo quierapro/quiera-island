@@ -23,6 +23,14 @@ export const FAQS: { q: string; a: string }[] = [
     a: "Oui. L'installateur n'est pas encore signé par un certificat payant, et SmartScreen avertit pour tout logiciel récent dans ce cas. Cliquez sur « Informations complémentaires », puis « Exécuter quand même ». Le code est public sur GitHub, et chaque installateur est compilé par GitHub Actions directement à partir de ce code.",
   },
   {
+    q: "Comment envoyer un fichier sur mon téléphone ?",
+    a: "Déposez-le sur l'île, puis « Envoyer au téléphone » dans le Shelf : un QR code s'affiche. Scannez-le avec l'appareil photo, sur le même Wi-Fi que le PC, et le fichier se télécharge, sur iPhone comme sur Android, sans appli. Rien ne passe par Internet et le lien ne marche que 10 minutes. « Partager avec Windows » ouvre aussi le panneau Partager de Windows.",
+  },
+  {
+    q: "Comment Quiera se met-il à jour ?",
+    a: "Quiera cherche une nouvelle version au démarrage puis toutes les 6 heures, et l'annonce sur l'île. Elle s'installe quand vous le décidez, depuis l'icône de Quiera dans la barre des tâches ou les réglages, après vérification de sa signature. La recherche se coupe dans Réglages › À propos.",
+  },
+  {
     q: "D'où viennent les paroles ?",
     a: "De LRCLIB, une base de paroles synchronisées ouverte et gratuite. Seuls le titre, l'artiste, l'album et la durée du morceau sont envoyés pour les trouver. Une source mot à mot (NetEase) peut être activée dans les réglages ; elle est coupée par défaut, car son service n'est pas officiel.",
   },
@@ -36,7 +44,7 @@ export const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "Mes données restent-elles sur mon PC ?",
-    a: "Oui. Pas de compte, pas de publicité, pas de télémétrie. L'historique du presse-papiers et les notifications sont gardés en mémoire seulement, et disparaissent à la fermeture. La seule chose envoyée sur Internet est la recherche de paroles décrite plus haut.",
+    a: "Oui. Pas de compte, pas de publicité, pas de télémétrie. L'historique du presse-papiers et les notifications sont gardés en mémoire seulement, et disparaissent à la fermeture. Seules deux choses passent par Internet : la recherche de paroles décrite plus haut, et la vérification des mises à jour, une simple lecture de la page des versions sur GitHub, sans aucune donnée personnelle.",
   },
   {
     q: "Comment changer le raccourci ou couper un module ?",

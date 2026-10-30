@@ -25,6 +25,7 @@ import {
   Player,
   SIZES,
   Shell,
+  PhoneShare,
   Shelf,
   SystemPeekView,
   TAB_BAR_HEIGHT,
@@ -93,7 +94,7 @@ export const SCENES: Scene[] = [
     id: "shelf",
     label: "Shelf & presse-papiers",
     title: "Vos fichiers et vos copies, sous la main.",
-    desc: "Glissez un fichier sur l'île pour le garder de côté : essayez avec ceux du bureau, ou un fichier de votre ordinateur (il ne quitte pas votre navigateur). Copiez du texte sur cette page : il arrive dans le presse-papiers de l'île.",
+    desc: "Glissez un fichier sur l'île pour le garder de côté : essayez avec ceux du bureau, ou un fichier de votre ordinateur (il ne quitte pas votre navigateur). « Envoyer au téléphone » affiche un QR code à scanner. Copiez du texte sur cette page : il arrive dans le presse-papiers de l'île.",
     ms: 9000,
   },
 ];
@@ -201,6 +202,8 @@ export function Demo({ scene, onScene }: { scene: SceneId; onScene(id: SceneId):
     apps: APP_VOLUMES,
   });
   const [shelf, setShelf] = useState<ShelfItem[]>([]);
+  // The Shelf's "send to phone" panel is open.
+  const [phone, setPhone] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [clips, setClips] = useState<ClipItem[]>(INITIAL_CLIPS);
   const [copied, setCopied] = useState<number | null>(null);
@@ -220,6 +223,7 @@ export function Demo({ scene, onScene }: { scene: SceneId; onScene(id: SceneId):
     setQuery("");
     typedByUser.current = false;
     setTab(PIN_TAB[scene] ?? (scene === "notifications" ? "notifications" : "home"));
+    setPhone(false);
 
     switch (scene) {
       case "veille":
@@ -493,7 +497,19 @@ export function Demo({ scene, onScene }: { scene: SceneId; onScene(id: SceneId):
           onClear={() => setNotifications([])}
         />
       );
-    else if (tab === "shelf") content = <Shelf items={shelf} target={dragOver} onRemove={(id) => removeShelf([id])} onClear={() => removeShelf(shelf.map((s) => s.id))} />;
+    else if (tab === "shelf")
+      content =
+        phone && shelf.length > 0 && !dragOver ? (
+          <PhoneShare what={shelf.length === 1 ? shelf[0].name : `${shelf.length} fichiers`} onBack={() => setPhone(false)} />
+        ) : (
+          <Shelf
+            items={shelf}
+            target={dragOver}
+            onRemove={(id) => removeShelf([id])}
+            onClear={() => removeShelf(shelf.map((s) => s.id))}
+            onSend={() => setPhone(true)}
+          />
+        );
     else if (tab === "clipboard")
       content = (
         <Clipboard
@@ -604,6 +620,14 @@ export function Demo({ scene, onScene }: { scene: SceneId; onScene(id: SceneId):
               navigator.clipboard?.writeText(text).catch(() => {});
               addClip(text);
             } },
+          {
+            label: "Envoyer au téléphone",
+            run: () => {
+              if (shelf.length === 0) addDesktopFile(0);
+              setTab("shelf");
+              setPhone(true);
+            },
+          },
           { label: "Voir le presse-papiers", run: () => setTab("clipboard") },
           { label: "Voir le Shelf", run: () => setTab("shelf") },
         ];

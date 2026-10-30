@@ -299,8 +299,8 @@ const FEATURES: { title: string; desc: string; icon: ReactNode; scene?: SceneId 
     scene: "controles",
   },
   {
-    title: "Shelf",
-    desc: "Glissez des fichiers sur l'île pour les garder de côté le temps d'une tâche, puis faites-les glisser là où il faut.",
+    title: "Shelf et envoi au téléphone",
+    desc: "Glissez des fichiers sur l'île pour les garder de côté, puis ailleurs. Un QR code les envoie sur votre téléphone, iPhone ou Android, sans appli ni Internet.",
     icon: icon(
       <>
         <path d="M3.5 13.5 6 5.8A2 2 0 0 1 7.9 4.5h8.2A2 2 0 0 1 18 5.8l2.5 7.7" />
@@ -333,7 +333,7 @@ const FEATURES: { title: string; desc: string; icon: ReactNode; scene?: SceneId 
   },
   {
     title: "Discrète et légère",
-    desc: "Se cache pendant les jeux et les vidéos en plein écran, presque aucun processeur au repos, et un démarrage avec Windows au choix.",
+    desc: "Se cache pendant les jeux et les vidéos en plein écran, presque aucun processeur au repos, et se met à jour toute seule quand vous le voulez.",
     icon: icon(<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />),
   },
 ];

@@ -3,7 +3,7 @@
  * (src/island, src/modules): same sizes, same layout, same styles.
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import type { AppVolume, ClipItem, DemoNotification, LaunchItem, LyricLine, Track } from "./data";
+import { SITE_QR, type AppVolume, type ClipItem, type DemoNotification, type LaunchItem, type LyricLine, type Track } from "./data";
 import {
   BellIcon,
   BluetoothIcon,
@@ -21,6 +21,7 @@ import {
   LinkIcon,
   NoteIcon,
   PauseIcon,
+  PhoneIcon,
   PlayIcon,
   RepeatIcon,
   SearchIcon,
@@ -714,7 +715,19 @@ export function formatSize(bytes: number): string {
   return `${(bytes / 1_000_000_000).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} Go`;
 }
 
-export function Shelf({ items, target, onRemove, onClear }: { items: ShelfItem[]; target: boolean; onRemove(id: number): void; onClear(): void }) {
+export function Shelf({
+  items,
+  target,
+  onRemove,
+  onClear,
+  onSend,
+}: {
+  items: ShelfItem[];
+  target: boolean;
+  onRemove(id: number): void;
+  onClear(): void;
+  onSend(): void;
+}) {
   if (items.length === 0) {
     return (
       <div className={`shelf-empty ${target ? "shelf-empty--target" : ""}`}>
@@ -729,9 +742,15 @@ export function Shelf({ items, target, onRemove, onClear }: { items: ShelfItem[]
         <span className="shelf-count">
           {items.length} fichier{items.length > 1 ? "s" : ""}
         </span>
-        <button type="button" className="shelf-clear" onClick={onClear}>
-          Tout retirer
-        </button>
+        <span className="shelf-head-actions">
+          <button type="button" className="shelf-clear" onClick={onSend}>
+            <PhoneIcon size={11} />
+            Envoyer au téléphone
+          </button>
+          <button type="button" className="shelf-clear" onClick={onClear}>
+            Tout retirer
+          </button>
+        </span>
       </div>
       <div className="shelf-row">
         {items.map((item) => (
@@ -746,6 +765,33 @@ export function Shelf({ items, target, onRemove, onClear }: { items: ShelfItem[]
             <div className="shelf-size">{formatSize(item.size)}</div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+/** Sending to a phone: in the demo, the code opens this site. */
+export function PhoneShare({ what, onBack }: { what: string; onBack(): void }) {
+  const side = SITE_QR.size + 4;
+  return (
+    <div className="shelf">
+      <div className="phone-share">
+        <div className="phone-qr">
+          <svg viewBox={`-2 -2 ${side} ${side}`} shapeRendering="crispEdges" role="img" aria-label="QR code vers quiera.eu">
+            <rect x="-2" y="-2" width={side} height={side} fill="#fff" />
+            <path d={SITE_QR.path} fill="#000" />
+          </svg>
+        </div>
+        <div className="phone-text">
+          <span className="phone-title">Scanne avec ton téléphone</span>
+          <span className="phone-name">{what}</span>
+          <span className="phone-sub">Même Wi-Fi que le PC · expire dans 10:00. Ici, le code ouvre quiera.eu.</span>
+          <div className="phone-actions">
+            <button type="button" className="phone-btn" onClick={onBack}>
+              Retour
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

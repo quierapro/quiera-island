@@ -1494,6 +1494,116 @@
   text-overflow: ellipsis;
 }
 
+.shelf-head-actions {
+  display: flex;
+  gap: 2px;
+}
+
+.shelf-head-actions .shelf-clear {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ---- Sending to a phone ---- */
+
+.phone-share {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 100%;
+  padding: 4px 4px 0;
+}
+
+.phone-qr {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 118px;
+  height: 118px;
+  border-radius: 14px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.phone-qr svg {
+  width: 108px;
+  height: 108px;
+}
+
+.phone-qr-empty {
+  color: #111;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.phone-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.phone-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.phone-name {
+  margin-top: 2px;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--text-2);
+}
+
+.phone-sub {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--text-3);
+}
+
+.phone-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.phone-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 10px;
+  background: #1c1c20;
+  color: var(--text-1);
+  font: 600 11.5px var(--font-ui);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.phone-btn:hover {
+  background: #26262b;
+}
+
+.phone-btn--main {
+  background: #fff;
+  color: #000;
+}
+
+.phone-btn--main:hover {
+  background: #e6e6e6;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .isl,
   .isl-body,

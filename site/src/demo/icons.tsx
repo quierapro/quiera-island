@@ -241,3 +241,12 @@ export function FileGlyph({ kind, size = 26 }: { kind: string; size?: number }) 
     </svg>
   );
 }
+
+export function PhoneIcon({ size = 24 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" {...stroke} aria-hidden="true">
+      <rect x="6.5" y="2.5" width="11" height="19" rx="2.6" />
+      <path d="M10.5 18.5h3" />
+    </svg>
+  );
+}

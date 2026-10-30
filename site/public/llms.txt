@@ -9,7 +9,8 @@
 - Lanceur façon Spotlight (Alt+Espace, modifiable) : applis, fichiers de tous les disques, calculs, recherche web ; « images », « vidéos », « musique », « documents » filtrent par type.
 - Notifications de Windows sur l'île ; un clic ouvre l'appli. Le mode Ne pas déranger est respecté.
 - Contrôles rapides : Wi-Fi, Bluetooth, volume général, sortie audio, volume par application.
-- Shelf : des fichiers glissés sur l'île, gardés sous la main.
+- Shelf : des fichiers glissés sur l'île, gardés sous la main, et envoyés au téléphone par QR code (réseau local, sans appli, lien valable 10 minutes) ou par le panneau Partager de Windows.
+- Mises à jour : proposées par l'appli, vérifiées par signature avant installation.
 - Historique du presse-papiers, en mémoire seulement.
 - Aperçus système : chargeur, casque et sa batterie, Verr. Maj, volume.
 - Se cache pendant les jeux et vidéos en plein écran.
