@@ -5,6 +5,7 @@ export type SystemPeek =
   | { kind: "power"; plugged: boolean; percent: number | null }
   | { kind: "audioDevice"; name: string; form: "headphones" | "headset" | "speakers" | "other"; battery: number | null }
   | { kind: "capsLock"; on: boolean }
+  | { kind: "update"; version: string }
   | { kind: "volume"; level: number; muted: boolean }
   | { kind: "copied"; content: "text" | "link" | "image"; preview: string; thumbnail: string | null }
   | { kind: "notification"; id: number; app: string; title: string; body: string; icon: string | null };

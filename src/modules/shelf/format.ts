@@ -18,3 +18,9 @@ export function formatSize(bytes: number, locale?: string): string {
 export function shelfContentSize(count: number): [width: number, height: number] {
   return count === 0 ? [380, 120] : [560, 150];
 }
+
+/** "9:05": minutes and seconds left. */
+export function countdown(seconds: number): string {
+  const s = Math.max(0, Math.floor(seconds));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}

@@ -231,6 +231,17 @@ pub fn watch_drops(app: &AppHandle) {
     platform::watch_file_drops(&window, move |paths| add_paths(&handle, paths));
 }
 
+/// The paths of the items `ids` that are files (a folder cannot be sent as
+/// is), in that order.
+pub fn file_paths(ids: &[u32]) -> Vec<PathBuf> {
+    let shelf = shelf();
+    ids.iter()
+        .filter_map(|id| shelf.get(*id))
+        .filter(|item| item.kind != ItemKind::Folder)
+        .map(|item| PathBuf::from(&item.path))
+        .collect()
+}
+
 fn item_path(id: u32) -> Result<PathBuf, String> {
     shelf()
         .get(id)
@@ -355,6 +366,8 @@ pub fn serve_thumbnail(path: &str) -> Response<Vec<u8>> {
             .body(png.as_slice().to_vec()),
         None => Response::builder()
             .status(StatusCode::NOT_FOUND)
+            // Not cached by the web view: it may come later.
+            .header(header::CACHE_CONTROL, "no-store")
             .body(Vec::new()),
     };
     response.unwrap_or_else(|_| Response::new(Vec::new()))

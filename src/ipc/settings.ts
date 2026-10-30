@@ -14,6 +14,8 @@ export interface Settings {
     hideInFullscreen: boolean;
     openOnHover: boolean;
     motion: "system" | "reduced" | "full";
+    /** Looks for a new version now and then. */
+    checkUpdates: boolean;
   };
   launcher: { enabled: boolean; shortcut: Shortcut; indexFiles: boolean };
   media: { lyrics: boolean; netease: boolean; lyricsOffsetMs: number };
@@ -34,7 +36,7 @@ export interface Monitor {
 /** The defaults, as the backend has them, until it answers. */
 export const DEFAULT_SETTINGS: Settings = {
   version: 1,
-  general: { startWithWindows: false, screen: null, hideInFullscreen: true, openOnHover: true, motion: "system" },
+  general: { startWithWindows: false, screen: null, hideInFullscreen: true, openOnHover: true, motion: "system", checkUpdates: true },
   launcher: { enabled: true, shortcut: "Alt+Espace", indexFiles: true },
   media: { lyrics: true, netease: false, lyricsOffsetMs: 0 },
   notifications: { enabled: true, peek: true },

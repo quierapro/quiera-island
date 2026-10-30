@@ -15,6 +15,7 @@ use tauri::{AppHandle, Emitter, Manager};
 
 use tauri_plugin_opener::OpenerExt;
 
+use crate::icon_cache::IconCache;
 use crate::settings::{self, Shortcut};
 use crate::{files, island, platform, protocol};
 
@@ -59,7 +60,7 @@ static APPS: LazyLock<Mutex<Apps>> = LazyLock::new(|| {
         items: Vec::new(),
     })
 });
-static ICONS: LazyLock<Mutex<HashMap<String, Option<Vec<u8>>>>> = LazyLock::new(Mutex::default);
+static ICONS: LazyLock<IconCache> = LazyLock::new(IconCache::default);
 
 fn key_of(id: &str) -> String {
     let mut hasher = DefaultHasher::new();
@@ -251,11 +252,6 @@ pub fn launcher_close(app: AppHandle, restore: bool) {
 pub fn serve_icon(path: &str, responder: tauri::UriSchemeResponder) {
     let key = path.trim_start_matches('/').to_owned();
     std::thread::spawn(move || {
-        let cached = ICONS
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .get(&key)
-            .cloned();
         // A file: its icon or preview, from the shell (not kept here: the
         // web view caches it).
         let file = key.strip_prefix('f').and_then(|rest| {
@@ -268,24 +264,17 @@ pub fn serve_icon(path: &str, responder: tauri::UriSchemeResponder) {
             responder.respond(png_response(png));
             return;
         }
-        let png = cached.unwrap_or_else(|| {
+        let png = ICONS.get_or_load(&key, || {
             let id = APPS
                 .lock()
                 .unwrap_or_else(|e| e.into_inner())
                 .ids
                 .get(&key)
-                .cloned();
-            let png = id.and_then(|id| {
-                platform::file_thumbnail(
-                    std::path::Path::new(&format!("shell:AppsFolder\\{id}")),
-                    ICON_SIZE,
-                )
-            });
-            ICONS
-                .lock()
-                .unwrap_or_else(|e| e.into_inner())
-                .insert(key.clone(), png.clone());
-            png
+                .cloned()?;
+            platform::file_thumbnail(
+                std::path::Path::new(&format!("shell:AppsFolder\\{id}")),
+                ICON_SIZE,
+            )
         });
         responder.respond(png_response(png));
     });
@@ -299,6 +288,8 @@ fn png_response(png: Option<Vec<u8>>) -> Response<Vec<u8>> {
             .body(png),
         None => Response::builder()
             .status(StatusCode::NOT_FOUND)
+            // Not cached by the web view: it may come later.
+            .header(header::CACHE_CONTROL, "no-store")
             .body(Vec::new()),
     };
     response.unwrap_or_else(|_| Response::new(Vec::new()))

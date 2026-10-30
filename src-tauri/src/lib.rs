@@ -2,6 +2,7 @@ mod apply;
 mod clipboard;
 mod controls;
 mod files;
+mod icon_cache;
 mod island;
 mod launcher;
 mod lyrics;
@@ -12,9 +13,11 @@ mod platform;
 mod protocol;
 mod recovery;
 mod settings;
+mod share;
 mod shelf;
 mod system;
 mod tray;
+mod updates;
 
 use platform::Capabilities;
 use tauri::Manager;
@@ -64,6 +67,7 @@ pub fn run() {
         )
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_drag::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .register_uri_scheme_protocol(media::ART_SCHEME, |_ctx, request| {
             media::serve_artwork(request.uri().path())
         })
@@ -106,6 +110,7 @@ pub fn run() {
             launcher::start(app.handle());
             files::start();
             apply::at_start(app.handle());
+            updates::start(app.handle());
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -134,6 +139,9 @@ pub fn run() {
             settings::settings_get,
             settings::settings_set,
             settings::settings_open,
+            updates::updates_status,
+            updates::updates_check,
+            updates::updates_install,
             island::settings_monitors,
             island::island_memory,
             launcher::launcher_shortcut,
@@ -165,6 +173,9 @@ pub fn run() {
             shelf::shelf_open,
             shelf::shelf_reveal,
             shelf::shelf_drag_icon,
+            share::shelf_share_phone,
+            share::shelf_share_stop,
+            share::shelf_share_windows,
             dev_log,
             dev_bench_requested,
             dev_shelf_add

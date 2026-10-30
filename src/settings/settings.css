@@ -375,3 +375,23 @@ button {
   display: flex;
   gap: 8px;
 }
+
+.about-updates {
+  align-self: stretch;
+  margin-top: 28px;
+  text-align: left;
+}
+
+.button--main {
+  background: #fff;
+  color: #000;
+}
+
+.button--main:hover {
+  background: #e6e6e6;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

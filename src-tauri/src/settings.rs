@@ -66,6 +66,8 @@ pub struct General {
     /// Opens the panel on hover; otherwise on click.
     pub open_on_hover: bool,
     pub motion: Motion,
+    /// Looks for a new version now and then (GitHub releases).
+    pub check_updates: bool,
 }
 
 impl Default for General {
@@ -76,6 +78,7 @@ impl Default for General {
             hide_in_fullscreen: true,
             open_on_hover: true,
             motion: Motion::System,
+            check_updates: true,
         }
     }
 }
@@ -248,25 +251,35 @@ pub fn write(path: &Path, settings: &Settings) -> std::io::Result<()> {
 }
 
 pub const WINDOW: &str = "settings";
+/// Tells an open settings window which section to show.
+pub const SECTION_EVENT: &str = "settings://section";
 
 /// Opens the settings window, or brings it forward when already open.
 pub fn open_window(app: &AppHandle) {
+    open_window_at(app, None);
+}
+
+/// Opens the settings, on one section ("about") when given.
+pub fn open_window_at(app: &AppHandle, section: Option<&str>) {
     if let Some(window) = app.get_webview_window(WINDOW) {
         let _ = window.unminimize();
         let _ = window.set_focus();
+        if let Some(section) = section {
+            let _ = window.emit(SECTION_EVENT, section);
+        }
         return;
     }
-    let built = tauri::WebviewWindowBuilder::new(
-        app,
-        WINDOW,
-        tauri::WebviewUrl::App("settings.html".into()),
-    )
-    .title("Réglages de Quiera")
-    .inner_size(780.0, 560.0)
-    .min_inner_size(680.0, 460.0)
-    .theme(Some(tauri::Theme::Dark))
-    .center()
-    .build();
+    let page = match section {
+        Some(section) => format!("settings.html#{section}"),
+        None => "settings.html".to_owned(),
+    };
+    let built = tauri::WebviewWindowBuilder::new(app, WINDOW, tauri::WebviewUrl::App(page.into()))
+        .title("Réglages de Quiera")
+        .inner_size(780.0, 560.0)
+        .min_inner_size(680.0, 460.0)
+        .theme(Some(tauri::Theme::Dark))
+        .center()
+        .build();
     if let Err(e) = built {
         log::error!("could not open the settings: {e}");
     }

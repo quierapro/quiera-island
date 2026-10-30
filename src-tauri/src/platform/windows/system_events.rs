@@ -17,11 +17,11 @@ use windows::Win32::System::RemoteDesktop::{
 use windows::Win32::UI::Accessibility::{HWINEVENTHOOK, SetWinEventHook, UnhookWinEvent};
 use windows::Win32::UI::WindowsAndMessaging::{
     CHILDID_SELF, CreateWindowExW, DefWindowProcW, DispatchMessageW, EVENT_OBJECT_LOCATIONCHANGE,
-    EVENT_SYSTEM_FOREGROUND, GetForegroundWindow, GetMessageW, GetWindowThreadProcessId, MSG,
-    OBJID_WINDOW, PBT_APMRESUMEAUTOMATIC, RegisterClassW, RegisterWindowMessageW, SPI_SETWORKAREA,
-    TranslateMessage, WINEVENT_OUTOFCONTEXT, WINEVENT_SKIPOWNPROCESS, WM_DISPLAYCHANGE,
-    WM_POWERBROADCAST, WM_SETTINGCHANGE, WM_WTSSESSION_CHANGE, WNDCLASSW, WS_EX_TOOLWINDOW,
-    WS_POPUP, WTS_SESSION_UNLOCK,
+    EVENT_SYSTEM_FOREGROUND, GetForegroundWindow, GetMessageW, GetWindowThreadProcessId, KillTimer,
+    MSG, OBJID_WINDOW, PBT_APMRESUMEAUTOMATIC, RegisterClassW, RegisterWindowMessageW,
+    SPI_SETWORKAREA, SetTimer, TranslateMessage, WINEVENT_OUTOFCONTEXT, WINEVENT_SKIPOWNPROCESS,
+    WM_DISPLAYCHANGE, WM_POWERBROADCAST, WM_SETTINGCHANGE, WM_TIMER, WM_WTSSESSION_CHANGE,
+    WNDCLASSW, WS_EX_TOOLWINDOW, WS_POPUP, WTS_SESSION_UNLOCK,
 };
 use windows::core::w;
 
@@ -33,10 +33,21 @@ type Handler = Box<dyn Fn(SystemEvent) + Send>;
 
 struct Watch {
     handler: Handler,
+    window: HWND,
     taskbar_created: u32,
+    /// The fullscreen state last reported.
     fullscreen: Option<bool>,
+    /// A different state waiting to settle, its timer running.
+    pending: Option<bool>,
     location_hook: Option<HWINEVENTHOOK>,
 }
+
+/// The timer that lets a fullscreen change settle before it is reported.
+const SETTLE_TIMER: usize = 1;
+/// While a game loads or Alt+Tab runs, the foreground flips several times a
+/// second: reported at once, the island blinked in and out. A change is
+/// reported once it has lasted this long.
+const SETTLE_MS: u32 = 300;
 
 thread_local! {
     // Everything below runs on the watcher thread: window procedure and
@@ -92,8 +103,10 @@ unsafe fn run(handler: Handler) -> windows::core::Result<()> {
         WATCH.with_borrow_mut(|w| {
             *w = Some(Watch {
                 handler,
+                window: hwnd,
                 taskbar_created,
                 fullscreen: None,
+                pending: None,
                 location_hook: None,
             })
         });
@@ -130,23 +143,73 @@ fn emit(event: SystemEvent) {
     });
 }
 
-/// Re-checks fullscreen and reports it when it changed.
+/// Re-checks fullscreen. A change is reported once it has held for
+/// `SETTLE_MS`, the very first state at once. Returns the state reported,
+/// which is what the island follows.
 fn check_fullscreen() -> bool {
     let Some(island) = island_hwnd() else {
         return false;
     };
     let now = foreground_is_fullscreen(island);
-    let changed = WATCH.with_borrow_mut(|w| match w {
-        Some(w) if w.fullscreen != Some(now) => {
-            w.fullscreen = Some(now);
-            true
+    let Some((window, reported, pending)) =
+        WATCH.with_borrow(|w| w.as_ref().map(|w| (w.window, w.fullscreen, w.pending)))
+    else {
+        return now;
+    };
+    match reported {
+        None => report_fullscreen(now),
+        Some(was) if was == now => {
+            // Back where it was: drop the pending change.
+            if pending.is_some() {
+                set_pending(None);
+                // SAFETY: the watcher's own window, on this thread.
+                let _ = unsafe { KillTimer(Some(window), SETTLE_TIMER) };
+            }
         }
-        _ => false,
-    });
-    if changed {
-        emit(SystemEvent::Fullscreen(now));
+        // Armed once per change, not at every event: a window that keeps
+        // moving (a video player) must not hold the change back.
+        Some(_) if pending != Some(now) => {
+            set_pending(Some(now));
+            // SAFETY: as above.
+            unsafe { SetTimer(Some(window), SETTLE_TIMER, SETTLE_MS, None) };
+        }
+        Some(_) => {}
     }
-    now
+    reported.unwrap_or(now)
+}
+
+fn set_pending(state: Option<bool>) {
+    WATCH.with_borrow_mut(|w| {
+        if let Some(w) = w {
+            w.pending = state;
+        }
+    });
+}
+
+/// The settle timer fired: reports the state if it still differs.
+fn settle_fullscreen(window: HWND) {
+    // SAFETY: the watcher's own window, on this thread.
+    let _ = unsafe { KillTimer(Some(window), SETTLE_TIMER) };
+    set_pending(None);
+    let Some(island) = island_hwnd() else {
+        return;
+    };
+    let now = foreground_is_fullscreen(island);
+    if WATCH.with_borrow(|w| w.as_ref().and_then(|w| w.fullscreen)) != Some(now) {
+        report_fullscreen(now);
+        if !now {
+            reassert_topmost();
+        }
+    }
+}
+
+fn report_fullscreen(now: bool) {
+    WATCH.with_borrow_mut(|w| {
+        if let Some(w) = w {
+            w.fullscreen = Some(now);
+        }
+    });
+    emit(SystemEvent::Fullscreen(now));
 }
 
 /// The foreground changed: watch the new app's window moves (F11 does not
@@ -228,6 +291,7 @@ unsafe extern "system" fn window_proc(
             emit(SystemEvent::Resumed)
         }
         WM_WTSSESSION_CHANGE if wparam.0 as u32 == WTS_SESSION_UNLOCK => emit(SystemEvent::Resumed),
+        WM_TIMER if wparam.0 == SETTLE_TIMER => settle_fullscreen(hwnd),
         m if m != 0 && m == taskbar_created => emit(SystemEvent::TaskbarCreated),
         _ => {}
     }

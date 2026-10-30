@@ -36,6 +36,9 @@ pub enum SystemPeek {
     },
     #[serde(rename_all = "camelCase")]
     CapsLock { on: bool },
+    /// A new version of Quiera is out.
+    #[serde(rename_all = "camelCase")]
+    Update { version: String },
     /// Master volume, 0–100.
     #[serde(rename_all = "camelCase")]
     Volume { level: u8, muted: bool },
@@ -93,6 +96,7 @@ fn wanted(peek: &SystemPeek) -> bool {
         SystemPeek::Power { .. } => settings.peeks.power,
         SystemPeek::AudioDevice { .. } => settings.peeks.audio_device,
         SystemPeek::CapsLock { .. } => settings.peeks.caps_lock,
+        SystemPeek::Update { .. } => settings.general.check_updates,
         SystemPeek::Volume { .. } => settings.peeks.volume,
         SystemPeek::Copied { .. } => settings.clipboard.enabled,
         SystemPeek::Notification { .. } => {
@@ -123,6 +127,7 @@ fn kind_name(peek: &SystemPeek) -> &'static str {
         SystemPeek::Power { .. } => "power",
         SystemPeek::AudioDevice { .. } => "audio device",
         SystemPeek::CapsLock { .. } => "caps lock",
+        SystemPeek::Update { .. } => "update",
         SystemPeek::Volume { .. } => "volume",
         SystemPeek::Copied { .. } => "copied",
         SystemPeek::Notification { .. } => "notification",

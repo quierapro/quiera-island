@@ -28,7 +28,7 @@ An island at the top of your screen for media, quick controls and live activitie
 - **Notifications**: shown on the island (quietly in Do not disturb). Links open and a click opens the app.
 
 **Tabs**
-- **Shelf**: drop files on the island, drag them out again later.
+- **Shelf**: drop files on the island, drag them out again later, or send them to a phone: a QR code opens them on the local network (any phone, no app, link valid 10 minutes), or Windows' Share panel.
 - **Clipboard**: keeps what you copied during the session. Never written to disk, and copies marked private by password managers are skipped.
 - **Controls**: Wi-Fi, Bluetooth, audio output, master and per-app volume.
 
@@ -39,6 +39,7 @@ An island at the top of your screen for media, quick controls and live activitie
 **Behaves well**
 - Every setting applies at once: start with Windows, screen, hover, shortcut, lyrics, each module and peek.
 - Steps aside for fullscreen apps, follows display changes and recovers from web view crashes.
+- Updates itself when you say so: new versions are announced on the island and checked against a signature before they install.
 
 > Windows does not let other apps reply to a notification or press its buttons, so Quiera can only open them.
 

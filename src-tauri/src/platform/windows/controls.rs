@@ -337,13 +337,31 @@ fn app_name(path: &Path) -> String {
     names
         .entry(path.to_path_buf())
         .or_insert_with(|| {
-            file_description(path).unwrap_or_else(|| {
-                path.file_stem()
-                    .map(|s| s.to_string_lossy().into_owned())
-                    .unwrap_or_default()
-            })
+            file_description(path)
+                .or_else(|| install_folder(path))
+                .unwrap_or_else(|| {
+                    path.file_stem()
+                        .map(|s| s.to_string_lossy().into_owned())
+                        .unwrap_or_default()
+                })
         })
         .clone()
+}
+
+/// For a program without a description, the folder it is installed in
+/// when that folder sits right in Program Files or the user's Programs:
+/// "AJAZZ AK820Pro" rather than its "DeviceDriver.exe".
+fn install_folder(path: &Path) -> Option<String> {
+    let folder = path.parent()?;
+    let root = folder.parent()?;
+    let root_name = root.file_name()?.to_string_lossy().to_lowercase();
+    let in_programs = matches!(root_name.as_str(), "program files" | "program files (x86)")
+        || (root_name == "programs"
+            && root
+                .parent()
+                .and_then(|p| p.file_name())
+                .is_some_and(|n| n.eq_ignore_ascii_case("local")));
+    in_programs.then(|| folder.file_name().map(|n| n.to_string_lossy().into_owned()))?
 }
 
 fn file_description(path: &Path) -> Option<String> {
@@ -452,4 +470,33 @@ pub fn set_app_volume(path: &Path, level: u8) -> Result<(), String> {
 pub fn set_app_mute(path: &Path, muted: bool) -> Result<(), String> {
     // SAFETY: a plain COM setter.
     for_app(path, |v| unsafe { v.SetMute(muted, std::ptr::null()) })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn programs_without_a_name_take_their_install_folder() {
+        let named = |p: &str| install_folder(Path::new(p));
+        assert_eq!(
+            named(r"C:\Program Files (x86)\AJAZZ AK820Pro\DeviceDriver.exe").as_deref(),
+            Some("AJAZZ AK820Pro")
+        );
+        assert_eq!(
+            named(r"C:\Program Files\Vendor\tool.exe").as_deref(),
+            Some("Vendor")
+        );
+        assert_eq!(
+            named(r"C:\Users\x\AppData\Local\Programs\Some App\app.exe").as_deref(),
+            Some("Some App")
+        );
+        // Deeper, or elsewhere: the folder says nothing about the app.
+        assert_eq!(named(r"C:\Program Files\Java\jdk-21\bin\javaw.exe"), None);
+        assert_eq!(
+            named(r"C:\Users\x\AppData\Local\Discord\app-1.0\Discord.exe"),
+            None
+        );
+        assert_eq!(named(r"C:\Games\game.exe"), None);
+    }
 }

@@ -1,7 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { getVersion } from "@tauri-apps/api/app";
+import { listen } from "@tauri-apps/api/event";
 import { openLink } from "../ipc/notifications";
+import { checkForUpdates, getUpdateStatus, installUpdate, onUpdateStatus, type UpdateStatus } from "../ipc/updates";
 import { getHeldShortcut, getMonitors, SHORTCUTS, type Monitor, type Settings, type Shortcut } from "../ipc/settings";
 import { updateSettings, useSettings } from "./store";
 
@@ -283,16 +284,73 @@ function Peeks({ settings, save }: { settings: Settings; save: ReturnType<typeof
   );
 }
 
-function About() {
-  const [version, setVersion] = useState("");
+/** The update state, kept current by the backend's events. */
+function useUpdateStatus(): UpdateStatus | null {
+  const [status, setStatus] = useState<UpdateStatus | null>(null);
   useEffect(() => {
-    getVersion().then(setVersion).catch(ignore);
+    let stop: (() => void) | undefined;
+    onUpdateStatus(setStatus)
+      .then((unlisten) => {
+        stop = unlisten;
+        return getUpdateStatus();
+      })
+      .then(setStatus)
+      .catch(ignore);
+    return () => stop?.();
   }, []);
+  return status;
+}
+
+function Updates({ settings, save }: { settings: Settings; save: ReturnType<typeof useSave>["save"] }) {
+  const status = useUpdateStatus();
+  const [installError, setInstallError] = useState<string | null>(null);
+  if (!status) return null;
+  const busy = status.checking || status.installing;
+  const text = status.installing
+    ? "Téléchargement et installation… Quiera va redémarrer."
+    : status.checking
+      ? "Recherche…"
+      : status.available
+        ? `La version ${status.available} est disponible.`
+        : "Quiera est à jour.";
+  return (
+    <Group title="Mises à jour">
+      <Row title={text} description={installError ?? status.error ?? "Chaque mise à jour est vérifiée (signée) avant d'être installée."}>
+        {status.available ? (
+          <button
+            className="button button--main"
+            disabled={busy}
+            onClick={() => {
+              setInstallError(null);
+              installUpdate().catch(() => setInstallError("La mise à jour n'a pas pu être installée."));
+            }}
+          >
+            Installer et redémarrer
+          </button>
+        ) : (
+          <button className="button" disabled={busy} onClick={() => checkForUpdates().catch(ignore)}>
+            Rechercher
+          </button>
+        )}
+      </Row>
+      <Row title="Rechercher automatiquement" description="Au démarrage, puis toutes les 6 heures. Une nouvelle version est annoncée sur l'île ; rien ne s'installe sans toi.">
+        <Toggle
+          label="Rechercher automatiquement"
+          on={settings.general.checkUpdates}
+          onChange={(on) => save((s) => ({ ...s, general: { ...s.general, checkUpdates: on } }))}
+        />
+      </Row>
+    </Group>
+  );
+}
+
+function About({ settings, save }: { settings: Settings; save: ReturnType<typeof useSave>["save"] }) {
+  const status = useUpdateStatus();
   return (
     <div className="about">
       <div className="about-mark">Q</div>
       <div className="about-name">Quiera</div>
-      <div className="about-version">Version {version}</div>
+      <div className="about-version">Version {status?.current}</div>
       <p className="about-text">Une île en haut de ton écran pour la musique, tes fichiers et tes raccourcis. Logiciel libre sous licence GPL-3.0.</p>
       <div className="about-links">
         <button className="button" onClick={() => openLink(REPO).catch(ignore)}>
@@ -302,14 +360,29 @@ function About() {
           Signaler un problème
         </button>
       </div>
+      <div className="about-updates">
+        <Updates settings={settings} save={save} />
+      </div>
     </div>
   );
 }
 
+const isSection = (s: string): s is Section => SECTIONS.some((x) => x.id === s);
+
 export function SettingsApp() {
   const settings = useSettings();
   const { save, error } = useSave();
-  const [section, setSection] = useState<Section>("general");
+  // Opened on a section ("#about", from the tray's update item) or told to show one.
+  const [section, setSection] = useState<Section>(() => {
+    const asked = location.hash.slice(1);
+    return isSection(asked) ? asked : "general";
+  });
+  useEffect(() => {
+    const stop = listen<string>("settings://section", (e) => isSection(e.payload) && setSection(e.payload));
+    return () => {
+      stop.then((unlisten) => unlisten()).catch(ignore);
+    };
+  }, []);
   const current = SECTIONS.find((s) => s.id === section)!;
 
   return (
@@ -334,7 +407,7 @@ export function SettingsApp() {
             {section === "notifications" && <Notifications settings={settings} save={save} />}
             {section === "clipboard" && <Clipboard settings={settings} save={save} />}
             {section === "peeks" && <Peeks settings={settings} save={save} />}
-            {section === "about" && <About />}
+            {section === "about" && <About settings={settings} save={save} />}
           </motion.div>
         </AnimatePresence>
         {error && <div className="error">Le réglage n'a pas pu être enregistré : {error}</div>}

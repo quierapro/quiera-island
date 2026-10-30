@@ -4,7 +4,8 @@ import { startDrag } from "@crabnebula/tauri-plugin-drag";
 import * as shelf from "../../ipc/shelf";
 import type { ShelfItem } from "../../ipc/shelf";
 import { formatSize } from "./format";
-import { CloseIcon, TrayIcon } from "./icons";
+import { CloseIcon, PhoneIcon, TrayIcon } from "./icons";
+import { PhoneShare } from "./PhoneShare";
 import { useShelf } from "./store";
 import "./shelf.css";
 
@@ -13,7 +14,7 @@ const ignore = () => {};
 /** Moving this far with the button down starts dragging the item out. */
 const DRAG_THRESHOLD = 5;
 
-function Tile({ item }: { item: ShelfItem }) {
+function Tile({ item, onShare }: { item: ShelfItem; onShare(): void }) {
   const icon = useRef<Promise<string> | null>(null);
   const start = useRef<{ x: number; y: number } | null>(null);
   const dragged = useRef(false);
@@ -75,6 +76,21 @@ function Tile({ item }: { item: ShelfItem }) {
         >
           <CloseIcon size={10} />
         </button>
+        {item.kind !== "folder" && (
+          <button
+            className="shelf-send"
+            aria-label="Envoyer au téléphone"
+            title="Envoyer au téléphone"
+            onPointerDown={(e) => e.stopPropagation()}
+            onPointerUp={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              onShare();
+            }}
+          >
+            <PhoneIcon size={11} />
+          </button>
+        )}
       </div>
       <span className="shelf-name">{item.name}</span>
       {item.size !== null && <span className="shelf-size">{formatSize(item.size)}</span>}
@@ -86,6 +102,9 @@ function Tile({ item }: { item: ShelfItem }) {
 export function ShelfView({ dragging }: { dragging: boolean }) {
   const items = useShelf();
   const row = useRef<HTMLDivElement>(null);
+  // The items being sent to a phone; those removed meanwhile drop out.
+  const [sending, setSending] = useState<number[] | null>(null);
+  const sent = sending && items.filter((i) => sending.includes(i.id));
 
   if (items.length === 0) {
     return (
@@ -96,21 +115,45 @@ export function ShelfView({ dragging }: { dragging: boolean }) {
     );
   }
 
+  const files = items.filter((i) => i.kind !== "folder");
+
+  if (sent && sent.length > 0 && !dragging) {
+    return (
+      <div className="shelf">
+        <PhoneShare items={sent} onBack={() => setSending(null)} />
+      </div>
+    );
+  }
+
   return (
     <div className={`shelf ${dragging ? "shelf--target" : ""}`}>
       <div className="shelf-head">
         <span className="shelf-count">
           {items.length} {items.length > 1 ? "éléments" : "élément"}
         </span>
-        <button
-          className="shelf-clear"
-          onClick={(e) => {
-            e.stopPropagation();
-            shelf.clearShelf().catch(ignore);
-          }}
-        >
-          Vider
-        </button>
+        <span className="shelf-head-actions">
+          {files.length > 0 && (
+            <button
+              className="shelf-clear"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSending(files.map((i) => i.id));
+              }}
+            >
+              <PhoneIcon size={11} />
+              {files.length > 1 ? "Tout envoyer au téléphone" : "Envoyer au téléphone"}
+            </button>
+          )}
+          <button
+            className="shelf-clear"
+            onClick={(e) => {
+              e.stopPropagation();
+              shelf.clearShelf().catch(ignore);
+            }}
+          >
+            Vider
+          </button>
+        </span>
       </div>
       <div
         ref={row}
@@ -122,7 +165,7 @@ export function ShelfView({ dragging }: { dragging: boolean }) {
       >
         <AnimatePresence initial={false}>
           {items.map((item) => (
-            <Tile key={item.id} item={item} />
+            <Tile key={item.id} item={item} onShare={() => setSending([item.id])} />
           ))}
         </AnimatePresence>
       </div>

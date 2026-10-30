@@ -12,6 +12,7 @@ use std::sync::{LazyLock, Mutex};
 use serde::{Deserialize, Serialize};
 use tauri::http::{Response, StatusCode, header};
 
+use crate::icon_cache::IconCache;
 use crate::peeks::DeviceForm;
 use crate::{platform, protocol};
 
@@ -94,8 +95,8 @@ pub struct App {
 
 /// App paths by key, so commands never take a path from the page.
 static APPS: LazyLock<Mutex<HashMap<String, PathBuf>>> = LazyLock::new(Mutex::default);
-/// App icons (PNG) by key; None when the shell had none.
-static ICONS: LazyLock<Mutex<HashMap<String, Option<Vec<u8>>>>> = LazyLock::new(Mutex::default);
+/// App icons (PNG) by key.
+static ICONS: LazyLock<IconCache> = LazyLock::new(IconCache::default);
 
 fn key_of(path: &Path) -> String {
     let mut hasher = DefaultHasher::new();
@@ -231,20 +232,8 @@ pub async fn controls_set_app_mute(key: String, muted: bool) -> Result<(), Strin
 pub fn serve_icon(path: &str, responder: tauri::UriSchemeResponder) {
     let key = path.trim_start_matches('/').to_owned();
     std::thread::spawn(move || {
-        let cached = ICONS
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .get(&key)
-            .cloned();
-        let png = cached.unwrap_or_else(|| {
-            let png = app_path(&key)
-                .ok()
-                .and_then(|p| platform::file_thumbnail(&p, ICON_SIZE));
-            ICONS
-                .lock()
-                .unwrap_or_else(|e| e.into_inner())
-                .insert(key.clone(), png.clone());
-            png
+        let png = ICONS.get_or_load(&key, || {
+            platform::file_thumbnail(&app_path(&key).ok()?, ICON_SIZE)
         });
         let response = match png {
             Some(png) => Response::builder()
@@ -253,6 +242,8 @@ pub fn serve_icon(path: &str, responder: tauri::UriSchemeResponder) {
                 .body(png),
             None => Response::builder()
                 .status(StatusCode::NOT_FOUND)
+                // Not cached by the web view: the icon may come later.
+                .header(header::CACHE_CONTROL, "no-store")
                 .body(Vec::new()),
         };
         responder.respond(response.unwrap_or_else(|_| Response::new(Vec::new())));

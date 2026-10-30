@@ -383,6 +383,8 @@ pub fn serve_thumbnail(path: &str) -> Response<Vec<u8>> {
             .body(png),
         None => Response::builder()
             .status(StatusCode::NOT_FOUND)
+            // Not cached by the web view: it may come later.
+            .header(header::CACHE_CONTROL, "no-store")
             .body(Vec::new()),
     };
     response.unwrap_or_else(|_| Response::new(Vec::new()))

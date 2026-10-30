@@ -2,6 +2,8 @@ name: Release
 
 # Pushing a tag such as v0.1.0 builds the Windows installer from that commit
 # and publishes it as a GitHub release, notes from docs/releases/<tag>.md.
+# The installer is signed for the updater (secret TAURI_SIGNING_PRIVATE_KEY),
+# and latest.json tells installed copies that this version is out.
 on:
   push:
     tags: ["v*"]
@@ -35,6 +37,9 @@ jobs:
           fi
       - run: pnpm test
       - run: pnpm tauri build
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
       # The installer also goes up as Quiera-Setup-x64.exe: the website links to
       # releases/latest/download/Quiera-Setup-x64.exe, whatever the version.
       - name: Publish the release
@@ -43,8 +48,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           version="${GITHUB_REF_NAME#v}"
-          cp "src-tauri/target/release/bundle/nsis/Quiera_${version}_x64-setup.exe" Quiera-Setup-x64.exe
+          installer="src-tauri/target/release/bundle/nsis/Quiera_${version}_x64-setup.exe"
+          cp "$installer" Quiera-Setup-x64.exe
           sha256sum Quiera-Setup-x64.exe > Quiera-Setup-x64.exe.sha256
-          gh release create "$GITHUB_REF_NAME" Quiera-Setup-x64.exe Quiera-Setup-x64.exe.sha256 \
+          # What installed copies read: this version, its installer, and the
+          # installer's signature (checked against the key built into the app).
+          VERSION="$version" \
+          SIGNATURE="$(cat "$installer.sig")" \
+          URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/Quiera-Setup-x64.exe" \
+            node scripts/latest-json.mjs > latest.json
+          gh release create "$GITHUB_REF_NAME" Quiera-Setup-x64.exe Quiera-Setup-x64.exe.sha256 latest.json \
             --title "Quiera $version" \
             --notes-file "docs/releases/$GITHUB_REF_NAME.md"

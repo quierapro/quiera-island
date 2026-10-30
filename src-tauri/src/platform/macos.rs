@@ -139,3 +139,11 @@ pub fn file_thumbnail(_path: &std::path::Path, _size: u32) -> Option<Vec<u8>> {
 }
 
 pub fn start_peek_watch(_handler: impl Fn(crate::peeks::SystemPeek) + Send + Sync + 'static) {}
+
+pub fn share_files(_window: &WebviewWindow, _paths: &[std::path::PathBuf]) -> Result<(), String> {
+    Err("not implemented on this platform yet".into())
+}
+
+pub fn lan_addresses() -> Vec<std::net::Ipv4Addr> {
+    Vec::new()
+}

@@ -19,3 +19,23 @@ export function CloseIcon({ size = 24 }: IconProps) {
     </svg>
   );
 }
+
+/** A phone: sending to the phone. */
+export function PhoneIcon({ size = 24 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="6.5" y="2.5" width="11" height="19" rx="2.6" />
+      <path d="M10.5 18.5h3" />
+    </svg>
+  );
+}
+
+/** An arrow out of a box: Windows' Share panel. */
+export function ShareIcon({ size = 24 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 14.5V3.5M8 7.5l4-4 4 4" />
+      <path d="M8.5 10.5H7a2 2 0 0 0-2 2V19a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6.5a2 2 0 0 0-2-2h-1.5" />
+    </svg>
+  );
+}

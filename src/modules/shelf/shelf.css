@@ -28,7 +28,15 @@
   color: var(--text-3);
 }
 
+.shelf-head-actions {
+  display: flex;
+  gap: 2px;
+}
+
 .shelf-clear {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   padding: 3px 9px;
   border: 0;
   border-radius: 9px;
@@ -113,7 +121,27 @@
   cursor: pointer;
 }
 
-.shelf-tile:hover .shelf-remove {
+.shelf-send {
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 9px;
+  background: #0a84ff;
+  color: #fff;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  cursor: pointer;
+}
+
+.shelf-tile:hover .shelf-remove,
+.shelf-tile:hover .shelf-send {
   opacity: 1;
   transform: scale(1);
 }
@@ -161,4 +189,103 @@
   border-color: rgba(255, 255, 255, 0.45);
   background: rgba(255, 255, 255, 0.04);
   color: var(--text-1);
+}
+
+/* ---- Sending to a phone ---- */
+
+.phone-share {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 100%;
+  padding: 4px 4px 0;
+}
+
+.phone-qr {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 118px;
+  height: 118px;
+  border-radius: 14px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.phone-qr svg {
+  width: 108px;
+  height: 108px;
+}
+
+.phone-qr-empty {
+  color: #111;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.phone-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.phone-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.phone-name {
+  margin-top: 2px;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--text-2);
+}
+
+.phone-sub {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--text-3);
+}
+
+.phone-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.phone-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 10px;
+  background: #1c1c20;
+  color: var(--text-1);
+  font: 600 11.5px var(--font-ui);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.phone-btn:hover {
+  background: #26262b;
+}
+
+.phone-btn--main {
+  background: #fff;
+  color: #000;
+}
+
+.phone-btn--main:hover {
+  background: #e6e6e6;
 }

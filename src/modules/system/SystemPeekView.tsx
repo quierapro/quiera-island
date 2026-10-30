@@ -15,6 +15,8 @@ export function systemPeekSize(peek: SystemPeek | null): Size {
       return [330, 50, 25];
     case "capsLock":
       return [220, 38, 19];
+    case "update":
+      return [330, 50, 25];
     case "volume":
       return [290, 38, 19];
     case "copied":
@@ -119,6 +121,23 @@ function AudioDevice({ name, form, battery }: { name: string; form: string; batt
   );
 }
 
+/** A new version: where to install it. */
+function Update({ version }: { version: string }) {
+  return (
+    <div className="peek-row">
+      <span className="peek-icon peek-icon--update" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 4v11m0 0 4.5-4.5M12 15l-4.5-4.5M5 20h14" />
+        </svg>
+      </span>
+      <span className="peek-text">
+        <span className="peek-caption">Mise à jour {version}</span>
+        <span className="peek-title peek-title--ellipsis">Icône Quiera › Installer</span>
+      </span>
+    </div>
+  );
+}
+
 function CapsLock({ on }: { on: boolean }) {
   return (
     <div className="peek-row">
@@ -212,6 +231,8 @@ export function SystemPeekView() {
       return <AudioDevice name={peek.name} form={peek.form} battery={peek.battery} />;
     case "capsLock":
       return <CapsLock on={peek.on} />;
+    case "update":
+      return <Update version={peek.version} />;
     case "volume":
       return <Volume level={peek.level} muted={peek.muted} />;
     case "copied":

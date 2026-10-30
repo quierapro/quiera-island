@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatSize, shelfContentSize } from "./format";
+import { countdown, formatSize, shelfContentSize } from "./format";
 
 describe("formatSize", () => {
   it("picks a readable unit", () => {
@@ -13,5 +13,14 @@ describe("formatSize", () => {
 describe("shelfContentSize", () => {
   it("is smaller when empty", () => {
     expect(shelfContentSize(0)[0]).toBeLessThan(shelfContentSize(3)[0]);
+  });
+});
+
+describe("countdown", () => {
+  it("reads minutes and seconds", () => {
+    expect(countdown(600)).toBe("10:00");
+    expect(countdown(65)).toBe("1:05");
+    expect(countdown(0)).toBe("0:00");
+    expect(countdown(-3)).toBe("0:00");
   });
 });

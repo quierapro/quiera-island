@@ -1,6 +1,6 @@
 [package]
 name = "quiera"
-version = "0.1.0"
+version = "0.1.1"
 description = "An island at the top of your screen for media, quick controls and live activities."
 authors = ["Quiera contributors"]
 license = "GPL-3.0-or-later"
@@ -29,6 +29,11 @@ tauri-plugin-opener = "2.7"
 tauri-plugin-drag = "2.1"
 png = "0.18"
 arboard = "3.7"
+# Sending Shelf files to a phone: the link's QR code, and its random token.
+qrcode = { version = "0.14", default-features = false }
+getrandom = "0.3"
+# Updates: checks GitHub releases, verifies their signature, installs them.
+tauri-plugin-updater = "2.14"
 
 # Same version as Tauri's own dependency, so HWND types match.
 [target.'cfg(windows)'.dependencies]
@@ -36,9 +41,11 @@ windows = { version = "0.62", features = [
 	"Devices_Enumeration",
 	"Devices_Radios",
 	"ApplicationModel",
+	"ApplicationModel_DataTransfer",
 	"Foundation",
 	"Foundation_Collections",
 	"Media_Control",
+	"Storage",
 	"Storage_Streams",
 	"UI_Notifications",
 	"UI_Notifications_Management",
@@ -47,6 +54,9 @@ windows = { version = "0.62", features = [
 	"Win32_Graphics_Gdi",
 	"Win32_Media_Audio",
 	"Win32_Media_Audio_Endpoints",
+	"Win32_NetworkManagement_IpHelper",
+	"Win32_NetworkManagement_Ndis",
+	"Win32_Networking_WinSock",
 	"Win32_Storage_FileSystem",
 	"Win32_System_Com",
 	"Win32_System_Com_StructuredStorage",
