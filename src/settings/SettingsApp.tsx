@@ -5,20 +5,21 @@ import { openLink } from "../ipc/notifications";
 import { checkForUpdates, getUpdateStatus, installUpdate, onUpdateStatus, type UpdateStatus } from "../ipc/updates";
 import { getHeldShortcut, getMonitors, SHORTCUTS, type Monitor, type Settings, type Shortcut } from "../ipc/settings";
 import { updateSettings, useSettings } from "./store";
+import { localeOf, useLang, useT } from "../i18n";
 
 const ignore = () => {};
 const REPO = "https://github.com/quierapro/quiera-island";
 
 type Section = "general" | "launcher" | "media" | "notifications" | "clipboard" | "peeks" | "about";
 
-const SECTIONS: { id: Section; label: string; icon: ReactNode }[] = [
-  { id: "general", label: "Général", icon: <Icon d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM4 12h2m12 0h2M12 4v2m0 12v2M6.3 6.3l1.4 1.4m8.6 8.6 1.4 1.4m0-11.4-1.4 1.4m-8.6 8.6-1.4 1.4" /> },
-  { id: "launcher", label: "Lanceur", icon: <Icon d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Zm5-2 4.5 4.5" /> },
-  { id: "media", label: "Musique", icon: <Icon d="M9 18V6l11-2v12M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm11-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /> },
-  { id: "notifications", label: "Notifications", icon: <Icon d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15l1.5-2ZM10 20.5a2.2 2.2 0 0 0 4 0" /> },
-  { id: "clipboard", label: "Presse-papiers et Shelf", icon: <Icon d="M8.5 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1.5M9 4h6v3H9V4Z" /> },
-  { id: "peeks", label: "Aperçus", icon: <Icon d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6Zm9 3a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" /> },
-  { id: "about", label: "À propos", icon: <Icon d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0-5v-5m0-3h.01" /> },
+const SECTIONS: { id: Section; icon: ReactNode }[] = [
+  { id: "general", icon: <Icon d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM4 12h2m12 0h2M12 4v2m0 12v2M6.3 6.3l1.4 1.4m8.6 8.6 1.4 1.4m0-11.4-1.4 1.4m-8.6 8.6-1.4 1.4" /> },
+  { id: "launcher", icon: <Icon d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Zm5-2 4.5 4.5" /> },
+  { id: "media", icon: <Icon d="M9 18V6l11-2v12M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm11-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /> },
+  { id: "notifications", icon: <Icon d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15l1.5-2ZM10 20.5a2.2 2.2 0 0 0 4 0" /> },
+  { id: "clipboard", icon: <Icon d="M8.5 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1.5M9 4h6v3H9V4Z" /> },
+  { id: "peeks", icon: <Icon d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6Zm9 3a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" /> },
+  { id: "about", icon: <Icon d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0-5v-5m0-3h.01" /> },
 ];
 
 function Icon({ d }: { d: string }) {
@@ -100,41 +101,53 @@ function General({ settings, save }: { settings: Settings; save: ReturnType<type
   useEffect(() => {
     getMonitors().then(setMonitors).catch(ignore);
   }, []);
+  const t = useT().settings.general;
   const g = settings.general;
   const set = (patch: Partial<Settings["general"]>) => save((s) => ({ ...s, general: { ...s.general, ...patch } }));
   return (
     <>
       <Group>
-        <Row title="Lancer Quiera au démarrage de Windows" description="L'île est là dès l'ouverture de ta session.">
-          <Toggle label="Lancer au démarrage" on={g.startWithWindows} onChange={(on) => set({ startWithWindows: on })} />
+        <Row title={t.startup} description={t.startupHint}>
+          <Toggle label={t.startupLabel} on={g.startWithWindows} onChange={(on) => set({ startWithWindows: on })} />
         </Row>
-        <Row title="Écran" description="Où l'île se place. Si cet écran est débranché, elle va sur l'écran principal.">
+        <Row title={t.language} description={t.languageHint}>
+          <Choice
+            value={g.language}
+            onChange={(language) => set({ language })}
+            options={[
+              { value: "system", label: t.languages.system },
+              { value: "fr", label: t.languages.fr },
+              { value: "en", label: t.languages.en },
+            ]}
+          />
+        </Row>
+        <Row title={t.screen} description={t.screenHint}>
           <select className="select" value={g.screen ?? ""} onChange={(e) => set({ screen: e.target.value || null })}>
-            <option value="">Écran principal</option>
+            <option value="">{t.primaryScreen}</option>
             {monitors.map((m) => (
               <option key={m.name} value={m.name}>
-                {m.primary ? "Principal · " : ""}
+                {m.primary ? t.primary : ""}
                 {m.width} × {m.height} ({m.name.replace(/^\\\\\.\\/, "")})
               </option>
             ))}
           </select>
         </Row>
       </Group>
-      <Group title="Comportement">
-        <Row title="Ouvrir au survol" description="Sinon, l'île s'ouvre au clic et le survol la fait juste grossir un peu.">
-          <Toggle label="Ouvrir au survol" on={g.openOnHover} onChange={(on) => set({ openOnHover: on })} />
+      <Group title={t.behaviour}>
+        <Row title={t.hover} description={t.hoverHint}>
+          <Toggle label={t.hover} on={g.openOnHover} onChange={(on) => set({ openOnHover: on })} />
         </Row>
-        <Row title="Se cacher en plein écran" description="Pendant un jeu, une vidéo ou une présentation en plein écran.">
-          <Toggle label="Se cacher en plein écran" on={g.hideInFullscreen} onChange={(on) => set({ hideInFullscreen: on })} />
+        <Row title={t.fullscreen} description={t.fullscreenHint}>
+          <Toggle label={t.fullscreen} on={g.hideInFullscreen} onChange={(on) => set({ hideInFullscreen: on })} />
         </Row>
-        <Row title="Animations" description="« Système » suit le réglage « Effets d'animation » de Windows.">
+        <Row title={t.motion} description={t.motionHint}>
           <Choice
             value={g.motion}
             onChange={(motion) => set({ motion })}
             options={[
-              { value: "system", label: "Système" },
-              { value: "reduced", label: "Réduites" },
-              { value: "full", label: "Complètes" },
+              { value: "system", label: t.motions.system },
+              { value: "reduced", label: t.motions.reduced },
+              { value: "full", label: t.motions.full },
             ]}
           />
         </Row>
@@ -144,6 +157,9 @@ function General({ settings, save }: { settings: Settings; save: ReturnType<type
 }
 
 function Launcher({ settings, save }: { settings: Settings; save: ReturnType<typeof useSave>["save"] }) {
+  const messages = useT();
+  const t = messages.settings.launcher;
+  const label = messages.shortcut;
   const l = settings.launcher;
   const [held, setHeld] = useState<Shortcut | null>(null);
   useEffect(() => {
@@ -156,34 +172,30 @@ function Launcher({ settings, save }: { settings: Settings; save: ReturnType<typ
   return (
     <>
       <Group>
-        <Row title="Lanceur" description="Un raccourci ouvre une barre de recherche dans l'île : applis, fichiers, calculs, web.">
-          <Toggle label="Lanceur" on={l.enabled} onChange={(on) => set({ enabled: on })} />
+        <Row title={t.launcher} description={t.launcherHint}>
+          <Toggle label={t.launcher} on={l.enabled} onChange={(on) => set({ enabled: on })} />
         </Row>
         <Row
-          title="Raccourci"
+          title={t.shortcut}
           stacked
           disabled={!l.enabled}
           description={
             taken ? (
               <span className="warn">
-                {l.shortcut} est déjà pris par une autre appli
-                {held ? ` : Quiera utilise ${held} à la place.` : ", et aucun autre n'est libre."}
+                {t.taken(label(l.shortcut))}
+                {held ? t.takenUsing(label(held)) : t.takenNone}
               </span>
             ) : (
-              "Appuie dessus n'importe où pour ouvrir le lanceur."
+              t.shortcutHint
             )
           }
         >
-          <Choice value={l.shortcut} disabled={!l.enabled} onChange={(shortcut) => set({ shortcut })} options={SHORTCUTS.map((s) => ({ value: s, label: s }))} />
+          <Choice value={l.shortcut} disabled={!l.enabled} onChange={(shortcut) => set({ shortcut })} options={SHORTCUTS.map((s) => ({ value: s, label: label(s) }))} />
         </Row>
       </Group>
-      <Group title="Fichiers">
-        <Row
-          title="Rechercher dans les fichiers"
-          disabled={!l.enabled}
-          description="Quiera garde en mémoire la liste des fichiers de tes disques (environ 35 Mo), refaite en arrière-plan. Les dossiers système, caches et moteurs de jeu sont laissés de côté."
-        >
-          <Toggle label="Rechercher dans les fichiers" on={l.indexFiles} disabled={!l.enabled} onChange={(on) => set({ indexFiles: on })} />
+      <Group title={t.files}>
+        <Row title={t.indexFiles} disabled={!l.enabled} description={t.indexFilesHint}>
+          <Toggle label={t.indexFiles} on={l.indexFiles} disabled={!l.enabled} onChange={(on) => set({ indexFiles: on })} />
         </Row>
       </Group>
     </>
@@ -191,22 +203,20 @@ function Launcher({ settings, save }: { settings: Settings; save: ReturnType<typ
 }
 
 function Media({ settings, save }: { settings: Settings; save: ReturnType<typeof useSave>["save"] }) {
+  const t = useT().settings.media;
+  const lang = useLang();
   const m = settings.media;
   const set = (patch: Partial<Settings["media"]>) => save((s) => ({ ...s, media: { ...s.media, ...patch } }));
-  const seconds = (m.lyricsOffsetMs / 1000).toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1, signDisplay: "exceptZero" });
+  const seconds = (m.lyricsOffsetMs / 1000).toLocaleString(localeOf(lang), { minimumFractionDigits: 1, maximumFractionDigits: 1, signDisplay: "exceptZero" });
   return (
     <Group>
-      <Row title="Paroles synchronisées" description="Les paroles défilent avec la musique, dans la pilule et le lecteur. Seuls le titre, l'artiste, l'album et la durée sont envoyés pour les trouver.">
-        <Toggle label="Paroles synchronisées" on={m.lyrics} onChange={(on) => set({ lyrics: on })} />
+      <Row title={t.lyrics} description={t.lyricsHint}>
+        <Toggle label={t.lyrics} on={m.lyrics} onChange={(on) => set({ lyrics: on })} />
       </Row>
-      <Row
-        title="Paroles mot à mot (NetEase)"
-        disabled={!m.lyrics}
-        description="Le vrai timing de chaque mot, pour beaucoup de chansons. Passe par une API non officielle de NetEase Cloud Music ; sans elle, LRCLIB (ouvert) donne des paroles ligne par ligne."
-      >
-        <Toggle label="Paroles mot à mot" on={m.netease} disabled={!m.lyrics} onChange={(on) => set({ netease: on })} />
+      <Row title={t.netease} disabled={!m.lyrics} description={t.neteaseHint}>
+        <Toggle label={t.neteaseLabel} on={m.netease} disabled={!m.lyrics} onChange={(on) => set({ netease: on })} />
       </Row>
-      <Row title="Décalage des paroles" disabled={!m.lyrics} description="Si les paroles sont en avance ou en retard sur la musique.">
+      <Row title={t.offset} disabled={!m.lyrics} description={t.offsetHint}>
         <div className="offset">
           <input
             className="range"
@@ -222,7 +232,7 @@ function Media({ settings, save }: { settings: Settings; save: ReturnType<typeof
           <span className="offset-value">{m.lyricsOffsetMs === 0 ? "0 s" : `${seconds} s`}</span>
           {m.lyricsOffsetMs !== 0 && (
             <button className="link" onClick={() => set({ lyricsOffsetMs: 0 })}>
-              Réinitialiser
+              {t.reset}
             </button>
           )}
         </div>
@@ -232,31 +242,33 @@ function Media({ settings, save }: { settings: Settings; save: ReturnType<typeof
 }
 
 function Notifications({ settings, save }: { settings: Settings; save: ReturnType<typeof useSave>["save"] }) {
+  const t = useT().settings.notifications;
   const n = settings.notifications;
   const set = (patch: Partial<Settings["notifications"]>) => save((s) => ({ ...s, notifications: { ...s.notifications, ...patch } }));
   return (
     <Group>
-      <Row title="Notifications dans l'île" description="Les notifications de Windows arrivent dans l'onglet 🔔. Rien n'est enregistré ni envoyé.">
-        <Toggle label="Notifications dans l'île" on={n.enabled} onChange={(on) => set({ enabled: on })} />
+      <Row title={t.enabled} description={t.enabledHint}>
+        <Toggle label={t.enabled} on={n.enabled} onChange={(on) => set({ enabled: on })} />
       </Row>
-      <Row title="Les annoncer sur l'île" disabled={!n.enabled} description="Un aperçu de 5 s à chaque notification. Jamais en mode « Ne pas déranger ».">
-        <Toggle label="Annoncer les notifications" on={n.peek} disabled={!n.enabled} onChange={(on) => set({ peek: on })} />
+      <Row title={t.peek} disabled={!n.enabled} description={t.peekHint}>
+        <Toggle label={t.peekLabel} on={n.peek} disabled={!n.enabled} onChange={(on) => set({ peek: on })} />
       </Row>
     </Group>
   );
 }
 
 function Clipboard({ settings, save }: { settings: Settings; save: ReturnType<typeof useSave>["save"] }) {
+  const t = useT().settings.clipboard;
   return (
     <>
-      <Group title="Presse-papiers">
-        <Row title="Historique du presse-papiers" description="Ce que tu copies pendant la session, dans un onglet. Jamais écrit sur le disque ; les mots de passe des gestionnaires sont ignorés.">
-          <Toggle label="Historique du presse-papiers" on={settings.clipboard.enabled} onChange={(on) => save((s) => ({ ...s, clipboard: { enabled: on } }))} />
+      <Group title={t.clipboard}>
+        <Row title={t.history} description={t.historyHint}>
+          <Toggle label={t.history} on={settings.clipboard.enabled} onChange={(on) => save((s) => ({ ...s, clipboard: { enabled: on } }))} />
         </Row>
       </Group>
-      <Group title="Shelf">
-        <Row title="Garder le Shelf entre deux sessions" description="Les fichiers déposés sur l'île restent après avoir fermé Quiera (seuls leurs chemins sont gardés, jamais copiés).">
-          <Toggle label="Garder le Shelf" on={settings.shelf.keep} onChange={(on) => save((s) => ({ ...s, shelf: { keep: on } }))} />
+      <Group title={t.shelf}>
+        <Row title={t.keep} description={t.keepHint}>
+          <Toggle label={t.keepLabel} on={settings.shelf.keep} onChange={(on) => save((s) => ({ ...s, shelf: { keep: on } }))} />
         </Row>
       </Group>
     </>
@@ -264,21 +276,22 @@ function Clipboard({ settings, save }: { settings: Settings; save: ReturnType<ty
 }
 
 function Peeks({ settings, save }: { settings: Settings; save: ReturnType<typeof useSave>["save"] }) {
+  const t = useT().settings.peeks;
   const p = settings.peeks;
   const set = (patch: Partial<Settings["peeks"]>) => save((s) => ({ ...s, peeks: { ...s.peeks, ...patch } }));
   return (
     <Group>
-      <Row title="Chargeur" description="Quand tu branches ou débranches le chargeur.">
-        <Toggle label="Aperçu du chargeur" on={p.power} onChange={(on) => set({ power: on })} />
+      <Row title={t.power} description={t.powerHint}>
+        <Toggle label={t.powerLabel} on={p.power} onChange={(on) => set({ power: on })} />
       </Row>
-      <Row title="Casque et sortie audio" description="Quand un casque se connecte, avec sa batterie si Windows la connaît.">
-        <Toggle label="Aperçu du casque" on={p.audioDevice} onChange={(on) => set({ audioDevice: on })} />
+      <Row title={t.audio} description={t.audioHint}>
+        <Toggle label={t.audioLabel} on={p.audioDevice} onChange={(on) => set({ audioDevice: on })} />
       </Row>
-      <Row title="Verr. Maj" description="Quand tu actives ou coupes Verr. Maj.">
-        <Toggle label="Aperçu de Verr. Maj" on={p.capsLock} onChange={(on) => set({ capsLock: on })} />
+      <Row title={t.caps} description={t.capsHint}>
+        <Toggle label={t.capsLabel} on={p.capsLock} onChange={(on) => set({ capsLock: on })} />
       </Row>
-      <Row title="Volume" description="Quand le volume change.">
-        <Toggle label="Aperçu du volume" on={p.volume} onChange={(on) => set({ volume: on })} />
+      <Row title={t.volume} description={t.volumeHint}>
+        <Toggle label={t.volumeLabel} on={p.volume} onChange={(on) => set({ volume: on })} />
       </Row>
     </Group>
   );
@@ -302,40 +315,41 @@ function useUpdateStatus(): UpdateStatus | null {
 }
 
 function Updates({ settings, save }: { settings: Settings; save: ReturnType<typeof useSave>["save"] }) {
+  const t = useT().settings.updates;
   const status = useUpdateStatus();
   const [installError, setInstallError] = useState<string | null>(null);
   if (!status) return null;
   const busy = status.checking || status.installing;
   const text = status.installing
-    ? "Téléchargement et installation… Quiera va redémarrer."
+    ? t.installing
     : status.checking
-      ? "Recherche…"
+      ? t.checking
       : status.available
-        ? `La version ${status.available} est disponible.`
-        : "Quiera est à jour.";
+        ? t.available(status.available)
+        : t.upToDate;
   return (
-    <Group title="Mises à jour">
-      <Row title={text} description={installError ?? status.error ?? "Chaque mise à jour est vérifiée (signée) avant d'être installée."}>
+    <Group title={t.title}>
+      <Row title={text} description={installError ?? status.error ?? t.signed}>
         {status.available ? (
           <button
             className="button button--main"
             disabled={busy}
             onClick={() => {
               setInstallError(null);
-              installUpdate().catch(() => setInstallError("La mise à jour n'a pas pu être installée."));
+              installUpdate().catch(() => setInstallError(t.installFailed));
             }}
           >
-            Installer et redémarrer
+            {t.install}
           </button>
         ) : (
           <button className="button" disabled={busy} onClick={() => checkForUpdates().catch(ignore)}>
-            Rechercher
+            {t.check}
           </button>
         )}
       </Row>
-      <Row title="Rechercher automatiquement" description="Au démarrage, puis toutes les 6 heures. Une nouvelle version est annoncée sur l'île ; rien ne s'installe sans toi.">
+      <Row title={t.auto} description={t.autoHint}>
         <Toggle
-          label="Rechercher automatiquement"
+          label={t.auto}
           on={settings.general.checkUpdates}
           onChange={(on) => save((s) => ({ ...s, general: { ...s.general, checkUpdates: on } }))}
         />
@@ -345,19 +359,20 @@ function Updates({ settings, save }: { settings: Settings; save: ReturnType<type
 }
 
 function About({ settings, save }: { settings: Settings; save: ReturnType<typeof useSave>["save"] }) {
+  const t = useT().settings.about;
   const status = useUpdateStatus();
   return (
     <div className="about">
       <div className="about-mark">Q</div>
       <div className="about-name">Quiera</div>
-      <div className="about-version">Version {status?.current}</div>
-      <p className="about-text">Une île en haut de ton écran pour la musique, tes fichiers et tes raccourcis. Logiciel libre sous licence GPL-3.0.</p>
+      <div className="about-version">{t.version(status?.current ?? "")}</div>
+      <p className="about-text">{t.text}</p>
       <div className="about-links">
         <button className="button" onClick={() => openLink(REPO).catch(ignore)}>
-          Code source
+          {t.source}
         </button>
         <button className="button" onClick={() => openLink(`${REPO}/issues`).catch(ignore)}>
-          Signaler un problème
+          {t.report}
         </button>
       </div>
       <div className="about-updates">
@@ -383,24 +398,28 @@ export function SettingsApp() {
       stop.then((unlisten) => unlisten()).catch(ignore);
     };
   }, []);
-  const current = SECTIONS.find((s) => s.id === section)!;
+  const t = useT().settings;
+  // The window's title follows the language.
+  useEffect(() => {
+    document.title = t.windowTitle;
+  }, [t.windowTitle]);
 
   return (
     <div className="app">
       <nav className="nav">
-        <div className="nav-title">Réglages</div>
+        <div className="nav-title">{t.windowTitle}</div>
         {SECTIONS.map((s) => (
           <button key={s.id} className={`nav-item ${s.id === section ? "nav-item--on" : ""}`} onClick={() => setSection(s.id)}>
             {s.id === section && <motion.span layoutId="nav-pill" className="nav-pill" transition={{ type: "spring", stiffness: 550, damping: 42 }} />}
             <span className="nav-icon">{s.icon}</span>
-            <span className="nav-label">{s.label}</span>
+            <span className="nav-label">{t.sections[s.id]}</span>
           </button>
         ))}
       </nav>
       <main className="main">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div key={section} className="page" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.16 }}>
-            {section !== "about" && <h1 className="page-title">{current.label}</h1>}
+            {section !== "about" && <h1 className="page-title">{t.sections[section]}</h1>}
             {section === "general" && <General settings={settings} save={save} />}
             {section === "launcher" && <Launcher settings={settings} save={save} />}
             {section === "media" && <Media settings={settings} save={save} />}
@@ -410,7 +429,7 @@ export function SettingsApp() {
             {section === "about" && <About settings={settings} save={save} />}
           </motion.div>
         </AnimatePresence>
-        {error && <div className="error">Le réglage n'a pas pu être enregistré : {error}</div>}
+        {error && <div className="error">{t.saveError(error)}</div>}
       </main>
     </div>
   );

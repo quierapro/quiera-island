@@ -7,6 +7,7 @@ import { formatSize } from "./format";
 import { CloseIcon, PhoneIcon, TrayIcon } from "./icons";
 import { PhoneShare } from "./PhoneShare";
 import { useShelf } from "./store";
+import { localeOf, useLang, useT } from "../../i18n";
 import "./shelf.css";
 
 const ignore = () => {};
@@ -15,6 +16,9 @@ const ignore = () => {};
 const DRAG_THRESHOLD = 5;
 
 function Tile({ item, onShare }: { item: ShelfItem; onShare(): void }) {
+  const messages = useT();
+  const t = messages.shelf;
+  const locale = localeOf(useLang());
   const icon = useRef<Promise<string> | null>(null);
   const start = useRef<{ x: number; y: number } | null>(null);
   const dragged = useRef(false);
@@ -66,7 +70,7 @@ function Tile({ item, onShare }: { item: ShelfItem; onShare(): void }) {
         {!failed && <img src={item.thumbnail} alt="" draggable={false} onError={() => setFailed(true)} />}
         <button
           className="shelf-remove"
-          aria-label="Retirer du Shelf"
+          aria-label={t.remove}
           onPointerDown={(e) => e.stopPropagation()}
           onPointerUp={(e) => e.stopPropagation()}
           onClick={(e) => {
@@ -79,8 +83,8 @@ function Tile({ item, onShare }: { item: ShelfItem; onShare(): void }) {
         {item.kind !== "folder" && (
           <button
             className="shelf-send"
-            aria-label="Envoyer au téléphone"
-            title="Envoyer au téléphone"
+            aria-label={t.send}
+            title={t.send}
             onPointerDown={(e) => e.stopPropagation()}
             onPointerUp={(e) => e.stopPropagation()}
             onClick={(e) => {
@@ -93,13 +97,14 @@ function Tile({ item, onShare }: { item: ShelfItem; onShare(): void }) {
         )}
       </div>
       <span className="shelf-name">{item.name}</span>
-      {item.size !== null && <span className="shelf-size">{formatSize(item.size)}</span>}
+      {item.size !== null && <span className="shelf-size">{formatSize(item.size, locale, messages.sizeUnits)}</span>}
     </motion.div>
   );
 }
 
 /** The Shelf tab: the files kept here, or where to drop them. */
 export function ShelfView({ dragging }: { dragging: boolean }) {
+  const t = useT().shelf;
   const items = useShelf();
   const row = useRef<HTMLDivElement>(null);
   // The items being sent to a phone; those removed meanwhile drop out.
@@ -110,7 +115,7 @@ export function ShelfView({ dragging }: { dragging: boolean }) {
     return (
       <div className={`shelf-empty ${dragging ? "shelf-empty--target" : ""}`}>
         <TrayIcon size={22} />
-        <span>{dragging ? "Dépose tes fichiers ici" : "Glisse des fichiers sur l'île pour les garder ici"}</span>
+        <span>{dragging ? t.dropHere : t.empty}</span>
       </div>
     );
   }
@@ -129,7 +134,7 @@ export function ShelfView({ dragging }: { dragging: boolean }) {
     <div className={`shelf ${dragging ? "shelf--target" : ""}`}>
       <div className="shelf-head">
         <span className="shelf-count">
-          {items.length} {items.length > 1 ? "éléments" : "élément"}
+          {t.count(items.length)}
         </span>
         <span className="shelf-head-actions">
           {files.length > 0 && (
@@ -141,7 +146,7 @@ export function ShelfView({ dragging }: { dragging: boolean }) {
               }}
             >
               <PhoneIcon size={11} />
-              {files.length > 1 ? "Tout envoyer au téléphone" : "Envoyer au téléphone"}
+              {files.length > 1 ? t.sendAll : t.send}
             </button>
           )}
           <button
@@ -151,7 +156,7 @@ export function ShelfView({ dragging }: { dragging: boolean }) {
               shelf.clearShelf().catch(ignore);
             }}
           >
-            Vider
+            {t.clear}
           </button>
         </span>
       </div>

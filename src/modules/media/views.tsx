@@ -29,6 +29,7 @@ import { activeLine, fitFontSize, useLyrics, wordsSung, type LyricLine } from ".
 import { Marquee } from "./Marquee";
 import { formatRemaining, formatTime, positionAt, trackKey } from "./progress";
 import { setOptimisticPlaying, useMedia } from "./store";
+import { useT } from "../../i18n";
 import "./media.css";
 
 const ignore = () => {};
@@ -191,12 +192,13 @@ export function MediaActivity() {
 }
 /** A new track: cover, title and artist for a moment. */
 export function MediaPeek() {
+  const t = useT().media;
   const { state, accent } = useMedia();
   return (
     <div className="media-peek" style={accentStyle(accent)}>
       <Art url={state?.artwork ?? null} size={28} radius={8} />
       <div className="media-text">
-        <Marquee text={state?.title || "Lecture en cours"} className="media-title" />
+        <Marquee text={state?.title || t.nowPlaying} className="media-title" />
         <span className="media-artist">{state?.artist}</span>
       </div>
       <Bars playing={state?.playing ?? false} />
@@ -206,6 +208,7 @@ export function MediaPeek() {
 
 /** Previous / next with Bloom's push animation: the glyph slides out, a twin slides in. */
 function SkipButton({ back, disabled, onPress }: { back: boolean; disabled: boolean; onPress(): void }) {
+  const t = useT().media;
   const [scope, animateIn] = useAnimate();
   const dir = back ? -1 : 1;
   const press = () => {
@@ -224,7 +227,7 @@ function SkipButton({ back, disabled, onPress }: { back: boolean; disabled: bool
         press();
       }}
       whileTap={disabled ? undefined : { scale: 0.9 }}
-      aria-label={back ? "Piste précédente" : "Piste suivante"}
+      aria-label={back ? t.previous : t.next}
     >
       <span ref={scope} className="skip-wrap">
         <span className="skip-layer skip-back" style={{ transform: `translateX(${-26 * dir}px)` }}>
@@ -239,6 +242,7 @@ function SkipButton({ back, disabled, onPress }: { back: boolean; disabled: bool
 }
 
 function PlayButton({ state }: { state: MediaState }) {
+  const t = useT().media;
   return (
     <motion.button
       className="media-btn media-btn--play"
@@ -249,7 +253,7 @@ function PlayButton({ state }: { state: MediaState }) {
         media.playPause().catch(ignore);
       }}
       whileTap={{ scale: 0.92 }}
-      aria-label={state.playing ? "Pause" : "Lecture"}
+      aria-label={state.playing ? t.pause : t.play}
     >
       <AnimatePresence mode="wait" initial={false}>
         <motion.span
@@ -270,6 +274,7 @@ function PlayButton({ state }: { state: MediaState }) {
 const NEXT_REPEAT: Record<media.RepeatMode, media.RepeatMode> = { none: "list", list: "track", track: "none" };
 
 function ShuffleButton({ state }: { state: MediaState }) {
+  const t = useT().media;
   const on = state.shuffle === true;
   return (
     <motion.button
@@ -280,7 +285,7 @@ function ShuffleButton({ state }: { state: MediaState }) {
         media.setShuffle(!on).catch(ignore);
       }}
       whileTap={{ scale: 0.9 }}
-      aria-label="Aléatoire"
+      aria-label={t.shuffle}
       aria-pressed={on}
     >
       <ShuffleIcon size={18} />
@@ -289,6 +294,7 @@ function ShuffleButton({ state }: { state: MediaState }) {
 }
 
 function RepeatButton({ state }: { state: MediaState }) {
+  const t = useT().media;
   const mode = state.repeat ?? "none";
   return (
     <motion.button
@@ -299,7 +305,7 @@ function RepeatButton({ state }: { state: MediaState }) {
         media.setRepeat(NEXT_REPEAT[mode]).catch(ignore);
       }}
       whileTap={{ scale: 0.9 }}
-      aria-label="Répétition"
+      aria-label={t.repeat}
     >
       <RepeatIcon size={18} one={mode === "track"} />
     </motion.button>
@@ -311,6 +317,7 @@ function RepeatButton({ state }: { state: MediaState }) {
  * transform (no layout); the times re-render only when a second changes.
  */
 function Progress({ state, clock }: { state: MediaState; clock: MotionValue<number> }) {
+  const t = useT().media;
   const duration = state.durationMs ?? 0;
   const [dragging, setDragging] = useState<number | null>(null);
   const [second, setSecond] = useState(() => Math.floor(clock.get() / 1000));
@@ -349,7 +356,7 @@ function Progress({ state, clock }: { state: MediaState; clock: MotionValue<numb
             onPointerUp={commit}
             onKeyUp={commit}
             onClick={(e) => e.stopPropagation()}
-            aria-label="Position"
+            aria-label={t.position}
           />
         )}
       </div>
@@ -448,6 +455,7 @@ export function MediaExpanded() {
 }
 
 function Player({ state, accent }: { state: MediaState; accent: string }) {
+  const t = useT().media;
   const clock = usePlaybackClock(state);
   const lines = useLyrics(state);
   return (
@@ -456,7 +464,7 @@ function Player({ state, accent }: { state: MediaState; accent: string }) {
         <div className="media-head">
           <Art url={state.artwork} size={60} radius={14} />
           <div className="media-text">
-            <Marquee text={state.title || "Titre inconnu"} className="media-title media-title--lg" />
+            <Marquee text={state.title || t.unknownTitle} className="media-title media-title--lg" />
             <span className="media-artist">{state.artist}</span>
           </div>
         </div>

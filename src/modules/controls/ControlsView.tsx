@@ -5,6 +5,7 @@ import type { Controls, RadioKind } from "../../ipc/controls";
 import { levelAt, shownLevel } from "./format";
 import { BluetoothIcon, HeadphonesIcon, SpeakerIcon, WifiIcon } from "./icons";
 import { refreshControls, setOutputsOpen, useControls, useOutputsOpen } from "./store";
+import { useT } from "../../i18n";
 import "./controls.css";
 
 const ignore = () => {};
@@ -18,6 +19,7 @@ const RADIOS: Record<RadioKind, { label: string; icon: ReactNode }> = {
 };
 
 function Toggle({ kind, on }: { kind: RadioKind; on: boolean }) {
+  const t = useT().controls;
   const [pending, setPending] = useState<boolean | null>(null);
   const shown = pending ?? on;
   return (
@@ -42,7 +44,7 @@ function Toggle({ kind, on }: { kind: RadioKind; on: boolean }) {
       <span className="ctl-toggle-icon">{RADIOS[kind].icon}</span>
       <span className="ctl-toggle-text">
         <span className="ctl-toggle-label">{RADIOS[kind].label}</span>
-        <span className="ctl-toggle-state">{shown ? "Activé" : "Désactivé"}</span>
+        <span className="ctl-toggle-state">{shown ? t.on : t.off}</span>
       </span>
     </motion.button>
   );
@@ -67,6 +69,7 @@ function PillSlider({
   onLevel(level: number): void;
   children: ReactNode;
 }) {
+  const t = useT().controls;
   const [local, setLocal] = useState<{ level: number; at: number }>();
   const [dragging, setDragging] = useState(false);
   const last = useRef(0);
@@ -116,7 +119,7 @@ function PillSlider({
       <span className="ctl-pill-fill" style={{ width: `${value}%` }} />
       <span className="ctl-pill-content">
         {children}
-        <span className="ctl-pill-value">{muted ? "Coupé" : value}</span>
+        <span className="ctl-pill-value">{muted ? t.muted : value}</span>
       </span>
     </div>
   );
@@ -186,6 +189,7 @@ function OutputList({ outputs }: { outputs: Controls["outputs"] }) {
 }
 
 function AppList({ apps }: { apps: Controls["apps"] }) {
+  const t = useT().controls;
   return (
     <div className="ctl-list">
       <AnimatePresence initial={false}>
@@ -198,10 +202,10 @@ function AppList({ apps }: { apps: Controls["apps"] }) {
             exit={{ opacity: 0 }}
             transition={spring}
           >
-            <PillSlider level={a.level} muted={a.muted} label={`Volume de ${a.name}`} onLevel={(l) => ctl.setAppVolume(a.key, l).catch(ignore)}>
+            <PillSlider level={a.level} muted={a.muted} label={t.appVolume(a.name)} onLevel={(l) => ctl.setAppVolume(a.key, l).catch(ignore)}>
               <button
                 className="ctl-pill-icon"
-                title={a.muted ? `Réactiver ${a.name}` : `Couper ${a.name}`}
+                title={a.muted ? t.unmuteApp(a.name) : t.muteApp(a.name)}
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -221,6 +225,7 @@ function AppList({ apps }: { apps: Controls["apps"] }) {
 
 /** The Controls tab: radios, audio output, master and app volumes. */
 export function ControlsView() {
+  const t = useT().controls;
   const controls = useControls();
   const outputsOpen = useOutputsOpen();
   if (!controls) return <div className="ctl" />;
@@ -246,17 +251,17 @@ export function ControlsView() {
           }}
         >
           {current && <OutputIcon form={current.form} />}
-          <span className="ctl-current-label">Sortie</span>
-          <span className="ctl-current-name">{current?.name ?? "Aucune"}</span>
+          <span className="ctl-current-label">{t.output}</span>
+          <span className="ctl-current-name">{current?.name ?? t.noOutput}</span>
           <Chevron open={outputsOpen} />
         </motion.button>
       )}
 
       {volume && (
-        <PillSlider big level={volume.level} muted={volume.muted} label="Volume" onLevel={(l) => ctl.setVolume(l).catch(ignore)}>
+        <PillSlider big level={volume.level} muted={volume.muted} label={t.volume} onLevel={(l) => ctl.setVolume(l).catch(ignore)}>
           <button
             className="ctl-pill-icon"
-            aria-label={volume.muted ? "Réactiver le son" : "Couper le son"}
+            aria-label={volume.muted ? t.unmute : t.mute}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
@@ -265,20 +270,20 @@ export function ControlsView() {
           >
             <SpeakerIcon size={17} muted={volume.muted} />
           </button>
-          <span className="ctl-pill-label">Volume</span>
+          <span className="ctl-pill-label">{t.volume}</span>
         </PillSlider>
       )}
 
       <AnimatePresence mode="wait" initial={false}>
         {outputsOpen ? (
           <motion.div key="outputs" className="ctl-section" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.16 }}>
-            <div className="ctl-caption">Sorties audio</div>
+            <div className="ctl-caption">{t.outputs}</div>
             <OutputList outputs={outputs} />
           </motion.div>
         ) : (
           apps.length > 0 && (
             <motion.div key="apps" className="ctl-section" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} transition={{ duration: 0.16 }}>
-              <div className="ctl-caption">Applications</div>
+              <div className="ctl-caption">{t.apps}</div>
               <AppList apps={apps} />
             </motion.div>
           )

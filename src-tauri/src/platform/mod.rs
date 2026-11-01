@@ -23,7 +23,8 @@ pub use linux::{
     set_island_region, set_launcher_hotkey, set_master_mute, set_master_volume, set_radio,
     set_webview_memory_low, share_files, show_island_window, start_clipboard_watch,
     start_launcher_hotkey, start_media, start_notification_watch, start_peek_watch,
-    start_system_watch, wait_for_process_exit, watch_file_drops, watch_webview, write_clipboard,
+    start_system_watch, system_prefers_french, wait_for_process_exit, watch_file_drops,
+    watch_webview, write_clipboard,
 };
 #[cfg(target_os = "macos")]
 pub use macos::{
@@ -34,7 +35,8 @@ pub use macos::{
     set_island_region, set_launcher_hotkey, set_master_mute, set_master_volume, set_radio,
     set_webview_memory_low, share_files, show_island_window, start_clipboard_watch,
     start_launcher_hotkey, start_media, start_notification_watch, start_peek_watch,
-    start_system_watch, wait_for_process_exit, watch_file_drops, watch_webview, write_clipboard,
+    start_system_watch, system_prefers_french, wait_for_process_exit, watch_file_drops,
+    watch_webview, write_clipboard,
 };
 #[cfg(target_os = "windows")]
 pub use windows::{
@@ -45,7 +47,8 @@ pub use windows::{
     set_island_region, set_launcher_hotkey, set_master_mute, set_master_volume, set_radio,
     set_webview_memory_low, share_files, show_island_window, start_clipboard_watch,
     start_launcher_hotkey, start_media, start_notification_watch, start_peek_watch,
-    start_system_watch, wait_for_process_exit, watch_file_drops, watch_webview, write_clipboard,
+    start_system_watch, system_prefers_french, wait_for_process_exit, watch_file_drops,
+    watch_webview, write_clipboard,
 };
 
 /// What the system tells the island about.

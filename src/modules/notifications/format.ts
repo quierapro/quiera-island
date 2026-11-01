@@ -1,3 +1,5 @@
+import { fr } from "../../i18n/fr";
+
 export interface Part {
   text: string;
   /** Set when this part is a link. */
@@ -24,13 +26,13 @@ export function splitLinks(text: string): Part[] {
 }
 
 /** The time it arrived: "14:05" today, "hier 14:05", or the date. */
-export function arrivedLabel(at: number, now: number, locale = "fr-FR"): string {
+export function arrivedLabel(at: number, now: number, locale = "fr-FR", yesterdayAt = fr.time.yesterdayAt): string {
   const date = new Date(at);
   const time = date.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
   const day = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   const days = Math.round((day(new Date(now)) - day(date)) / 86_400_000);
   if (days <= 0) return time;
-  if (days === 1) return `hier ${time}`;
+  if (days === 1) return yesterdayAt(time);
   return date.toLocaleDateString(locale, { day: "numeric", month: "short" });
 }
 

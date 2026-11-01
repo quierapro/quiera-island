@@ -4,6 +4,9 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 export type Shortcut = "Alt+Espace" | "Ctrl+Alt+Espace" | "Ctrl+Maj+Espace" | "Alt+Q";
 export const SHORTCUTS: Shortcut[] = ["Alt+Espace", "Ctrl+Alt+Espace", "Ctrl+Maj+Espace", "Alt+Q"];
 
+/** The interface's language: Windows' display language, or one chosen. */
+export type Language = "system" | "fr" | "en";
+
 /** Mirrors `Settings` in `src-tauri/src/settings.rs`. */
 export interface Settings {
   version: number;
@@ -16,6 +19,7 @@ export interface Settings {
     motion: "system" | "reduced" | "full";
     /** Looks for a new version now and then. */
     checkUpdates: boolean;
+    language: Language;
   };
   launcher: { enabled: boolean; shortcut: Shortcut; indexFiles: boolean };
   media: { lyrics: boolean; netease: boolean; lyricsOffsetMs: number };
@@ -36,7 +40,7 @@ export interface Monitor {
 /** The defaults, as the backend has them, until it answers. */
 export const DEFAULT_SETTINGS: Settings = {
   version: 1,
-  general: { startWithWindows: false, screen: null, hideInFullscreen: true, openOnHover: true, motion: "system", checkUpdates: true },
+  general: { startWithWindows: false, screen: null, hideInFullscreen: true, openOnHover: true, motion: "system", checkUpdates: true, language: "system" },
   launcher: { enabled: true, shortcut: "Alt+Espace", indexFiles: true },
   media: { lyrics: true, netease: false, lyricsOffsetMs: 0 },
   notifications: { enabled: true, peek: true },

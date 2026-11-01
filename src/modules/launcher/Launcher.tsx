@@ -5,6 +5,7 @@ import { openSettings } from "../../ipc/settings";
 import { arrivedLabel } from "../notifications/format";
 import { formatNumber } from "./calc";
 import { compose, MAX_ROWS, type Result } from "./results";
+import { localeOf, useLang, useT } from "../../i18n";
 import "./launcher.css";
 
 const ignore = () => {};
@@ -75,13 +76,16 @@ function Icon({ src, name }: { src: string; name: string }) {
 }
 
 function Row({ result, selected, copied }: { result: Result; selected: boolean; copied: boolean }) {
+  const messages = useT();
+  const t = messages.launcher;
+  const locale = localeOf(useLang());
   switch (result.kind) {
     case "app":
       return (
         <>
           <Icon src={result.app.icon} name={result.app.name} />
           <span className="launch-title">{result.app.name}</span>
-          <span className="launch-hint">{selected ? "Ouvrir ↵" : "Application"}</span>
+          <span className="launch-hint">{selected ? t.open : t.app}</span>
         </>
       );
     case "file":
@@ -94,12 +98,12 @@ function Row({ result, selected, copied }: { result: Result; selected: boolean; 
           </span>
           <span className="launch-hint">
             {selected
-              ? "Ouvrir ↵ · Dossier Ctrl ↵"
+              ? t.openFile
               : result.file.modified
-                ? arrivedLabel(result.file.modified * 1000, Date.now())
+                ? arrivedLabel(result.file.modified * 1000, Date.now(), locale, messages.time.yesterdayAt)
                 : result.file.dir
-                  ? "Dossier"
-                  : "Fichier"}
+                  ? t.folder
+                  : t.file}
           </span>
         </>
       );
@@ -107,8 +111,8 @@ function Row({ result, selected, copied }: { result: Result; selected: boolean; 
       return (
         <>
           <span className="launch-icon launch-icon--glyph">=</span>
-          <span className="launch-title launch-title--big">{formatNumber(result.value)}</span>
-          <span className="launch-hint">{copied ? "Copié ✓" : selected ? "Copier ↵" : "Calcul"}</span>
+          <span className="launch-title launch-title--big">{formatNumber(result.value, locale)}</span>
+          <span className="launch-hint">{copied ? t.copiedCheck : selected ? t.copy : t.calc}</span>
         </>
       );
     case "settings":
@@ -117,8 +121,8 @@ function Row({ result, selected, copied }: { result: Result; selected: boolean; 
           <span className="launch-icon launch-icon--glyph">
             <GearIcon />
           </span>
-          <span className="launch-title">Réglages de Quiera</span>
-          <span className="launch-hint">{selected ? "Ouvrir ↵" : "Quiera"}</span>
+          <span className="launch-title">{t.settings}</span>
+          <span className="launch-hint">{selected ? t.open : "Quiera"}</span>
         </>
       );
     case "web":
@@ -128,9 +132,11 @@ function Row({ result, selected, copied }: { result: Result; selected: boolean; 
             <GlobeIcon />
           </span>
           <span className="launch-title">
-            Rechercher « <strong>{result.query}</strong> » sur le web
+            {t.webBefore}
+            <strong>{result.query}</strong>
+            {t.webAfter}
           </span>
-          <span className="launch-hint">{selected ? "Ouvrir ↵" : "Google"}</span>
+          <span className="launch-hint">{selected ? t.open : "Google"}</span>
         </>
       );
   }
@@ -143,6 +149,7 @@ function Row({ result, selected, copied }: { result: Result; selected: boolean; 
  * in its folder, Escape clears then closes.
  */
 export function Launcher({ onRows }: { onRows(rows: number): void }) {
+  const t = useT().launcher;
   const [query, setQuery] = useState("");
   const [apps, setApps] = useState<LauncherApp[]>([]);
   const [files, setFiles] = useState<{ query: string; hits: FileHit[]; ready: boolean }>({ query: "", hits: [], ready: true });
@@ -241,7 +248,7 @@ export function Launcher({ onRows }: { onRows(rows: number): void }) {
           ref={input}
           className="launch-input"
           value={query}
-          placeholder="Une app, un fichier, « images », un calcul…"
+          placeholder={t.placeholder}
           spellCheck={false}
           autoComplete="off"
           onChange={(e) => setQuery(e.target.value)}
@@ -262,7 +269,7 @@ export function Launcher({ onRows }: { onRows(rows: number): void }) {
             }
           }}
         />
-        {!files.ready && <span className="launch-indexing">Indexation des fichiers…</span>}
+        {!files.ready && <span className="launch-indexing">{t.indexing}</span>}
       </div>
       {list.length > 0 && (
         <div className="launch-list" role="listbox">

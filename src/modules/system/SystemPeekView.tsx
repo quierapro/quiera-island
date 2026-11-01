@@ -4,6 +4,7 @@ import type { Size } from "../../island/geometry";
 import { CheckIcon, LinkIcon } from "../clipboard/icons";
 import { AppIcon } from "../notifications/NotificationsView";
 import { useSystemPeek } from "./store";
+import { useT } from "../../i18n";
 import "./system.css";
 
 /** Each peek's size: as small as its content allows. */
@@ -59,11 +60,12 @@ function BatteryGlyph({ percent, charging }: { percent: number | null; charging:
 }
 
 function Power({ plugged, percent }: { plugged: boolean; percent: number | null }) {
+  const messages = useT();
   return (
     <div className="peek-row">
       <BatteryGlyph percent={percent} charging={plugged} />
-      <span className="peek-title">{plugged ? "En charge" : "Sur batterie"}</span>
-      {percent !== null && <span className={`peek-value ${plugged ? "peek-value--good" : ""}`}>{percent} %</span>}
+      <span className="peek-title">{plugged ? messages.peeks.charging : messages.peeks.onBattery}</span>
+      {percent !== null && <span className={`peek-value ${plugged ? "peek-value--good" : ""}`}>{messages.percent(percent)}</span>}
     </div>
   );
 }
@@ -86,8 +88,9 @@ function BatteryRing({ percent }: { percent: number }) {
   const r = 12;
   const length = 2 * Math.PI * r;
   const low = percent <= 20;
+  const t = useT().peeks;
   return (
-    <span className="peek-ring" aria-label={`Batterie ${percent} %`}>
+    <span className="peek-ring" aria-label={t.battery(percent)}>
       <svg viewBox="0 0 30 30" width="30" height="30">
         <circle cx="15" cy="15" r={r} className="peek-ring-track" />
         <motion.circle
@@ -107,13 +110,14 @@ function BatteryRing({ percent }: { percent: number }) {
 }
 
 function AudioDevice({ name, form, battery }: { name: string; form: string; battery: number | null }) {
+  const t = useT().peeks;
   return (
     <div className="peek-row">
       <span className="peek-icon">
         <DeviceGlyph form={form} />
       </span>
       <span className="peek-text">
-        <span className="peek-caption">Connecté</span>
+        <span className="peek-caption">{t.connected}</span>
         <span className="peek-title peek-title--ellipsis">{name}</span>
       </span>
       {battery !== null && <BatteryRing percent={battery} />}
@@ -123,6 +127,7 @@ function AudioDevice({ name, form, battery }: { name: string; form: string; batt
 
 /** A new version: where to install it. */
 function Update({ version }: { version: string }) {
+  const t = useT().peeks;
   return (
     <div className="peek-row">
       <span className="peek-icon peek-icon--update" aria-hidden="true">
@@ -131,14 +136,15 @@ function Update({ version }: { version: string }) {
         </svg>
       </span>
       <span className="peek-text">
-        <span className="peek-caption">Mise à jour {version}</span>
-        <span className="peek-title peek-title--ellipsis">Icône Quiera › Installer</span>
+        <span className="peek-caption">{t.update(version)}</span>
+        <span className="peek-title peek-title--ellipsis">{t.updateHow}</span>
       </span>
     </div>
   );
 }
 
 function CapsLock({ on }: { on: boolean }) {
+  const t = useT().peeks;
   return (
     <div className="peek-row">
       <span className="peek-key" aria-hidden="true">
@@ -146,7 +152,7 @@ function CapsLock({ on }: { on: boolean }) {
           <path d="M12 4 4.5 12H9v5h6v-5h4.5L12 4ZM9 20h6" />
         </svg>
       </span>
-      <span className="peek-title">Verr. Maj</span>
+      <span className="peek-title">{t.capsLock}</span>
       <motion.span
         className={`peek-dot ${on ? "peek-dot--on" : ""}`}
         initial={{ scale: 0.4 }}
@@ -182,6 +188,7 @@ function Volume({ level, muted }: { level: number; muted: boolean }) {
 
 /** Something was copied: a check, then what. */
 function Copied({ content, preview, thumbnail }: { content: string; preview: string; thumbnail: string | null }) {
+  const t = useT().peeks;
   return (
     <div className="peek-row">
       <motion.span
@@ -193,7 +200,7 @@ function Copied({ content, preview, thumbnail }: { content: string; preview: str
         <CheckIcon size={13} />
       </motion.span>
       <span className="peek-text">
-        <span className="peek-caption">Copié</span>
+        <span className="peek-caption">{t.copied}</span>
         <span className="peek-snippet">
           {content === "link" && <LinkIcon size={11} />}
           <span className="peek-snippet-text">{preview}</span>

@@ -2,6 +2,7 @@ mod apply;
 mod clipboard;
 mod controls;
 mod files;
+mod i18n;
 mod icon_cache;
 mod island;
 mod launcher;

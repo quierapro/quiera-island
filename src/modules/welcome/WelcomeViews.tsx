@@ -4,6 +4,7 @@ import type { Size } from "../../island/geometry";
 import { getLauncherShortcut } from "../../ipc/launcher";
 import { openLauncher } from "../../ipc/welcome";
 import { updateSettings, useSettings } from "../../settings/store";
+import { useT } from "../../i18n";
 import { endWelcome } from "./store";
 import "./welcome.css";
 
@@ -20,6 +21,7 @@ const icon = (d: ReactNode) => (
 
 /** "Bienvenue sur Quiera · survole-moi". */
 export function WelcomePill() {
+  const t = useT().welcome;
   const hover = useSettings().general.openOnHover;
   return (
     <div className="welcome-pill">
@@ -28,8 +30,8 @@ export function WelcomePill() {
         animate={{ scale: [1, 1.35, 1], opacity: [1, 0.6, 1] }}
         transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
       />
-      <span className="welcome-pill-text">Bienvenue sur Quiera</span>
-      <span className="welcome-pill-hint">{hover ? "survole-moi" : "clique-moi"}</span>
+      <span className="welcome-pill-text">{t.pill}</span>
+      <span className="welcome-pill-hint">{hover ? t.hover : t.click}</span>
     </div>
   );
 }
@@ -55,6 +57,9 @@ function Chip({ on, label, onToggle }: { on: boolean; label: string; onToggle():
 
 /** A first look at what the island does, then starting with Windows. */
 export function WelcomeTour() {
+  const messages = useT();
+  const t = messages.welcome;
+  const s = t.steps;
   const [step, setStep] = useState(0);
   const [shortcut, setShortcut] = useState<string | null>(null);
   const settings = useSettings();
@@ -67,14 +72,14 @@ export function WelcomeTour() {
 
   const steps: Step[] = [
     {
-      title: "Bienvenue sur Quiera",
-      text: "Ton île vit en haut de l'écran : elle montre ce qui se passe sur ton PC, et s'ouvre quand tu la survoles.",
+      title: s.hello.title,
+      text: s.hello.text,
       icon: icon(<path d="M4 9.5c0-1.4 1.1-2.5 2.5-2.5h11C18.9 7 20 8.1 20 9.5v0c0 1.4-1.1 2.5-2.5 2.5h-11C5.1 12 4 10.9 4 9.5ZM8 16h8" />),
       tint: "#7136ff",
     },
     {
-      title: "Ta musique, ici",
-      text: "Lance Spotify, Deezer ou une vidéo : le titre s'affiche dans la pilule, avec les paroles mot à mot.",
+      title: s.music.title,
+      text: s.music.text,
       icon: icon(
         <>
           <path d="M9 18V6l11-2v12" />
@@ -85,13 +90,14 @@ export function WelcomeTour() {
       tint: "#ff375f",
     },
     {
-      title: "Le lanceur",
+      title: s.launcher.title,
       text: shortcut ? (
         <>
-          <kbd>{shortcut}</kbd> : cherche une appli, un fichier, fais un calcul ou une recherche web.
+          <kbd>{messages.shortcut(shortcut)}</kbd>
+          {s.launcher.withShortcut}
         </>
       ) : (
-        "Un raccourci ouvre une recherche d'applis, de fichiers et de calculs. Choisis-le dans les réglages."
+        s.launcher.noShortcut
       ),
       icon: icon(
         <>
@@ -102,8 +108,8 @@ export function WelcomeTour() {
       tint: "#0a84ff",
     },
     {
-      title: "Le Shelf",
-      text: "Glisse un fichier sur l'île pour le garder sous la main, puis l'envoyer sur ton téléphone avec un QR code.",
+      title: s.shelf.title,
+      text: s.shelf.text,
       icon: icon(
         <>
           <path d="M3.5 13.5 6 5.8A2 2 0 0 1 7.9 4.5h8.2A2 2 0 0 1 18 5.8l2.5 7.7" />
@@ -113,19 +119,19 @@ export function WelcomeTour() {
       tint: "#ff9f0a",
     },
     {
-      title: "Ta vie privée",
-      text: "Seules sorties : le titre et l'artiste vers LRCLIB pour les paroles, et la liste des versions sur GitHub. Coupe ce que tu veux.",
+      title: s.privacy.title,
+      text: s.privacy.text,
       icon: icon(<path d="M12 3 5 6v5c0 4.5 3 8.3 7 9.5 4-1.2 7-5 7-9.5V6l-7-3Z" />),
       tint: "#5e5ce6",
       extra: (
         <span className="welcome-chips">
           <Chip
-            label="Paroles"
+            label={s.privacy.lyrics}
             on={settings.media.lyrics}
             onToggle={() => updateSettings((s) => ({ ...s, media: { ...s.media, lyrics: !s.media.lyrics } })).catch(() => {})}
           />
           <Chip
-            label="Mises à jour"
+            label={s.privacy.updates}
             on={settings.general.checkUpdates}
             onToggle={() =>
               updateSettings((s) => ({ ...s, general: { ...s.general, checkUpdates: !s.general.checkUpdates } })).catch(() => {})
@@ -135,14 +141,14 @@ export function WelcomeTour() {
       ),
     },
     {
-      title: "Au démarrage de Windows ?",
-      text: "Quiera se lance avec ta session, sans fenêtre. Tu pourras changer d'avis dans les réglages.",
+      title: s.startup.title,
+      text: s.startup.text,
       icon: icon(<path d="M12 3v8M7.5 6.5a7 7 0 1 0 9 0" />),
       tint: "#32d74b",
     },
     {
-      title: "C'est prêt",
-      text: "Les réglages et « Quitter » sont dans l'icône Quiera, en bas à droite de la barre des tâches.",
+      title: s.done.title,
+      text: s.done.text,
       icon: icon(<path d="m5 12.5 4.5 4.5L19 7.5" />),
       tint: "#32d74b",
     },
@@ -178,7 +184,7 @@ export function WelcomeTour() {
         </motion.div>
       </AnimatePresence>
       <div className="welcome-foot">
-        <span className="welcome-dots" aria-label={`Étape ${step + 1} sur ${steps.length}`}>
+        <span className="welcome-dots" aria-label={t.stepOf(step + 1, steps.length)}>
           {steps.map((_, i) => (
             <i key={i} className={i === step ? "welcome-dot--on" : ""} />
           ))}
@@ -186,30 +192,30 @@ export function WelcomeTour() {
         <span className="welcome-actions">
           {step < STARTUP && (
             <button className="welcome-btn welcome-btn--quiet" onClick={endWelcome}>
-              Passer
+              {t.skip}
             </button>
           )}
           {step === 2 && shortcut && (
             <button className="welcome-btn" onClick={() => openLauncher().catch(() => {})}>
-              Essayer
+              {t.try}
             </button>
           )}
           {step === STARTUP ? (
             <>
               <button className="welcome-btn" onClick={() => startup(false)}>
-                Non
+                {t.no}
               </button>
               <button className="welcome-btn welcome-btn--main" onClick={() => startup(true)}>
-                Oui
+                {t.yes}
               </button>
             </>
           ) : step === last ? (
             <button className="welcome-btn welcome-btn--main" onClick={endWelcome}>
-              Terminer
+              {t.finish}
             </button>
           ) : (
             <button className="welcome-btn welcome-btn--main" onClick={next}>
-              {step === 0 ? "Découvrir" : "Suivant"}
+              {step === 0 ? t.discover : t.next}
             </button>
           )}
         </span>

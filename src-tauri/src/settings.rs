@@ -69,6 +69,18 @@ pub struct General {
     pub motion: Motion,
     /// Looks for a new version now and then (GitHub releases).
     pub check_updates: bool,
+    pub language: Language,
+}
+
+/// The interface's language.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum Language {
+    /// Windows' display language: French for French, English otherwise.
+    #[default]
+    System,
+    Fr,
+    En,
 }
 
 impl Default for General {
@@ -80,6 +92,7 @@ impl Default for General {
             open_on_hover: true,
             motion: Motion::System,
             check_updates: true,
+            language: Language::System,
         }
     }
 }
@@ -278,7 +291,7 @@ pub fn open_window_at(app: &AppHandle, section: Option<&str>) {
         None => "settings.html".to_owned(),
     };
     let built = tauri::WebviewWindowBuilder::new(app, WINDOW, tauri::WebviewUrl::App(page.into()))
-        .title("Réglages de Quiera")
+        .title(crate::i18n::tr("Réglages de Quiera", "Quiera settings"))
         .inner_size(780.0, 560.0)
         .min_inner_size(680.0, 460.0)
         .theme(Some(tauri::Theme::Dark))

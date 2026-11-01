@@ -6,6 +6,7 @@ import { CloseIcon } from "../shelf/icons";
 import { BellIcon } from "./icons";
 import { arrivedLabel, splitLinks } from "./format";
 import { useNotifications } from "./store";
+import { localeOf, useLang, useT } from "../../i18n";
 import "./notifications.css";
 
 const ignore = () => {};
@@ -49,6 +50,8 @@ export function AppIcon({ item, size }: { item: Pick<NotificationItem, "app" | "
 }
 
 function Row({ item, now }: { item: NotificationItem; now: number }) {
+  const messages = useT();
+  const locale = localeOf(useLang());
   return (
     <motion.div
       layout
@@ -57,7 +60,7 @@ function Row({ item, now }: { item: NotificationItem; now: number }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: 24 }}
       transition={{ type: "spring", stiffness: 420, damping: 34 }}
-      title={`Ouvrir ${item.app}`}
+      title={messages.notifications.open(item.app)}
       onClick={(e) => {
         e.stopPropagation();
         notif.openNotification(item.id).catch(ignore);
@@ -67,7 +70,7 @@ function Row({ item, now }: { item: NotificationItem; now: number }) {
       <div className="notif-content">
         <div className="notif-meta">
           <span className="notif-app">{item.app}</span>
-          <span className="notif-time">{arrivedLabel(item.arrivedAt, now)}</span>
+          <span className="notif-time">{arrivedLabel(item.arrivedAt, now, locale, messages.time.yesterdayAt)}</span>
         </div>
         {item.title && <div className="notif-title">{item.title}</div>}
         {item.body && (
@@ -78,7 +81,7 @@ function Row({ item, now }: { item: NotificationItem; now: number }) {
       </div>
       <button
         className="notif-dismiss"
-        aria-label="Fermer la notification"
+        aria-label={messages.notifications.dismiss}
         onClick={(e) => {
           e.stopPropagation();
           notif.dismissNotification(item.id).catch(ignore);
@@ -92,6 +95,7 @@ function Row({ item, now }: { item: NotificationItem; now: number }) {
 
 /** The Notifications tab: what arrived during this session. */
 export function NotificationsView() {
+  const t = useT().notifications;
   const items = useNotifications();
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
@@ -103,7 +107,7 @@ export function NotificationsView() {
     return (
       <div className="notif-empty">
         <BellIcon size={22} />
-        <span>Aucune notification</span>
+        <span>{t.empty}</span>
       </div>
     );
   }
@@ -112,7 +116,7 @@ export function NotificationsView() {
     <div className="notif">
       <div className="notif-head">
         <span className="notif-count">
-          {items.length} {items.length > 1 ? "notifications" : "notification"}
+          {t.count(items.length)}
         </span>
         <button
           className="notif-clear"
@@ -121,7 +125,7 @@ export function NotificationsView() {
             notif.clearNotifications().catch(ignore);
           }}
         >
-          Tout effacer
+          {t.clearAll}
         </button>
       </div>
       <div className="notif-list">

@@ -38,7 +38,13 @@ pub fn share_files(window: &WebviewWindow, paths: &[PathBuf]) -> Result<(), Stri
         let file = StorageFile::GetFileFromPathAsync(&HSTRING::from(path.as_os_str()))
             .and_then(|op| op.join())
             .and_then(|f| f.cast::<IStorageItem>())
-            .map_err(|_| "Un fichier a été déplacé ou ne peut pas être lu.".to_owned())?;
+            .map_err(|_| {
+                crate::i18n::tr(
+                    "Un fichier a été déplacé ou ne peut pas être lu.",
+                    "A file was moved or cannot be read.",
+                )
+                .to_owned()
+            })?;
         items.push(Some(file));
     }
     let title = match paths {

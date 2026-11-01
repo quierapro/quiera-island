@@ -8,6 +8,7 @@ mod crash;
 mod file_drop;
 mod fullscreen;
 mod island;
+mod language;
 mod launcher;
 mod media;
 mod network;
@@ -28,6 +29,7 @@ pub use controls::{
 pub use crash::install_crash_logger;
 pub use file_drop::watch_file_drops;
 pub use island::{prepare_island_window, set_island_region, show_island_window};
+pub use language::system_prefers_french;
 pub use launcher::{
     fixed_drives, focus_island, island_has_focus, list_apps, restore_focus, set_launcher_hotkey,
     start_launcher_hotkey,

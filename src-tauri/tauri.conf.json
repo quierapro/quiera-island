@@ -53,7 +53,7 @@
     "licenseFile": "installer/notice.txt",
     "windows": {
       "nsis": {
-        "languages": ["French"],
+        "languages": ["French", "English"],
         "installMode": "currentUser"
       }
     }

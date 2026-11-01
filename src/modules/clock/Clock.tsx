@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import type { Size } from "../../island/geometry";
 import { formatClock, formatDay, msUntilNextMinute } from "./time";
+import { localeOf, resolveLang } from "../../i18n";
+import { useSettings } from "../../settings/store";
 import "./clock.css";
 
 /** The open panel when nothing plays: time and date. */
@@ -22,12 +24,19 @@ function useNow(): Date {
   return now;
 }
 
+/** Windows' own date format, unless a language is chosen in the settings. */
+function useLocale(): string | undefined {
+  const language = useSettings().general.language;
+  return language === "system" ? undefined : localeOf(resolveLang(language));
+}
+
 /** The pill at rest: just the time. */
 export function IdleClock() {
   const now = useNow();
+  const locale = useLocale();
   return (
     <div className="clock-idle">
-      <time dateTime={now.toISOString()}>{formatClock(now)}</time>
+      <time dateTime={now.toISOString()}>{formatClock(now, locale)}</time>
     </div>
   );
 }
@@ -35,12 +44,13 @@ export function IdleClock() {
 /** Open without music: the time, large, and the day. */
 export function ClockPanel() {
   const now = useNow();
+  const locale = useLocale();
   return (
     <div className="clock-panel">
       <time className="clock-panel-time" dateTime={now.toISOString()}>
-        {formatClock(now)}
+        {formatClock(now, locale)}
       </time>
-      <span className="clock-panel-day">{formatDay(now)}</span>
+      <span className="clock-panel-day">{formatDay(now, locale)}</span>
     </div>
   );
 }

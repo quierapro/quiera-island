@@ -1,14 +1,15 @@
 import type { ClipItem } from "../../ipc/clipboard";
+import { fr } from "../../i18n/fr";
 
-/** "à l'instant", "il y a 5 min", "il y a 2 h", "hier", "il y a 3 j". */
-export function timeAgo(then: number, now: number): string {
+/** "à l'instant", "il y a 5 min", "il y a 2 h", "hier", "il y a 3 j" (in the language of `t`). */
+export function timeAgo(then: number, now: number, t = fr.time): string {
   const minutes = Math.floor((now - then) / 60_000);
-  if (minutes < 1) return "à l'instant";
-  if (minutes < 60) return `il y a ${minutes} min`;
+  if (minutes < 1) return t.justNow;
+  if (minutes < 60) return t.minutesAgo(minutes);
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `il y a ${hours} h`;
+  if (hours < 24) return t.hoursAgo(hours);
   const days = Math.floor(hours / 24);
-  return days === 1 ? "hier" : `il y a ${days} j`;
+  return days === 1 ? t.yesterday : t.daysAgo(days);
 }
 
 /** Pinned items first, then the most recent. */

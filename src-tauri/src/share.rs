@@ -17,6 +17,7 @@ use qrcode::{Color, EcLevel, QrCode};
 use serde::Serialize;
 use tauri::{AppHandle, Manager};
 
+use crate::i18n::tr;
 use crate::platform;
 
 /// How long a link works.
@@ -57,10 +58,25 @@ pub struct PhoneLink {
 pub fn shelf_share_phone(ids: Vec<u32>) -> Result<PhoneLink, String> {
     let files = crate::shelf::file_paths(&ids);
     if files.is_empty() {
-        return Err("Aucun fichier à envoyer (les dossiers ne s'envoient pas).".into());
+        return Err(tr(
+            "Aucun fichier à envoyer (les dossiers ne s'envoient pas).",
+            "No file to send (folders cannot be sent).",
+        )
+        .into());
     }
-    let ip = local_ip().ok_or("Pas de réseau local : connecte le PC au Wi-Fi ou à une box.")?;
-    let port = server_port().map_err(|e| format!("Le partage n'a pas pu démarrer : {e}"))?;
+    let ip = local_ip().ok_or(tr(
+        "Pas de réseau local : connecte le PC au Wi-Fi ou à une box.",
+        "No local network: connect the PC to Wi-Fi or a router.",
+    ))?;
+    let port = server_port().map_err(|e| {
+        format!(
+            "{} {e}",
+            tr(
+                "Le partage n'a pas pu démarrer :",
+                "Sharing could not start:"
+            )
+        )
+    })?;
     let token = new_token().map_err(|e| e.to_string())?;
     let url = format!("http://{ip}:{port}/s/{token}");
     let (qr_size, qr_path) = qr_code(&url)?;
@@ -95,7 +111,7 @@ pub fn shelf_share_stop(token: String) {
 pub fn shelf_share_windows(app: AppHandle, ids: Vec<u32>) -> Result<(), String> {
     let files = crate::shelf::file_paths(&ids);
     if files.is_empty() {
-        return Err("Aucun fichier à partager.".into());
+        return Err(tr("Aucun fichier à partager.", "No file to share.").into());
     }
     let window = app
         .get_webview_window(crate::island::LABEL)
@@ -246,11 +262,17 @@ fn handle(stream: TcpStream) -> io::Result<()> {
     stream.set_write_timeout(Some(Duration::from_secs(30)))?;
     let mut reader = BufReader::new(stream.try_clone()?);
     let request = read_line(&mut reader)?;
-    // The headers are not needed: read through them.
+    // Of the headers, only the phone's language: its page is written in it.
+    let mut french = false;
     loop {
         let line = read_line(&mut reader)?;
         if line.trim().is_empty() {
             break;
+        }
+        if let Some((name, value)) = line.split_once(':')
+            && name.trim().eq_ignore_ascii_case("accept-language")
+        {
+            french = prefers_french(value);
         }
     }
     let mut words = request.split_whitespace();
@@ -271,17 +293,22 @@ fn handle(stream: TcpStream) -> io::Result<()> {
             &mut out,
             "200 OK",
             "text/html; charset=utf-8",
-            page(&token, &files).as_bytes(),
+            page(&token, &files, french).as_bytes(),
             head,
         ),
-        Route::File { path, inline } => send_file(&mut out, &path, inline, head),
+        Route::File { path, inline } => send_file(&mut out, &path, inline, head, french),
         Route::Expired => reply(
             &mut out,
             "410 Gone",
             "text/html; charset=utf-8",
             message_page(
-                "Ce lien a expiré",
-                "Renvoie le fichier depuis Quiera pour avoir un nouveau code.",
+                french,
+                pick(french, "Ce lien a expiré", "This link has expired"),
+                pick(
+                    french,
+                    "Renvoie le fichier depuis Quiera pour avoir un nouveau code.",
+                    "Send the file again from Quiera to get a new code.",
+                ),
             )
             .as_bytes(),
             head,
@@ -290,7 +317,16 @@ fn handle(stream: TcpStream) -> io::Result<()> {
             &mut out,
             "404 Not Found",
             "text/html; charset=utf-8",
-            message_page("Introuvable", "Cette adresse ne mène à rien.").as_bytes(),
+            message_page(
+                french,
+                pick(french, "Introuvable", "Not found"),
+                pick(
+                    french,
+                    "Cette adresse ne mène à rien.",
+                    "This address leads nowhere.",
+                ),
+            )
+            .as_bytes(),
             head,
         ),
     }
@@ -314,9 +350,23 @@ fn reply(
     out.flush()
 }
 
-fn send_file(out: &mut TcpStream, path: &Path, inline: bool, head: bool) -> io::Result<()> {
+fn send_file(
+    out: &mut TcpStream,
+    path: &Path,
+    inline: bool,
+    head: bool,
+    french: bool,
+) -> io::Result<()> {
     let Ok(mut file) = File::open(path) else {
-        let body = message_page("Fichier introuvable", "Il a été déplacé ou supprimé du PC.");
+        let body = message_page(
+            french,
+            pick(french, "Fichier introuvable", "File not found"),
+            pick(
+                french,
+                "Il a été déplacé ou supprimé du PC.",
+                "It was moved or deleted on the PC.",
+            ),
+        );
         return reply(
             out,
             "404 Not Found",
@@ -420,8 +470,12 @@ pub fn escape_html(text: &str) -> String {
 }
 
 /// "2,4 Mo", "812 Ko": as the island writes sizes.
-pub fn format_size(bytes: u64) -> String {
-    let units = ["o", "Ko", "Mo", "Go", "To"];
+pub fn format_size(bytes: u64, french: bool) -> String {
+    let units = if french {
+        ["o", "Ko", "Mo", "Go", "To"]
+    } else {
+        ["B", "KB", "MB", "GB", "TB"]
+    };
     let mut value = bytes as f64;
     let mut unit = 0;
     while value >= 1000.0 && unit < units.len() - 1 {
@@ -431,20 +485,32 @@ pub fn format_size(bytes: u64) -> String {
     if unit == 0 || value >= 100.0 {
         format!("{} {}", value.round(), units[unit])
     } else {
-        format!("{:.1} {}", value, units[unit])
-            .replace('.', ",")
-            .replace(",0 ", " ")
+        let text = format!("{:.1} {}", value, units[unit]).replace(".0 ", " ");
+        // French writes a decimal comma: "2,5 Mo".
+        if french { text.replace('.', ",") } else { text }
     }
 }
 
 const STYLE: &str = "body{margin:0;background:#111;color:#fff;font:16px/1.4 system-ui,-apple-system,'Segoe UI',sans-serif}main{max-width:520px;margin:0 auto;padding:28px 16px 40px}h1{font-size:22px;margin:0 0 4px}p{color:#9a9aa1;margin:0 0 22px}.file{display:flex;align-items:center;gap:12px;padding:12px;margin-bottom:10px;border-radius:16px;background:#1d1d20}.file img{width:56px;height:56px;object-fit:cover;border-radius:10px;flex:none}.name{flex:1;min-width:0;overflow-wrap:anywhere;font-weight:600}.size{display:block;color:#9a9aa1;font-size:13px;font-weight:500}a.get{flex:none;padding:10px 16px;border-radius:999px;background:#fff;color:#111;font-weight:700;text-decoration:none}footer{margin-top:24px;color:#6b6b73;font-size:13px}";
 
-fn page(token: &str, files: &[PathBuf]) -> String {
+/// Whether an Accept-Language header puts French first ("fr-FR,fr;q=0.9,…").
+pub fn prefers_french(accept_language: &str) -> bool {
+    accept_language
+        .trim()
+        .to_ascii_lowercase()
+        .starts_with("fr")
+}
+
+fn pick(french: bool, fr: &'static str, en: &'static str) -> &'static str {
+    if french { fr } else { en }
+}
+
+fn page(token: &str, files: &[PathBuf], french: bool) -> String {
     let mut rows = String::new();
     for (i, path) in files.iter().enumerate() {
         let name = escape_html(&file_name(path));
         let size = std::fs::metadata(path)
-            .map(|m| format_size(m.len()))
+            .map(|m| format_size(m.len(), french))
             .unwrap_or_default();
         let preview = if is_image(path) {
             format!(
@@ -455,22 +521,40 @@ fn page(token: &str, files: &[PathBuf]) -> String {
         };
         let _ = write!(
             rows,
-            "<div class=\"file\">{preview}<span class=\"name\">{name}<span class=\"size\">{size}</span></span><a class=\"get\" href=\"/s/{token}/{i}\">Télécharger</a></div>"
+            "<div class=\"file\">{preview}<span class=\"name\">{name}<span class=\"size\">{size}</span></span><a class=\"get\" href=\"/s/{token}/{i}\">{download}</a></div>",
+            download = pick(french, "Télécharger", "Download"),
         );
     }
-    let count = if files.len() == 1 {
-        "1 fichier".to_owned()
+    let count = match (files.len(), french) {
+        (1, true) => "1 fichier".to_owned(),
+        (n, true) => format!("{n} fichiers"),
+        (1, false) => "1 file".to_owned(),
+        (n, false) => format!("{n} files"),
+    };
+    let (lang, heading, intro, footer) = if french {
+        (
+            "fr",
+            "Envoyé depuis Quiera",
+            "le lien expire 10 minutes après sa création dans Quiera. Pour garder une photo dans tes photos, touche-la longuement.",
+            "Les fichiers viennent directement du PC, sur ton réseau local.",
+        )
     } else {
-        format!("{} fichiers", files.len())
+        (
+            "en",
+            "Sent from Quiera",
+            "the link expires 10 minutes after it was made in Quiera. To keep a photo in your photos, press and hold it.",
+            "The files come straight from the PC, over your local network.",
+        )
     };
     format!(
-        "<!doctype html><html lang=\"fr\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><meta name=\"robots\" content=\"noindex\"><title>Quiera · {count}</title><style>{STYLE}</style></head><body><main><h1>Envoyé depuis Quiera</h1><p>{count} · le lien expire 10 minutes après sa création dans Quiera. Pour garder une photo dans tes photos, touche-la longuement.</p>{rows}<footer>Les fichiers viennent directement du PC, sur ton réseau local.</footer></main></body></html>"
+        "<!doctype html><html lang=\"{lang}\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><meta name=\"robots\" content=\"noindex\"><title>Quiera · {count}</title><style>{STYLE}</style></head><body><main><h1>{heading}</h1><p>{count} · {intro}</p>{rows}<footer>{footer}</footer></main></body></html>"
     )
 }
 
-fn message_page(title: &str, text: &str) -> String {
+fn message_page(french: bool, title: &str, text: &str) -> String {
+    let lang = if french { "fr" } else { "en" };
     format!(
-        "<!doctype html><html lang=\"fr\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><meta name=\"robots\" content=\"noindex\"><title>Quiera · {title}</title><style>{STYLE}</style></head><body><main><h1>{title}</h1><p>{text}</p></main></body></html>"
+        "<!doctype html><html lang=\"{lang}\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><meta name=\"robots\" content=\"noindex\"><title>Quiera · {title}</title><style>{STYLE}</style></head><body><main><h1>{title}</h1><p>{text}</p></main></body></html>"
     )
 }
 
@@ -645,10 +729,22 @@ mod tests {
     }
 
     #[test]
+    fn the_phone_page_speaks_the_phone_language() {
+        assert!(prefers_french("fr-FR,fr;q=0.9,en;q=0.8"));
+        assert!(prefers_french(" FR"));
+        assert!(!prefers_french("en-US,en;q=0.9,fr;q=0.8"));
+        assert!(!prefers_french(""));
+        assert!(page("t", &[], true).contains("Envoyé depuis Quiera"));
+        assert!(page("t", &[], false).contains("Sent from Quiera"));
+    }
+
+    #[test]
     fn sizes_read_like_the_island() {
-        assert_eq!(format_size(512), "512 o");
-        assert_eq!(format_size(812_000), "812 Ko");
-        assert_eq!(format_size(2_480_000), "2,5 Mo");
-        assert_eq!(format_size(3_000_000), "3 Mo");
+        assert_eq!(format_size(512, true), "512 o");
+        assert_eq!(format_size(812_000, true), "812 Ko");
+        assert_eq!(format_size(2_480_000, true), "2,5 Mo");
+        assert_eq!(format_size(3_000_000, true), "3 Mo");
+        assert_eq!(format_size(2_480_000, false), "2.5 MB");
+        assert_eq!(format_size(3_000_000, false), "3 MB");
     }
 }

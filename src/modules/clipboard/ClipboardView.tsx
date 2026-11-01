@@ -6,6 +6,7 @@ import { CloseIcon } from "../shelf/icons";
 import { ordered, timeAgo } from "./format";
 import { CheckIcon, ClipboardIcon, LinkIcon, PinIcon } from "./icons";
 import { useClipboard } from "./store";
+import { useT } from "../../i18n";
 import "./clipboard.css";
 
 const ignore = () => {};
@@ -42,6 +43,8 @@ function Body({ item }: { item: ClipItem }) {
 }
 
 function Card({ item, now }: { item: ClipItem; now: number }) {
+  const messages = useT();
+  const t = messages.clipboard;
   const [copied, setCopied] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
@@ -74,11 +77,11 @@ function Card({ item, now }: { item: ClipItem; now: number }) {
       </div>
       <div className="clip-foot">
         {item.pinned && <PinIcon size={10} filled />}
-        <span>{item.kind === "image" ? item.preview : timeAgo(item.copiedAt, now)}</span>
+        <span>{item.kind === "image" ? item.preview : timeAgo(item.copiedAt, now, messages.time)}</span>
       </div>
       <div className="clip-actions">
         <button
-          aria-label={item.pinned ? "Désépingler" : "Épingler"}
+          aria-label={item.pinned ? t.unpin : t.pin}
           className={item.pinned ? "clip-action--on" : ""}
           onPointerDown={stop}
           onClick={(e) => {
@@ -89,7 +92,7 @@ function Card({ item, now }: { item: ClipItem; now: number }) {
           <PinIcon size={11} filled={item.pinned} />
         </button>
         <button
-          aria-label="Retirer de l'historique"
+          aria-label={t.remove}
           onPointerDown={stop}
           onClick={(e) => {
             stop(e);
@@ -109,7 +112,7 @@ function Card({ item, now }: { item: ClipItem; now: number }) {
             transition={{ duration: 0.15 }}
           >
             <CheckIcon size={16} />
-            Copié
+            {t.copied}
           </motion.div>
         )}
       </AnimatePresence>
@@ -119,6 +122,7 @@ function Card({ item, now }: { item: ClipItem; now: number }) {
 
 /** The Clipboard tab: what was copied during this session. */
 export function ClipboardView() {
+  const t = useT().clipboard;
   const items = ordered(useClipboard());
   const now = useNow();
   const row = useRef<HTMLDivElement>(null);
@@ -127,7 +131,7 @@ export function ClipboardView() {
     return (
       <div className="clip-empty">
         <ClipboardIcon size={22} />
-        <span>Ce que tu copies apparaîtra ici</span>
+        <span>{t.empty}</span>
       </div>
     );
   }
@@ -137,18 +141,18 @@ export function ClipboardView() {
     <div className="clip">
       <div className="clip-head">
         <span className="clip-count">
-          {items.length} {items.length > 1 ? "éléments" : "élément"}
+          {t.count(items.length)}
         </span>
         {unpinned && (
           <button
             className="clip-clear"
-            title="Les éléments épinglés restent"
+            title={t.pinnedStay}
             onClick={(e) => {
               e.stopPropagation();
               clip.clearClipboard().catch(ignore);
             }}
           >
-            Vider
+            {t.clear}
           </button>
         )}
       </div>

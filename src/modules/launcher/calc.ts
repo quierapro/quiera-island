@@ -85,7 +85,7 @@ export function calculate(input: string): number | null {
   return result !== null && pos === text.length && Number.isFinite(result) ? result : null;
 }
 
-/** "1 234,5": the way French writes numbers, up to 10 decimals. */
-export function formatNumber(value: number): string {
-  return value.toLocaleString("fr-FR", { maximumFractionDigits: 10 });
+/** "1 234,5" in French, "1,234.5" in English: up to 10 decimals. */
+export function formatNumber(value: number, locale = "fr-FR"): string {
+  return value.toLocaleString(locale, { maximumFractionDigits: 10 });
 }

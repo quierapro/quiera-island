@@ -5,6 +5,7 @@ import { ClipboardIcon } from "../modules/clipboard/icons";
 import { BellIcon } from "../modules/notifications/icons";
 import { SlidersIcon } from "../modules/controls/icons";
 import { TrayIcon } from "../modules/shelf/icons";
+import { useT } from "../i18n";
 import "./tabs.css";
 
 /** Height the tab bar adds on top of the open panel. */
@@ -38,12 +39,13 @@ export function tabShown(id: Tab, current: Tab, count: number): boolean {
 
 /** Icon tabs above the open panel; the active one sits on a soft pill. */
 export function TabBar({ tab, hasMedia, shelfCount, clipboardCount, notificationCount, onSelect }: TabBarProps) {
+  const labels = useT().tabs;
   const tabs: { id: Tab; label: string; icon: React.ReactNode; badge?: number }[] = [
-    { id: "home" as Tab, label: hasMedia ? "Lecture" : "Heure", icon: hasMedia ? <NoteIcon size={17} /> : <ClockIcon /> },
-    { id: "controls" as Tab, label: "Contrôles", icon: <SlidersIcon size={17} /> },
-    { id: "notifications" as Tab, label: "Notifications", icon: <BellIcon size={17} />, badge: notificationCount },
-    { id: "shelf" as Tab, label: "Shelf", icon: <TrayIcon size={18} />, badge: shelfCount },
-    { id: "clipboard" as Tab, label: "Presse-papiers", icon: <ClipboardIcon size={17} />, badge: clipboardCount },
+    { id: "home" as Tab, label: hasMedia ? labels.playing : labels.clock, icon: hasMedia ? <NoteIcon size={17} /> : <ClockIcon /> },
+    { id: "controls" as Tab, label: labels.controls, icon: <SlidersIcon size={17} /> },
+    { id: "notifications" as Tab, label: labels.notifications, icon: <BellIcon size={17} />, badge: notificationCount },
+    { id: "shelf" as Tab, label: labels.shelf, icon: <TrayIcon size={18} />, badge: shelfCount },
+    { id: "clipboard" as Tab, label: labels.clipboard, icon: <ClipboardIcon size={17} />, badge: clipboardCount },
   ].filter((t) => tabShown(t.id, tab, t.badge ?? 0));
   return (
     <div className="tabs" role="tablist">

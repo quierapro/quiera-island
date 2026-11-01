@@ -1,6 +1,5 @@
 /** "2,4 Mo", "402 Ko", "3 o": sizes the way the user's locale writes them. */
-export function formatSize(bytes: number, locale?: string): string {
-  const units = ["o", "Ko", "Mo", "Go", "To"];
+export function formatSize(bytes: number, locale?: string, units: readonly string[] = ["o", "Ko", "Mo", "Go", "To"]): string {
   let value = bytes;
   let unit = 0;
   while (value >= 1000 && unit < units.length - 1) {

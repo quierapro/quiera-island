@@ -8,10 +8,10 @@ use std::sync::{LazyLock, Mutex};
 use std::time::Duration;
 
 use serde::Serialize;
-use tauri::menu::MenuItem;
-use tauri::{AppHandle, Emitter, Manager, Wry};
+use tauri::{AppHandle, Emitter};
 use tauri_plugin_updater::{Update, UpdaterExt};
 
+use crate::i18n::tr;
 use crate::peeks::{self, SystemPeek};
 
 pub const STATUS_EVENT: &str = "updates://status";
@@ -50,18 +50,14 @@ fn state() -> std::sync::MutexGuard<'static, State> {
     STATE.lock().unwrap_or_else(|e| e.into_inner())
 }
 
-/// The tray's update item, renamed when a version is found.
-pub struct TrayItem(pub MenuItem<Wry>);
+/// The newer version found, if any (for the tray menu).
+pub fn available() -> Option<String> {
+    state().status.available.clone()
+}
 
 fn changed(app: &AppHandle) {
     let status = state().status.clone();
-    if let Some(item) = app.try_state::<TrayItem>() {
-        let text = match &status.available {
-            Some(version) => format!("Installer la mise à jour {version}"),
-            None => "Rechercher des mises à jour".to_owned(),
-        };
-        let _ = item.0.set_text(text);
-    }
+    crate::tray::refresh(app);
     if let Err(e) = app.emit(STATUS_EVENT, status) {
         log::warn!("could not send the update status: {e}");
     }
@@ -113,7 +109,13 @@ async fn check(app: &AppHandle, manual: bool) {
             Err(e) => {
                 log::warn!("update check failed: {e}");
                 if manual {
-                    state.status.error = Some("Impossible de vérifier (pas de connexion ?)".into());
+                    state.status.error = Some(
+                        tr(
+                            "Impossible de vérifier (pas de connexion ?)",
+                            "Could not check (no connection?)",
+                        )
+                        .into(),
+                    );
                 }
             }
         }
@@ -137,7 +139,7 @@ async fn install(app: &AppHandle) -> Result<(), String> {
     let update = {
         let mut state = state();
         let Some(update) = state.update.clone() else {
-            return Err("Aucune mise à jour à installer.".into());
+            return Err(tr("Aucune mise à jour à installer.", "No update to install.").into());
         };
         if state.status.installing {
             return Ok(());
@@ -154,7 +156,13 @@ async fn install(app: &AppHandle) -> Result<(), String> {
         {
             let mut state = state();
             state.status.installing = false;
-            state.status.error = Some("La mise à jour n'a pas pu être installée.".into());
+            state.status.error = Some(
+                tr(
+                    "La mise à jour n'a pas pu être installée.",
+                    "The update could not be installed.",
+                )
+                .into(),
+            );
         }
         changed(app);
         return Err(e.to_string());

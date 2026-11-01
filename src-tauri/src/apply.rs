@@ -19,6 +19,12 @@ pub fn at_start(app: &AppHandle) {
 }
 
 pub fn changed(app: &AppHandle, previous: &Settings, now: &Settings) {
+    if previous.general.language != now.general.language {
+        crate::tray::refresh(app);
+        if let Some(window) = app.get_webview_window(crate::settings::WINDOW) {
+            let _ = window.set_title(crate::i18n::tr("Réglages de Quiera", "Quiera settings"));
+        }
+    }
     if previous.general.start_with_windows != now.general.start_with_windows
         && let Err(e) = platform::set_autostart(now.general.start_with_windows)
     {
