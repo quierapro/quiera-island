@@ -19,10 +19,13 @@ export interface PeekState {
 }
 
 /** What the open panel shows: "home" is the player, or the clock without music. */
-export type Tab = "home" | "controls" | "shelf" | "clipboard" | "notifications";
+export type Tab = "home" | "timer" | "controls" | "shelf" | "clipboard" | "notifications";
 
 /** The notification peek: opening the island over it leads to its tab. */
 export const NOTIFICATION_PEEK = "system:notification";
+
+/** The timer's live activity: opening the island over it leads to its tab. */
+export const TIMER_ACTIVITY = "timer";
 
 export interface IslandState {
   visible: boolean;
@@ -85,9 +88,15 @@ export function reduce(state: IslandState, event: IslandEvent): IslandState {
       return state.launcher ? { ...state, launcher: false } : state;
 
     case "press": {
-      // Opening starts at home, or on the notifications over a notification.
+      // Opening starts at home, or on what the closed island was showing:
+      // a notification, the timer.
       if (!state.visible || state.open || state.launcher) return state;
-      const tab = state.peek?.id === NOTIFICATION_PEEK ? "notifications" : "home";
+      const tab =
+        state.peek?.id === NOTIFICATION_PEEK
+          ? "notifications"
+          : !state.peek && primaryActivity(state.activities)?.id === TIMER_ACTIVITY
+            ? "timer"
+            : "home";
       return { ...state, open: true, tab, peek: null };
     }
 

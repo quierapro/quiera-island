@@ -1,0 +1,268 @@
+/* Apple's timer orange, and the green of its Start button. */
+.timer-activity,
+.timer-live,
+.timer-picker {
+  --timer: #ff9f0a;
+  --timer-soft: rgba(255, 159, 10, 0.22);
+  --start: #30d158;
+  --start-soft: rgba(48, 209, 88, 0.2);
+}
+
+/* ---- Closed island ---- */
+
+.timer-activity {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  padding: 0 16px 0 12px;
+  color: var(--timer);
+}
+
+.timer-activity-time {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.2px;
+}
+
+.timer-activity--paused {
+  opacity: 0.55;
+}
+
+.timer-activity--ringing .timer-activity-time,
+.timer-live--ringing .timer-live-time {
+  animation: timer-blink 1s steps(2, jump-none) infinite;
+}
+
+.timer-bell {
+  display: grid;
+  place-items: center;
+  animation: timer-shake 1s ease-in-out infinite;
+}
+
+@keyframes timer-blink {
+  from { opacity: 1; }
+  to { opacity: 0.45; }
+}
+
+@keyframes timer-shake {
+  0%, 50%, 100% { transform: rotate(0); }
+  10%, 30% { transform: rotate(-14deg); }
+  20%, 40% { transform: rotate(14deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timer-bell,
+  .timer-activity--ringing .timer-activity-time,
+  .timer-live--ringing .timer-live-time {
+    animation: none;
+  }
+}
+
+.timer-ring {
+  flex: none;
+}
+
+.timer-ring-track,
+.timer-ring-left {
+  fill: none;
+  stroke-width: 2.5;
+}
+
+.timer-ring-track {
+  stroke: var(--timer-soft);
+}
+
+.timer-ring-left {
+  stroke: var(--timer);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.9s linear;
+}
+
+/* ---- Open: the countdown ---- */
+
+.timer-live {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  padding: 0 24px 0 20px;
+}
+
+.timer-live-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.timer-circle {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.timer-circle:hover {
+  filter: brightness(1.25);
+}
+
+.timer-circle:active {
+  transform: scale(0.94);
+}
+
+.timer-circle--gray {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--text-1);
+}
+
+.timer-circle--orange {
+  background: var(--timer-soft);
+  color: var(--timer);
+}
+
+.timer-live-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  color: var(--timer);
+}
+
+.timer-live-name {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.timer-live-time {
+  font-family: var(--font-display);
+  font-size: 42px;
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.timer-live--paused .timer-live-time {
+  opacity: 0.6;
+}
+
+/* ---- Open: the wheels ---- */
+
+.timer-picker {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  padding: 0 24px 0 18px;
+}
+
+.timer-wheels {
+  position: relative;
+  display: flex;
+}
+
+/* The selected row, across the three wheels. */
+.timer-wheels-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.09);
+  pointer-events: none;
+}
+
+.timer-wheel {
+  position: relative;
+  width: 74px;
+  height: 90px;
+  overflow: hidden;
+  outline: none;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  /* Rows fade out toward the top and the bottom. */
+  mask-image: linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent);
+}
+
+.timer-wheel:active {
+  cursor: grabbing;
+}
+
+/* The rows start one row down: row 0 sits in the middle at rest. */
+.timer-wheel-rows {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 30px;
+  will-change: transform;
+}
+
+.timer-wheel-row {
+  height: 30px;
+  padding-right: 38px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  line-height: 30px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+  transition: color 0.15s ease;
+}
+
+.timer-wheel-row--on {
+  color: var(--text-1);
+}
+
+/* The unit, fixed in the band beside the number. */
+.timer-wheel-unit {
+  position: absolute;
+  left: 40px;
+  top: 30px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 30px;
+  color: var(--text-1);
+  pointer-events: none;
+}
+
+.timer-round {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  font: 600 13px var(--font-ui);
+  cursor: pointer;
+  /* The ring inside the edge, as on Apple's round buttons. */
+  box-shadow: inset 0 0 0 2px #000, inset 0 0 0 3.5px currentColor;
+  transition: filter 0.15s ease, transform 0.15s ease, opacity 0.15s ease;
+}
+
+.timer-round:hover:not(:disabled) {
+  filter: brightness(1.2);
+}
+
+.timer-round:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.timer-round:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.timer-round--start {
+  background: var(--start-soft);
+  color: var(--start);
+}

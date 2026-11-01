@@ -5,6 +5,7 @@ import { ClipboardIcon } from "../modules/clipboard/icons";
 import { BellIcon } from "../modules/notifications/icons";
 import { SlidersIcon } from "../modules/controls/icons";
 import { TrayIcon } from "../modules/shelf/icons";
+import { TimerIcon } from "../modules/timer/TimerViews";
 import { useT } from "../i18n";
 import "./tabs.css";
 
@@ -30,9 +31,9 @@ interface TabBarProps {
 }
 
 /** Tabs offered whatever they hold. */
-const ALWAYS: Tab[] = ["home", "controls"];
+const ALWAYS: Tab[] = ["home", "timer", "controls"];
 
-/** Whether a tab is offered: home and controls always; the others once they hold something, or while shown. */
+/** Whether a tab is offered: home, the timer and controls always; the others once they hold something, or while shown. */
 export function tabShown(id: Tab, current: Tab, count: number): boolean {
   return ALWAYS.includes(id) || count > 0 || id === current;
 }
@@ -42,6 +43,7 @@ export function TabBar({ tab, hasMedia, shelfCount, clipboardCount, notification
   const labels = useT().tabs;
   const tabs: { id: Tab; label: string; icon: React.ReactNode; badge?: number }[] = [
     { id: "home" as Tab, label: hasMedia ? labels.playing : labels.clock, icon: hasMedia ? <NoteIcon size={17} /> : <ClockIcon /> },
+    { id: "timer" as Tab, label: labels.timer, icon: <TimerIcon size={17} /> },
     { id: "controls" as Tab, label: labels.controls, icon: <SlidersIcon size={17} /> },
     { id: "notifications" as Tab, label: labels.notifications, icon: <BellIcon size={17} />, badge: notificationCount },
     { id: "shelf" as Tab, label: labels.shelf, icon: <TrayIcon size={18} />, badge: shelfCount },

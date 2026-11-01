@@ -4,6 +4,10 @@ import { openLink } from "../../ipc/notifications";
 import { openSettings } from "../../ipc/settings";
 import { arrivedLabel } from "../notifications/format";
 import { formatNumber } from "./calc";
+import { formatDuration } from "../timer/duration";
+import { primeChime } from "../timer/chime";
+import { startTimer } from "../timer/store";
+import { TimerIcon } from "../timer/TimerViews";
 import { compose, MAX_ROWS, type Result } from "./results";
 import { localeOf, useLang, useT } from "../../i18n";
 import "./launcher.css";
@@ -107,6 +111,16 @@ function Row({ result, selected, copied }: { result: Result; selected: boolean; 
           </span>
         </>
       );
+    case "timer":
+      return (
+        <>
+          <span className="launch-icon launch-icon--glyph">
+            <TimerIcon />
+          </span>
+          <span className="launch-title">{(result.pomodoro ? t.pomodoro : t.timer)(formatDuration(result.ms))}</span>
+          <span className="launch-hint">{selected ? t.start : messages.timer.title}</span>
+        </>
+      );
     case "calc":
       return (
         <>
@@ -143,8 +157,8 @@ function Row({ result, selected, copied }: { result: Result; selected: boolean; 
 }
 
 /**
- * The launcher: a search bar in the island. A calculation when the text is
- * one, apps (ranked by name, then by use), files and folders of the drives,
+ * The launcher: a search bar in the island. A timer ("5 min", "pomodoro")
+ * or a calculation when the text is one, apps (ranked by name, then by use), files and folders of the drives,
  * and always a web search. Arrows move, Enter opens, Ctrl+Enter shows a file
  * in its folder, Escape clears then closes.
  */
@@ -217,6 +231,12 @@ export function Launcher({ onRows }: { onRows(rows: number): void }) {
         break;
       case "file":
         openFile(result.file, reveal).catch(ignore);
+        break;
+      case "timer":
+        // Now, during the key press or click: the chime may sound later.
+        primeChime();
+        startTimer(result.ms, result.pomodoro);
+        closeLauncher(true).catch(ignore);
         break;
       case "calc":
         navigator.clipboard

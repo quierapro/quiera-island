@@ -1,8 +1,10 @@
 import type { FileHit, LauncherApp } from "../../ipc/launcher";
+import { timerRequests } from "../timer/duration";
 import { calculate } from "./calc";
 import { normalize, rank } from "./search";
 
 export type Result =
+  | { kind: "timer"; id: string; ms: number; pomodoro: boolean }
   | { kind: "calc"; id: string; value: number }
   | { kind: "app"; id: string; app: LauncherApp }
   | { kind: "file"; id: string; file: FileHit }
@@ -24,14 +26,15 @@ export const MAX_ROWS = 7;
 const MAX_APPS = 3;
 
 /**
- * The list under the search bar: a calculation when the text is one, the
- * best apps, then files, and always a web search last.
+ * The list under the search bar: a timer or a calculation when the text is
+ * one, the best apps, then files, and always a web search last.
  */
 export function compose(query: string, apps: LauncherApp[], files: FileHit[], usage: Record<string, number>): Result[] {
   const q = query.trim();
   if (!q) return [];
   const list: Result[] = [];
   if (asksForSettings(q)) list.push({ kind: "settings", id: "settings" });
+  for (const { ms, pomodoro } of timerRequests(q)) list.push({ kind: "timer", id: `timer:${ms}:${pomodoro}`, ms, pomodoro });
   const value = calculate(q);
   if (value !== null) list.push({ kind: "calc", id: "calc", value });
   for (const app of rank(apps, q, usage, MAX_APPS)) list.push({ kind: "app", id: `app:${app.key}`, app });
