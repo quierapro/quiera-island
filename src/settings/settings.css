@@ -171,6 +171,66 @@ button {
   flex: none;
 }
 
+/* ---- Tabs ---- */
+
+.tab-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tab-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 10px 16px 10px 10px;
+  box-sizing: border-box;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  background: #101012;
+}
+
+.tab-row--fixed {
+  border-top: 0;
+}
+
+.tab-row-grip {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 30px;
+  color: var(--text-3);
+  cursor: grab;
+}
+
+.tab-row:active .tab-row-grip {
+  cursor: grabbing;
+}
+
+.tab-row-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text-1);
+  transition: opacity 0.2s ease;
+}
+
+.tab-row-icon--off {
+  opacity: 0.35;
+}
+
+.tab-hint {
+  margin: -10px 4px 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-3);
+}
+
 /* ---- Controls ---- */
 
 .toggle {

@@ -1,19 +1,23 @@
-import { useEffect, useState, type ReactNode } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { AnimatePresence, motion, Reorder } from "motion/react";
 import { listen } from "@tauri-apps/api/event";
 import { openLink } from "../ipc/notifications";
 import { checkForUpdates, getUpdateStatus, installUpdate, onUpdateStatus, type UpdateStatus } from "../ipc/updates";
 import { getHeldShortcut, getMonitors, SHORTCUTS, type Monitor, type Settings, type Shortcut } from "../ipc/settings";
 import { updateSettings, useSettings } from "./store";
 import { localeOf, useLang, useT } from "../i18n";
+import type { Tab } from "../machine/island-machine";
+import { orderTabs, TABS } from "../island/tabs";
+import { tabFace } from "../island/TabBar";
 
 const ignore = () => {};
 const REPO = "https://github.com/quierapro/quiera-island";
 
-type Section = "general" | "launcher" | "media" | "notifications" | "clipboard" | "peeks" | "about";
+type Section = "general" | "tabs" | "launcher" | "media" | "notifications" | "clipboard" | "peeks" | "about";
 
 const SECTIONS: { id: Section; icon: ReactNode }[] = [
   { id: "general", icon: <Icon d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM4 12h2m12 0h2M12 4v2m0 12v2M6.3 6.3l1.4 1.4m8.6 8.6 1.4 1.4m0-11.4-1.4 1.4m-8.6 8.6-1.4 1.4" /> },
+  { id: "tabs", icon: <Icon d="M3 9.5h18M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Zm2.5 2.2h3m2 0h3" /> },
   { id: "launcher", icon: <Icon d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Zm5-2 4.5 4.5" /> },
   { id: "media", icon: <Icon d="M9 18V6l11-2v12M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm11-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /> },
   { id: "notifications", icon: <Icon d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15l1.5-2ZM10 20.5a2.2 2.2 0 0 0 4 0" /> },
@@ -152,6 +156,74 @@ function General({ settings, save }: { settings: Settings; save: ReturnType<type
           />
         </Row>
       </Group>
+    </>
+  );
+}
+
+function Grip() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      {[6, 12, 18].map((y) => [9, 15].map((x) => <circle key={`${x}-${y}`} cx={x} cy={y} r="1.6" />))}
+    </svg>
+  );
+}
+
+/** The island's tabs: dragged into order, each shown or hidden. Home stays first. */
+function Tabs({ settings, save }: { settings: Settings; save: ReturnType<typeof useSave>["save"] }) {
+  const messages = useT();
+  const t = messages.settings.tabs;
+  const saved = settings.tabs.order.join();
+  const arrange = () => orderTabs(settings.tabs.order).map((def) => def.id).filter((id) => id !== "home");
+  const [order, setOrder] = useState<Tab[]>(arrange);
+  const latest = useRef(order);
+  latest.current = order;
+  // Changed elsewhere (another window): follow.
+  useEffect(() => setOrder(arrange()), [saved]);
+  const hidden = settings.tabs.hidden;
+  const commit = () =>
+    save((s) => {
+      // Ids this version does not know (a plugin's) keep their place at the end.
+      const unknown = s.tabs.order.filter((id) => !TABS.some((def) => def.id === id));
+      return { ...s, tabs: { ...s.tabs, order: ["home", ...latest.current, ...unknown] } };
+    });
+  const show = (id: Tab, on: boolean) =>
+    save((s) => {
+      const others = s.tabs.hidden.filter((h) => h !== id);
+      return { ...s, tabs: { ...s.tabs, hidden: on ? others : [...others, id] } };
+    });
+  return (
+    <>
+      <Group>
+        <div className="tab-row tab-row--fixed">
+          <span className="tab-row-grip" />
+          <span className="tab-row-icon">{tabFace("home", messages.tabs, false).icon}</span>
+          <div className="row-text">
+            <div className="row-title">{t.home}</div>
+            <div className="row-desc">{t.homeHint}</div>
+          </div>
+        </div>
+        <Reorder.Group axis="y" values={order} onReorder={setOrder} className="tab-list">
+          {order.map((id) => {
+            const def = TABS.find((d) => d.id === id)!;
+            const { label, icon } = tabFace(id, messages.tabs, false);
+            const on = !hidden.includes(id);
+            return (
+              <Reorder.Item key={id} value={id} className="tab-row" onDragEnd={commit} whileDrag={{ scale: 1.02, boxShadow: "0 8px 24px rgba(0,0,0,0.5)", zIndex: 1 }}>
+                <span className="tab-row-grip" title={t.drag}>
+                  <Grip />
+                </span>
+                <span className={`tab-row-icon ${on ? "" : "tab-row-icon--off"}`}>{icon}</span>
+                <div className="row-text">
+                  <div className="row-title">{label}</div>
+                  <div className="row-desc">{def.when === "always" ? t.always : t.content}</div>
+                </div>
+                <Toggle label={t.show(label)} on={on} onChange={(next) => show(id, next)} />
+              </Reorder.Item>
+            );
+          })}
+        </Reorder.Group>
+      </Group>
+      <p className="tab-hint">{t.hint}</p>
     </>
   );
 }
@@ -421,6 +493,7 @@ export function SettingsApp() {
           <motion.div key={section} className="page" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.16 }}>
             {section !== "about" && <h1 className="page-title">{t.sections[section]}</h1>}
             {section === "general" && <General settings={settings} save={save} />}
+            {section === "tabs" && <Tabs settings={settings} save={save} />}
             {section === "launcher" && <Launcher settings={settings} save={save} />}
             {section === "media" && <Media settings={settings} save={save} />}
             {section === "notifications" && <Notifications settings={settings} save={save} />}

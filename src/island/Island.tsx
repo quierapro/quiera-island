@@ -321,9 +321,9 @@ export function Island() {
               <TabBar
                 tab={state.tab}
                 hasMedia={hasMedia}
-                shelfCount={shelfItems.length}
-                clipboardCount={clipItems.length}
-                notificationCount={notifItems.length}
+                counts={{ shelf: shelfItems.length, clipboard: clipItems.length, notifications: notifItems.length }}
+                order={settings.tabs.order}
+                hidden={settings.tabs.hidden}
                 onSelect={(tab) => dispatch({ type: "tab.select", tab })}
               />
             </motion.div>

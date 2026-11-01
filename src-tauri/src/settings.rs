@@ -24,6 +24,7 @@ pub const VERSION: u32 = 1;
 pub struct Settings {
     pub version: u32,
     pub general: General,
+    pub tabs: Tabs,
     pub launcher: Launcher,
     pub media: Media,
     pub notifications: Notifications,
@@ -37,6 +38,7 @@ impl Default for Settings {
         Self {
             version: VERSION,
             general: General::default(),
+            tabs: Tabs::default(),
             launcher: Launcher::default(),
             media: Media::default(),
             notifications: Notifications::default(),
@@ -215,6 +217,16 @@ pub struct Shelf {
     pub keep: bool,
 }
 
+/// The island's tabs: in which order, and which are hidden. Ids are
+/// strings so that a plugin's tab can join later; an id this version does
+/// not know is kept, not dropped. An empty order is the default one.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(default, rename_all = "camelCase")]
+pub struct Tabs {
+    pub order: Vec<String>,
+    pub hidden: Vec<String>,
+}
+
 impl Settings {
     /// Brings values read from an older file up to date and into range.
     pub fn migrate(mut self) -> Self {
@@ -382,6 +394,8 @@ mod tests {
         let mut settings = Settings::default();
         settings.launcher.shortcut = Shortcut::AltQ;
         settings.media.netease = true;
+        settings.tabs.order = vec!["timer".into(), "home".into(), "plugin:weather".into()];
+        settings.tabs.hidden = vec!["clipboard".into()];
         write(&path, &settings).unwrap();
         assert_eq!(read(&path), settings);
 

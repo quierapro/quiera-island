@@ -180,12 +180,22 @@ export const en: Messages = {
     saveError: (error) => `The setting could not be saved: ${error}`,
     sections: {
       general: "General",
+      tabs: "Tabs",
       launcher: "Launcher",
       media: "Music",
       notifications: "Notifications",
       clipboard: "Clipboard and Shelf",
       peeks: "Peeks",
       about: "About",
+    },
+    tabs: {
+      home: "Home",
+      homeHint: "The music, or the time without music. Always first: the island opens on it.",
+      always: "Always in the bar",
+      content: "Shows up when it holds something",
+      show: (name: string) => `Show the ${name} tab`,
+      drag: "Drag to move",
+      hint: "Drag the tabs to choose their order in the island. A hidden tab comes back when the island opens on it (a notification, the timer ringing).",
     },
     general: {
       startup: "Start Quiera with Windows",

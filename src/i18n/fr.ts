@@ -180,12 +180,22 @@ export const fr = {
     saveError: (error: string) => `Le réglage n'a pas pu être enregistré : ${error}`,
     sections: {
       general: "Général",
+      tabs: "Onglets",
       launcher: "Lanceur",
       media: "Musique",
       notifications: "Notifications",
       clipboard: "Presse-papiers et Shelf",
       peeks: "Aperçus",
       about: "À propos",
+    },
+    tabs: {
+      home: "Accueil",
+      homeHint: "La musique, ou l'heure sans musique. Toujours en premier : l'île s'ouvre dessus.",
+      always: "Toujours dans la barre",
+      content: "Apparaît quand il contient quelque chose",
+      show: (name: string) => `Afficher l'onglet ${name}`,
+      drag: "Glisser pour déplacer",
+      hint: "Glisse les onglets pour choisir leur ordre dans l'île. Un onglet masqué revient quand l'île s'ouvre dessus (une notification, le minuteur qui sonne).",
     },
     general: {
       startup: "Lancer Quiera au démarrage de Windows",

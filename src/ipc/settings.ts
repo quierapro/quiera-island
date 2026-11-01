@@ -21,6 +21,8 @@ export interface Settings {
     checkUpdates: boolean;
     language: Language;
   };
+  /** The island's tabs: their order (empty: the default one) and the hidden ones. */
+  tabs: { order: string[]; hidden: string[] };
   launcher: { enabled: boolean; shortcut: Shortcut; indexFiles: boolean };
   media: { lyrics: boolean; netease: boolean; lyricsOffsetMs: number };
   notifications: { enabled: boolean; peek: boolean };
@@ -41,6 +43,7 @@ export interface Monitor {
 export const DEFAULT_SETTINGS: Settings = {
   version: 1,
   general: { startWithWindows: false, screen: null, hideInFullscreen: true, openOnHover: true, motion: "system", checkUpdates: true, language: "system" },
+  tabs: { order: [], hidden: [] },
   launcher: { enabled: true, shortcut: "Alt+Espace", indexFiles: true },
   media: { lyrics: true, netease: false, lyricsOffsetMs: 0 },
   notifications: { enabled: true, peek: true },
