@@ -1,0 +1,32 @@
+name: Bug / Problème
+description: Something does not work as it should. / Quelque chose ne marche pas comme prévu.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened? / Que s'est-il passé ?
+      description: What you did, what you expected, what you saw instead. / Ce que tu as fait, ce que tu attendais, ce qui s'est passé.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Quiera version / Version de Quiera
+      description: Settings › About. / Réglages › À propos.
+      placeholder: "0.1.1"
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version / Version de Windows
+      placeholder: "Windows 11 24H2"
+  - type: textarea
+    id: log
+    attributes:
+      label: Log (optional) / Journal (facultatif)
+      description: >-
+        The end of %LOCALAPPDATA%\app.quiera\logs\Quiera.log. It holds technical events only, never song titles or the
+        content of notifications or of what you copy. / La fin de ce fichier : des événements techniques seulement.
+      render: text

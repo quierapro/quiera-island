@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.9.0.schema.json
+PackageIdentifier: Quierapro.Quiera
+PackageVersion: 0.1.1
+InstallerType: nullsoft
+Scope: user
+InstallModes:
+  - interactive
+  - silent
+UpgradeBehavior: install
+ProductCode: quiera
+ReleaseDate: 2026-10-30
+Installers:
+  - Architecture: x64
+    InstallerUrl: https://github.com/quierapro/quiera-island/releases/download/v0.1.1/Quiera-Setup-x64.exe
+    InstallerSha256: A6C5C4810C320B63B8EADAB73AA2A1ADC535F1649AA6EECAD96BC9FD0047744F
+ManifestType: installer
+ManifestVersion: 1.9.0

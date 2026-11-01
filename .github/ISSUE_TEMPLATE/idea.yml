@@ -1,0 +1,11 @@
+name: Idea / Idée
+description: Something Quiera could do. / Une chose que Quiera pourrait faire.
+labels: [idea]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea / Ton idée
+      description: What you would like, and when you would use it. / Ce que tu aimerais, et quand tu t'en servirais.
+    validations:
+      required: true
