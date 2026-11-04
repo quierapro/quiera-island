@@ -8,8 +8,7 @@ import { SlidersIcon } from "../modules/controls/icons";
 import { TrayIcon } from "../modules/shelf/icons";
 import { TimerIcon } from "../modules/timer/TimerViews";
 import { useT, type Messages } from "../i18n";
-import type { PluginInfo } from "../ipc/plugins";
-import { orderTabs, pluginTabs, tabShown } from "./tabs";
+import { orderTabs, tabShown } from "./tabs";
 import "./tabs.css";
 
 /** Height the tab bar adds on top of the open panel. */
@@ -25,7 +24,7 @@ export function ClockIcon({ size = 18 }: { size?: number }) {
 }
 
 /** Each tab's name and icon; home shows the player, or the clock without music. */
-export function tabFace(id: Tab, labels: Messages["tabs"], hasMedia: boolean, plugins: readonly PluginInfo[] = []): { label: string; icon: ReactNode } {
+export function tabFace(id: Tab, labels: Messages["tabs"], hasMedia: boolean): { label: string; icon: ReactNode } {
   switch (id) {
     case "home":
       return hasMedia ? { label: labels.playing, icon: <NoteIcon size={17} /> } : { label: labels.clock, icon: <ClockIcon /> };
@@ -39,10 +38,6 @@ export function tabFace(id: Tab, labels: Messages["tabs"], hasMedia: boolean, pl
       return { label: labels.shelf, icon: <TrayIcon size={18} /> };
     case "clipboard":
       return { label: labels.clipboard, icon: <ClipboardIcon size={17} /> };
-    default: {
-      const plugin = plugins.find((p) => `plugin:${p.id}` === id);
-      return { label: plugin?.name ?? id.slice("plugin:".length), icon: <span className="tab-emoji">{plugin?.icon ?? "🧩"}</span> };
-    }
   }
 }
 
@@ -54,20 +49,18 @@ interface TabBarProps {
   /** From the settings: the tabs' order and the hidden ones. */
   order: readonly string[];
   hidden: readonly string[];
-  plugins: readonly PluginInfo[];
   onSelect(tab: Tab): void;
 }
 
 /** Icon tabs above the open panel; the active one sits on a soft pill. */
-export function TabBar({ tab, hasMedia, counts, order, hidden, plugins, onSelect }: TabBarProps) {
+export function TabBar({ tab, hasMedia, counts, order, hidden, onSelect }: TabBarProps) {
   const labels = useT().tabs;
-  const tabs = orderTabs(order, pluginTabs(plugins)).filter((def) => tabShown(def, tab, counts[def.id] ?? 0, hidden));
+  const tabs = orderTabs(order).filter((def) => tabShown(def, tab, counts[def.id] ?? 0, hidden));
   return (
     <div className="tabs" role="tablist">
       {tabs.map(({ id }) => {
-        const { label, icon } = tabFace(id, labels, hasMedia, plugins);
-        // Plugins' tabs count only to be shown, not as a badge.
-        const badge = id.startsWith("plugin:") ? 0 : counts[id];
+        const { label, icon } = tabFace(id, labels, hasMedia);
+        const badge = counts[id];
         return (
           <button
             key={id}

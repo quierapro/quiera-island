@@ -13,12 +13,6 @@ describe("orderTabs", () => {
     expect(ids(["clipboard", "home", "controls"])).toEqual(["home", "clipboard", "controls", "timer", "notifications", "shelf"]);
   });
 
-  it("puts plugins' tabs after the built-in ones, unless placed", () => {
-    const weather = { id: "plugin:weather" as const, when: "always" as const, hideable: true };
-    expect(orderTabs([], [weather]).at(-1)?.id).toBe("plugin:weather");
-    expect(orderTabs(["plugin:weather"], [weather])[1].id).toBe("plugin:weather");
-  });
-
   it("ignores ids it does not know (a removed plugin)", () => {
     expect(ids(["plugin:gone", "shelf"])[1]).toBe("shelf");
   });

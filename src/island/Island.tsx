@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useRef, useState, type ReactNode, lazy, Suspense } from "react";
+import { useEffect, useMemo, useReducer, useState, type ReactNode, lazy, Suspense } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { createIslandController } from "../machine/controller";
 import { initialState, reduce, surfaceOf, TIMER_ACTIVITY, type Surface, type Tab } from "../machine/island-machine";
@@ -7,7 +7,7 @@ import { benchRequested, runBench } from "../dev/bench";
 // Development only: loaded on demand, so neither it nor its CSS ships.
 const DebugPanel = import.meta.env.DEV ? lazy(() => import("../dev/DebugPanel").then((m) => ({ default: m.DebugPanel }))) : null;
 import { getFullscreen, onFullscreen } from "../ipc/system";
-import { BIRTH, targetBox, targetFor, type ShellTarget, type Size } from "./geometry";
+import { BIRTH, targetBox, targetFor, type ShellTarget } from "./geometry";
 import { IslandShell } from "./IslandShell";
 import { useMedia } from "../modules/media/store";
 import { useMediaActivity } from "../modules/media/useMediaActivity";
@@ -40,9 +40,6 @@ import { startWelcome, useWelcome } from "../modules/welcome/store";
 import { WELCOME_PILL_SIZE, WELCOME_SIZE, WelcomePill, WelcomeTour } from "../modules/welcome/WelcomeViews";
 import { TIMER_ACTIVITY_SIZE, TimerActivity, TimerPanel, timerPanelSize } from "../modules/timer/TimerViews";
 import { useTimer } from "../modules/timer/store";
-import { PluginActivity, PluginPeek, PluginTab } from "../modules/plugins/PluginViews";
-import { onPeek, PLUGIN_PREFIX, startPlugins, usePluginList, usePluginViews } from "../modules/plugins/store";
-import { sendPluginEvent } from "../ipc/plugins";
 import { BIRTH_IMPACT_MS, DURATIONS, REGION_HOLD_MS } from "./springs";
 import "./island.css";
 
@@ -53,13 +50,6 @@ const WELCOME_DELAY_MS = 1500;
 /** A running timer shows over the music; ringing, over almost everything. */
 const TIMER_PRIORITY = 20;
 const TIMER_RINGING_PRIORITY = 50;
-/** Plugins' activities: below the music. */
-const PLUGIN_PRIORITY = 5;
-/** A plugin's tab, within the island's limits whatever its manifest says. */
-function pluginTabSize(size: [number, number] | undefined): Size {
-  const [w, h] = size ?? [360, 140];
-  return [Math.min(Math.max(w, 300), 650), Math.min(Math.max(h, 80), 260), 28];
-}
 
 /** The bubble at the end of its rise, just before it meets the edge. */
 const RISEN: ShellTarget = { ...BIRTH, y: 0 };
@@ -72,11 +62,11 @@ const UNBORN: ShellTarget = { ...BIRTH, fill: 0 };
  */
 function viewFor(
   surface: Surface,
-  state: { tab: Tab; dragging: boolean; peekId: string | null; welcome: boolean; timer: boolean; timerSet: boolean; activityId: string | null },
+  state: { tab: Tab; dragging: boolean; peekId: string | null; welcome: boolean; timer: boolean; timerSet: boolean },
   hasMedia: boolean,
   onLauncherRows: (rows: number) => void,
 ): { key: string; content: ReactNode } {
-  const { tab, dragging, peekId, welcome, timer, timerSet, activityId } = state;
+  const { tab, dragging, peekId, welcome, timer, timerSet } = state;
   switch (surface) {
     case "launcher":
       return { key: "launcher", content: <Launcher onRows={onLauncherRows} /> };
@@ -87,16 +77,13 @@ function viewFor(
     case "activity":
       if (welcome) return { key: "activity:welcome", content: <WelcomePill /> };
       if (timer) return { key: "activity:timer", content: <TimerActivity /> };
-      if (activityId?.startsWith(PLUGIN_PREFIX)) return { key: `activity:${activityId}`, content: <PluginActivity id={activityId.slice(PLUGIN_PREFIX.length)} /> };
       return { key: surface, content: <MediaActivity /> };
     case "peek":
       // Peeks of different kinds crossfade; a peek updated in place does not.
       if (peekId?.startsWith(SYSTEM_PEEK_PREFIX)) return { key: `peek:${peekId}`, content: <SystemPeekView /> };
-      if (peekId?.startsWith(PLUGIN_PREFIX)) return { key: `peek:${peekId}`, content: <PluginPeek /> };
       return { key: "peek:media", content: <MediaPeek /> };
     case "expanded":
       // The wheels and the countdown crossfade.
-      if (tab.startsWith(PLUGIN_PREFIX)) return { key: `expanded:${tab}`, content: <PluginTab id={tab.slice(PLUGIN_PREFIX.length)} /> };
       if (tab === "timer") return { key: timerSet ? "expanded:timer" : "expanded:timer-pick", content: <TimerPanel /> };
       if (tab === "shelf") return { key: "expanded:shelf", content: <ShelfView dragging={dragging} /> };
       if (tab === "clipboard") return { key: "expanded:clipboard", content: <ClipboardView /> };
@@ -250,30 +237,7 @@ export function Island() {
   }, [hasTimer, timerRinging]);
   const timing = hasTimer && primaryActivity(state.activities)?.id === TIMER_ACTIVITY;
 
-  // Plugins: their activities on the closed island, their peeks, their tabs.
-  useEffect(() => startPlugins(), []);
-  const plugins = usePluginList();
-  const pluginViews = usePluginViews();
-  const pluginActivities = pluginViews.filter((v) => v.activity).map((v) => `${PLUGIN_PREFIX}${v.id}`);
-  const activityKey = pluginActivities.join();
-  const shownActivities = useRef<string[]>([]);
-  useEffect(() => {
-    for (const id of shownActivities.current) if (!pluginActivities.includes(id)) dispatch({ type: "activity.clear", id });
-    for (const id of pluginActivities) if (!shownActivities.current.includes(id)) dispatch({ type: "activity.set", activity: { id, priority: PLUGIN_PRIORITY } });
-    shownActivities.current = pluginActivities;
-  }, [activityKey]);
-  useEffect(() => onPeek((peek) => controller.showPeek(`${PLUGIN_PREFIX}${peek.id}`)), [controller]);
-  const primaryId = primaryActivity(state.activities)?.id ?? null;
-
   const surface = surfaceOf(state);
-
-  // A plugin hears when its tab opens and closes (to refresh, or rest).
-  const openPlugin = surface === "expanded" && state.tab.startsWith(PLUGIN_PREFIX) ? state.tab.slice(PLUGIN_PREFIX.length) : null;
-  useEffect(() => {
-    if (!openPlugin) return;
-    sendPluginEvent(openPlugin, "open").catch(() => {});
-    return () => void sendPluginEvent(openPlugin, "close").catch(() => {});
-  }, [openPlugin]);
 
   // A closed island asks WebView2 to keep its memory low; it is back to
   // normal as soon as the island opens (and the switch costs nothing seen).
@@ -299,9 +263,7 @@ export function Island() {
   if (surface === "activity" && timing) size = TIMER_ACTIVITY_SIZE;
   if (surface === "expanded") {
     const [w, h, r] =
-      state.tab.startsWith(PLUGIN_PREFIX)
-        ? pluginTabSize(plugins.find((p) => `${PLUGIN_PREFIX}${p.id}` === state.tab)?.tab?.size)
-        : state.tab === "timer"
+      state.tab === "timer"
         ? timerPanelSize(timer)
         : state.tab === "shelf"
           ? [...shelfContentSize(shelfItems.length), 26]
@@ -327,7 +289,7 @@ export function Island() {
 
   const view = viewFor(
     surface,
-    { tab: state.tab, dragging: state.dragging, peekId: state.peek?.id ?? null, welcome: welcoming, timer: timing, timerSet: hasTimer, activityId: primaryId },
+    { tab: state.tab, dragging: state.dragging, peekId: state.peek?.id ?? null, welcome: welcoming, timer: timing, timerSet: hasTimer },
     hasMedia,
     setLauncherRows,
   );
@@ -359,16 +321,9 @@ export function Island() {
               <TabBar
                 tab={state.tab}
                 hasMedia={hasMedia}
-                counts={{
-                  shelf: shelfItems.length,
-                  clipboard: clipItems.length,
-                  notifications: notifItems.length,
-                  // A plugin's tab "holds something" once it rendered.
-                  ...Object.fromEntries(pluginViews.filter((v) => v.tab).map((v) => [`${PLUGIN_PREFIX}${v.id}`, 1])),
-                }}
+                counts={{ shelf: shelfItems.length, clipboard: clipItems.length, notifications: notifItems.length }}
                 order={settings.tabs.order}
                 hidden={settings.tabs.hidden}
-                plugins={plugins}
                 onSelect={(tab) => dispatch({ type: "tab.select", tab })}
               />
             </motion.div>
