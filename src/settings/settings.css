@@ -568,14 +568,12 @@ button {
 }
 
 .about-mark {
-  display: grid;
-  place-items: center;
+  display: block;
   width: 64px;
   height: 64px;
-  border-radius: 18px;
-  background: #fff;
-  color: #000;
-  font: 800 30px var(--font-display);
+  border-radius: 15px;
+  /* The icon is black: a fine edge keeps it on the window's black. */
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
 }
 
 .about-name {

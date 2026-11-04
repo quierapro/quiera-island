@@ -647,12 +647,26 @@ function Updates({ settings, save }: { settings: Settings; save: ReturnType<type
   );
 }
 
+/** Quiera's icon (`src-tauri/icons/source.svg`): the island, its cover and its bars. */
+function AppLogo() {
+  return (
+    <svg className="about-mark" viewBox="0 0 1024 1024" role="img" aria-label="Quiera">
+      <rect width="1024" height="1024" rx="232" fill="#0b0b0c" />
+      <rect x="192" y="402" width="640" height="220" rx="110" fill="#f3f3f4" />
+      <rect x="262" y="452" width="120" height="120" rx="34" fill="#0b0b0c" />
+      <rect x="640" y="462" width="26" height="100" rx="13" fill="#0b0b0c" />
+      <rect x="690" y="432" width="26" height="160" rx="13" fill="#0b0b0c" />
+      <rect x="740" y="477" width="26" height="70" rx="13" fill="#0b0b0c" />
+    </svg>
+  );
+}
+
 function About({ settings, save }: { settings: Settings; save: ReturnType<typeof useSave>["save"] }) {
   const t = useT().settings.about;
   const status = useUpdateStatus();
   return (
     <div className="about">
-      <div className="about-mark">Q</div>
+      <AppLogo />
       <div className="about-name">Quiera</div>
       <div className="about-version">{t.version(status?.current ?? "")}</div>
       <p className="about-text">{t.text}</p>
