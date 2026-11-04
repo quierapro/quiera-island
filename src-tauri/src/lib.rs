@@ -11,6 +11,7 @@ mod media;
 mod notifications;
 mod peeks;
 mod platform;
+mod plugins;
 mod protocol;
 mod recovery;
 mod settings;
@@ -112,6 +113,7 @@ pub fn run() {
             files::start();
             apply::at_start(app.handle());
             updates::start(app.handle());
+            plugins::start(app.handle());
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -127,6 +129,11 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             get_capabilities,
+            plugins::plugins_list,
+            plugins::plugins_views,
+            plugins::plugin_event,
+            plugins::plugin_logs,
+            plugins::plugins_open_folder,
             island::set_island_region,
             system::get_fullscreen,
             media::get_media,

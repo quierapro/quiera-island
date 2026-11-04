@@ -7,17 +7,21 @@ import { getHeldShortcut, getMonitors, SHORTCUTS, type Monitor, type Settings, t
 import { updateSettings, useSettings } from "./store";
 import { localeOf, useLang, useT } from "../i18n";
 import type { Tab } from "../machine/island-machine";
-import { orderTabs, TABS } from "../island/tabs";
+import { orderTabs, pluginTabs, TABS } from "../island/tabs";
+import { getPluginLogs, openPluginsFolder, type LogLine, type PluginInfo } from "../ipc/plugins";
+import { startPlugins, usePluginList } from "../modules/plugins/store";
 import { tabFace } from "../island/TabBar";
 
 const ignore = () => {};
 const REPO = "https://github.com/quierapro/quiera-island";
+const PLUGIN_GUIDE = `${REPO}/blob/main/docs/plugins.md`;
 
-type Section = "general" | "tabs" | "launcher" | "media" | "notifications" | "clipboard" | "peeks" | "about";
+type Section = "general" | "tabs" | "plugins" | "launcher" | "media" | "notifications" | "clipboard" | "peeks" | "about";
 
 const SECTIONS: { id: Section; icon: ReactNode }[] = [
   { id: "general", icon: <Icon d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM4 12h2m12 0h2M12 4v2m0 12v2M6.3 6.3l1.4 1.4m8.6 8.6 1.4 1.4m0-11.4-1.4 1.4m-8.6 8.6-1.4 1.4" /> },
   { id: "tabs", icon: <Icon d="M3 9.5h18M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Zm2.5 2.2h3m2 0h3" /> },
+  { id: "plugins", icon: <Icon d="M10 4.5a2 2 0 1 1 4 0V6h3a1 1 0 0 1 1 1v3h1.5a2 2 0 1 1 0 4H18v3a1 1 0 0 1-1 1h-3v-1.5a2 2 0 1 0-4 0V18H7a1 1 0 0 1-1-1v-3h1.5a2 2 0 1 0 0-4H6V7a1 1 0 0 1 1-1h3V4.5Z" /> },
   { id: "launcher", icon: <Icon d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Zm5-2 4.5 4.5" /> },
   { id: "media", icon: <Icon d="M9 18V6l11-2v12M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm11-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /> },
   { id: "notifications", icon: <Icon d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15l1.5-2ZM10 20.5a2.2 2.2 0 0 0 4 0" /> },
@@ -172,8 +176,12 @@ function Grip() {
 function Tabs({ settings, save }: { settings: Settings; save: ReturnType<typeof useSave>["save"] }) {
   const messages = useT();
   const t = messages.settings.tabs;
-  const saved = settings.tabs.order.join();
-  const arrange = () => orderTabs(settings.tabs.order).map((def) => def.id).filter((id) => id !== "home");
+  useEffect(() => startPlugins(), []);
+  const plugins = usePluginList();
+  const extra = pluginTabs(plugins);
+  const defs = [...TABS, ...extra];
+  const saved = `${settings.tabs.order.join()}|${extra.map((d) => d.id).join()}`;
+  const arrange = () => orderTabs(settings.tabs.order, extra).map((def) => def.id).filter((id) => id !== "home");
   const [order, setOrder] = useState<Tab[]>(arrange);
   const latest = useRef(order);
   latest.current = order;
@@ -183,7 +191,7 @@ function Tabs({ settings, save }: { settings: Settings; save: ReturnType<typeof 
   const commit = () =>
     save((s) => {
       // Ids this version does not know (a plugin's) keep their place at the end.
-      const unknown = s.tabs.order.filter((id) => !TABS.some((def) => def.id === id));
+      const unknown = s.tabs.order.filter((id) => !defs.some((def) => def.id === id));
       return { ...s, tabs: { ...s.tabs, order: ["home", ...latest.current, ...unknown] } };
     });
   const show = (id: Tab, on: boolean) =>
@@ -204,8 +212,9 @@ function Tabs({ settings, save }: { settings: Settings; save: ReturnType<typeof 
         </div>
         <Reorder.Group axis="y" values={order} onReorder={setOrder} className="tab-list">
           {order.map((id) => {
-            const def = TABS.find((d) => d.id === id)!;
-            const { label, icon } = tabFace(id, messages.tabs, false);
+            const def = defs.find((d) => d.id === id);
+            if (!def) return null;
+            const { label, icon } = tabFace(id, messages.tabs, false, plugins);
             const on = !hidden.includes(id);
             return (
               <Reorder.Item key={id} value={id} className="tab-row" onDragEnd={commit} whileDrag={{ scale: 1.02, boxShadow: "0 8px 24px rgba(0,0,0,0.5)", zIndex: 1 }}>
@@ -224,6 +233,155 @@ function Tabs({ settings, save }: { settings: Settings; save: ReturnType<typeof 
         </Reorder.Group>
       </Group>
       <p className="tab-hint">{t.hint}</p>
+    </>
+  );
+}
+
+/** A plugin's console: what it logged, refreshed while shown. */
+function Console({ id }: { id: string }) {
+  const t = useT().settings.plugins;
+  const [lines, setLines] = useState<LogLine[]>([]);
+  useEffect(() => {
+    let live = true;
+    const read = () => getPluginLogs(id).then((l) => live && setLines(l)).catch(ignore);
+    read();
+    const timer = setInterval(read, 1000);
+    return () => {
+      live = false;
+      clearInterval(timer);
+    };
+  }, [id]);
+  const time = (at: number) => new Date(at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  return (
+    <div className="plugin-console">
+      {lines.length === 0 && <div className="plugin-console-empty">{t.emptyConsole}</div>}
+      {lines.map((line, i) => (
+        <div key={i} className={`plugin-log plugin-log--${line.level}`}>
+          <span className="plugin-log-time">{time(line.at)}</span>
+          <span className="plugin-log-text">{line.text}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PluginCard({ plugin, settings, save }: { plugin: PluginInfo; settings: Settings; save: ReturnType<typeof useSave>["save"] }) {
+  const t = useT().settings.plugins;
+  const [asking, setAsking] = useState(false);
+  const [logs, setLogs] = useState(false);
+  const enabled = settings.plugins.enabled.includes(plugin.id);
+  const broken = plugin.version === "" && plugin.error !== null;
+  const enable = () =>
+    save((s) => ({
+      ...s,
+      plugins: {
+        enabled: [...s.plugins.enabled.filter((id) => id !== plugin.id), plugin.id],
+        approved: { ...s.plugins.approved, [plugin.id]: plugin.network },
+      },
+    }));
+  const disable = () =>
+    save((s) => {
+      const approved = { ...s.plugins.approved };
+      delete approved[plugin.id];
+      return { ...s, plugins: { enabled: s.plugins.enabled.filter((id) => id !== plugin.id), approved } };
+    });
+  return (
+    <div className="plugin-card">
+      <div className="plugin-head">
+        <span className="plugin-icon">{plugin.icon}</span>
+        <div className="row-text">
+          <div className="row-title">
+            {plugin.name}
+            {plugin.version && <span className="plugin-meta"> {plugin.version}{plugin.author && ` · ${t.by(plugin.author)}`}</span>}
+          </div>
+          {plugin.description && <div className="row-desc">{plugin.description}</div>}
+          {!broken && <div className="plugin-perm">{plugin.network.length ? t.internet(plugin.network.join(", ")) : t.noPermission}</div>}
+        </div>
+        {!broken && (
+          <Toggle
+            label={t.enable(plugin.name)}
+            on={enabled}
+            onChange={(on) => {
+              if (!on) {
+                setAsking(false);
+                disable();
+              } else if (plugin.network.length) setAsking(true);
+              else enable();
+            }}
+          />
+        )}
+      </div>
+      {(asking || plugin.needsConsent) && (
+        <div className="plugin-consent">
+          <div className="row-title">{plugin.needsConsent ? t.newPermissions : t.consentTitle(plugin.name)}</div>
+          <div className="row-desc">{t.consentText}</div>
+          <ul className="plugin-hosts">
+            {plugin.network.map((host) => (
+              <li key={host}>{host}</li>
+            ))}
+          </ul>
+          <div className="plugin-actions">
+            <button
+              className="button"
+              onClick={() => {
+                setAsking(false);
+                if (plugin.needsConsent) disable();
+              }}
+            >
+              {plugin.needsConsent ? t.turnOff : t.cancel}
+            </button>
+            <button
+              className="button button--main"
+              onClick={() => {
+                setAsking(false);
+                enable();
+              }}
+            >
+              {t.allow}
+            </button>
+          </div>
+        </div>
+      )}
+      {plugin.error && <div className="plugin-error">{plugin.error}</div>}
+      {enabled && !broken && (
+        <div className="plugin-foot">
+          <button className="plugin-link" onClick={() => setLogs((v) => !v)}>
+            {logs ? t.hideConsole : t.console}
+          </button>
+        </div>
+      )}
+      {logs && enabled && <Console id={plugin.id} />}
+    </div>
+  );
+}
+
+/** Plugins found in the plugins folder: enabled with consent, each with its console. */
+function Plugins({ settings, save }: { settings: Settings; save: ReturnType<typeof useSave>["save"] }) {
+  const t = useT().settings.plugins;
+  useEffect(() => startPlugins(), []);
+  const plugins = usePluginList();
+  return (
+    <>
+      <Group>
+        <Row title={t.folder} description={t.folderHint}>
+          <button className="button" onClick={() => openPluginsFolder().catch(ignore)}>
+            {t.open}
+          </button>
+        </Row>
+        <Row title={t.guide} description={t.guideHint}>
+          <button className="button" onClick={() => openLink(PLUGIN_GUIDE).catch(ignore)}>
+            {t.guideButton}
+          </button>
+        </Row>
+      </Group>
+      <p className="plugin-warning">{t.warning}</p>
+      <Group title={t.installed}>
+        {plugins.length === 0 ? (
+          <div className="plugin-empty">{t.empty}</div>
+        ) : (
+          plugins.map((p) => <PluginCard key={p.folder} plugin={p} settings={settings} save={save} />)
+        )}
+      </Group>
     </>
   );
 }
@@ -494,6 +652,7 @@ export function SettingsApp() {
             {section !== "about" && <h1 className="page-title">{t.sections[section]}</h1>}
             {section === "general" && <General settings={settings} save={save} />}
             {section === "tabs" && <Tabs settings={settings} save={save} />}
+            {section === "plugins" && <Plugins settings={settings} save={save} />}
             {section === "launcher" && <Launcher settings={settings} save={save} />}
             {section === "media" && <Media settings={settings} save={save} />}
             {section === "notifications" && <Notifications settings={settings} save={save} />}

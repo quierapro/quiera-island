@@ -70,6 +70,12 @@ describe("opening and closing", () => {
     expect(run(timer, { type: "peek.show", id: "system:volume" }, { type: "press" }).tab).toBe("home");
   });
 
+  it("opens on a plugin's tab over its activity", () => {
+    const weather = { type: "activity.set", activity: { id: "plugin:weather", priority: 5 } } as const;
+    expect(run(weather, { type: "press" }).tab).toBe("plugin:weather");
+    expect(run(weather, music, { type: "press" }).tab).toBe("home");
+  });
+
   it("ignores a press while hidden", () => {
     expect(run({ type: "visibility", visible: false }, { type: "press" }).open).toBe(false);
   });

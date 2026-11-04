@@ -19,6 +19,9 @@ pub fn at_start(app: &AppHandle) {
 }
 
 pub fn changed(app: &AppHandle, previous: &Settings, now: &Settings) {
+    if previous.plugins != now.plugins {
+        crate::plugins::sync(app);
+    }
     if previous.general.language != now.general.language {
         crate::tray::refresh(app);
         if let Some(window) = app.get_webview_window(crate::settings::WINDOW) {

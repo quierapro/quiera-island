@@ -46,3 +46,10 @@
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
+
+/* A plugin's tab: its emoji, sized like the icons. */
+.tab-emoji {
+  font-size: 15px;
+  line-height: 1;
+  filter: saturate(0.9);
+}

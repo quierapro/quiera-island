@@ -23,6 +23,8 @@ export interface Settings {
   };
   /** The island's tabs: their order (empty: the default one) and the hidden ones. */
   tabs: { order: string[]; hidden: string[] };
+  /** Running plugins, and the network hosts agreed to for each. */
+  plugins: { enabled: string[]; approved: Record<string, string[]> };
   launcher: { enabled: boolean; shortcut: Shortcut; indexFiles: boolean };
   media: { lyrics: boolean; netease: boolean; lyricsOffsetMs: number };
   notifications: { enabled: boolean; peek: boolean };
@@ -44,6 +46,7 @@ export const DEFAULT_SETTINGS: Settings = {
   version: 1,
   general: { startWithWindows: false, screen: null, hideInFullscreen: true, openOnHover: true, motion: "system", checkUpdates: true, language: "system" },
   tabs: { order: [], hidden: [] },
+  plugins: { enabled: [], approved: {} },
   launcher: { enabled: true, shortcut: "Alt+Espace", indexFiles: true },
   media: { lyrics: true, netease: false, lyricsOffsetMs: 0 },
   notifications: { enabled: true, peek: true },

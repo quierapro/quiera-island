@@ -1,7 +1,8 @@
 /**
  * The island's tabs, in one place: which exist, when each is offered, and
- * how the settings arrange them. A plugin's tab will join this list.
+ * how the settings arrange them. Plugins' tabs join the built-in ones.
  */
+import type { PluginInfo } from "../ipc/plugins";
 import type { Tab } from "../machine/island-machine";
 
 export interface TabDef {
@@ -22,17 +23,25 @@ export const TABS: readonly TabDef[] = [
   { id: "clipboard", when: "content", hideable: true },
 ];
 
+/** The tabs of the running plugins that have one, after the built-in ones. */
+export function pluginTabs(plugins: readonly PluginInfo[]): TabDef[] {
+  return plugins
+    .filter((p) => p.running && p.tab)
+    .map((p) => ({ id: `plugin:${p.id}` as Tab, when: p.tab!.when, hideable: true }));
+}
+
 /**
  * The tabs in the order the settings give, the ones they do not name after
  * them in the default order. Home always comes first: the island opens on it.
  */
-export function orderTabs(order: readonly string[]): TabDef[] {
+export function orderTabs(order: readonly string[], plugins: readonly TabDef[] = []): TabDef[] {
+  const all = [...TABS, ...plugins];
   const rank = (def: TabDef) => {
     if (def.id === "home") return -1;
     const at = order.indexOf(def.id);
-    return at >= 0 ? at : order.length + TABS.indexOf(def);
+    return at >= 0 ? at : order.length + all.indexOf(def);
   };
-  return [...TABS].sort((a, b) => rank(a) - rank(b));
+  return all.sort((a, b) => rank(a) - rank(b));
 }
 
 /**

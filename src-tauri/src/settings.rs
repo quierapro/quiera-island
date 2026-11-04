@@ -25,6 +25,7 @@ pub struct Settings {
     pub version: u32,
     pub general: General,
     pub tabs: Tabs,
+    pub plugins: Plugins,
     pub launcher: Launcher,
     pub media: Media,
     pub notifications: Notifications,
@@ -39,6 +40,7 @@ impl Default for Settings {
             version: VERSION,
             general: General::default(),
             tabs: Tabs::default(),
+            plugins: Plugins::default(),
             launcher: Launcher::default(),
             media: Media::default(),
             notifications: Notifications::default(),
@@ -225,6 +227,15 @@ pub struct Shelf {
 pub struct Tabs {
     pub order: Vec<String>,
     pub hidden: Vec<String>,
+}
+
+/// Which plugins run, and the network hosts people agreed to for each
+/// (a plugin asking for more after an update waits for a new consent).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(default, rename_all = "camelCase")]
+pub struct Plugins {
+    pub enabled: Vec<String>,
+    pub approved: std::collections::BTreeMap<String, Vec<String>>,
 }
 
 impl Settings {
