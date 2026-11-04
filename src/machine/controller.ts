@@ -34,6 +34,8 @@ export const TIMING: Timing = {
 export interface IslandController {
   pointerEnter(): void;
   pointerLeave(): void;
+  /** The pointer rested on the island (seen by the backend while clicks go through): no intent delay. */
+  pointerRest(): void;
   press(): void;
   /** Shows a peek for `holdMs` (the usual duration by default). */
   showPeek(id: string, holdMs?: number): void;
@@ -100,6 +102,16 @@ export function createIslandController(
       }
       if (intent !== null) return;
       intent = setTimeout(startHover, timing.hoverIntentMs);
+    },
+
+    pointerRest() {
+      grace = clear(grace);
+      dropHold = clear(dropHold);
+      if (hovered) {
+        scheduleOpen();
+        return;
+      }
+      startHover();
     },
 
     pointerLeave() {

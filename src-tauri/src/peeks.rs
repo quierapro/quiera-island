@@ -20,6 +20,23 @@ pub enum DeviceForm {
     Other,
 }
 
+/// What a Bluetooth device is, for its icon.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum BluetoothKind {
+    Keyboard,
+    Mouse,
+    Gamepad,
+    Other,
+}
+
+/// A battery at or below this is low.
+pub const LOW_BATTERY: u8 = 15;
+
+pub fn battery_low(level: u8) -> bool {
+    level <= LOW_BATTERY
+}
+
 /// Mirrors `SystemPeek` in `src/ipc/peeks.ts`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
@@ -33,6 +50,15 @@ pub enum SystemPeek {
         name: String,
         form: DeviceForm,
         battery: Option<u8>,
+    },
+    /// A Bluetooth device connected with its battery level, or its battery
+    /// ran low.
+    #[serde(rename_all = "camelCase")]
+    Bluetooth {
+        name: String,
+        device: BluetoothKind,
+        battery: u8,
+        low: bool,
     },
     #[serde(rename_all = "camelCase")]
     CapsLock { on: bool },
@@ -85,7 +111,9 @@ pub fn volume_percent(scalar: f32) -> u8 {
 
 pub fn start(handle: &AppHandle) {
     let handle = handle.clone();
+    let for_bluetooth = handle.clone();
     platform::start_peek_watch(move |peek| announce(&handle, peek));
+    platform::start_bluetooth_watch(move |peek| announce(&for_bluetooth, peek));
 }
 
 /// Shows a peek on the island.
@@ -95,6 +123,7 @@ fn wanted(peek: &SystemPeek) -> bool {
     match peek {
         SystemPeek::Power { .. } => settings.peeks.power,
         SystemPeek::AudioDevice { .. } => settings.peeks.audio_device,
+        SystemPeek::Bluetooth { .. } => settings.peeks.bluetooth,
         SystemPeek::CapsLock { .. } => settings.peeks.caps_lock,
         SystemPeek::Update { .. } => settings.general.check_updates,
         SystemPeek::Volume { .. } => settings.peeks.volume,
@@ -126,6 +155,8 @@ fn kind_name(peek: &SystemPeek) -> &'static str {
     match peek {
         SystemPeek::Power { .. } => "power",
         SystemPeek::AudioDevice { .. } => "audio device",
+        SystemPeek::Bluetooth { low: true, .. } => "bluetooth battery low",
+        SystemPeek::Bluetooth { .. } => "bluetooth device",
         SystemPeek::CapsLock { .. } => "caps lock",
         SystemPeek::Update { .. } => "update",
         SystemPeek::Volume { .. } => "volume",

@@ -19,6 +19,12 @@ pub fn at_start(app: &AppHandle) {
 }
 
 pub fn changed(app: &AppHandle, previous: &Settings, now: &Settings) {
+    if previous.general.island_shortcut != now.general.island_shortcut {
+        island::apply_shortcut();
+    }
+    if previous.calendar.links != now.calendar.links {
+        crate::calendar::links_changed(app);
+    }
     if previous.general.language != now.general.language {
         crate::tray::refresh(app);
         if let Some(window) = app.get_webview_window(crate::settings::WINDOW) {

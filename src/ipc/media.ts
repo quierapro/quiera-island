@@ -24,6 +24,15 @@ export interface MediaState {
   canRepeat: boolean;
   /** Cover art URL, or null when the app provides none. */
   artwork: string | null;
+  /** Every app playing or paused, and the one shown (its id). */
+  sources: MediaSource[];
+  source: number;
+}
+
+/** Mirrors `MediaSource` in `src-tauri/src/media.rs`. */
+export interface MediaSource {
+  id: number;
+  playing: boolean;
 }
 
 export type RepeatMode = "none" | "track" | "list";
@@ -37,6 +46,8 @@ export function onMedia(callback: (state: MediaState | null) => void): Promise<U
 }
 
 export const playPause = () => invoke<void>("media_play_pause");
+/** Shows and controls this source, as long as it exists. */
+export const select = (id: number) => invoke<void>("media_select", { id });
 export const next = () => invoke<void>("media_next");
 export const previous = () => invoke<void>("media_previous");
 export const seek = (positionMs: number) => invoke<void>("media_seek", { positionMs: Math.round(positionMs) });

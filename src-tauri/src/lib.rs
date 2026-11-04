@@ -1,4 +1,5 @@
 mod apply;
+mod calendar;
 mod clipboard;
 mod controls;
 mod files;
@@ -35,6 +36,14 @@ fn dev_log(message: String) {
     if cfg!(debug_assertions) {
         log::info!("[dev] {message}");
     }
+}
+
+/// An error in the interface (a script error, a view that crashed), for
+/// the log: the message and where, never what was on screen.
+#[tauri::command]
+fn frontend_error(message: String) {
+    let message: String = message.chars().take(600).collect();
+    log::error!("interface: {message}");
 }
 
 /// Development aid: puts files on the shelf as if they had been dropped
@@ -101,6 +110,7 @@ pub fn run() {
             settings::load(app.handle());
             tray::create(app)?;
             island::setup(app.handle())?;
+            island::passthrough::start(app.handle());
             recovery::watch(app.handle());
             shelf::watch_drops(app.handle());
             system::start(app.handle());
@@ -109,9 +119,11 @@ pub fn run() {
             clipboard::start(app.handle());
             notifications::start(app.handle());
             launcher::start(app.handle());
+            island::start_shortcut(app.handle());
             files::start();
             apply::at_start(app.handle());
             updates::start(app.handle());
+            calendar::start(app.handle());
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -127,10 +139,18 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             get_capabilities,
+            frontend_error,
+            calendar::calendar_events,
+            calendar::calendar_refresh,
+            calendar::calendar_check,
             island::set_island_region,
+            island::passthrough::island_pass_through,
+            island::island_shortcut_held,
+            island::island_shortcut_recording,
             system::get_fullscreen,
             media::get_media,
             media::media_play_pause,
+            media::media_select,
             media::media_next,
             media::media_previous,
             media::media_seek,

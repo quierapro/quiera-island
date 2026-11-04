@@ -9,19 +9,25 @@
 //! - A window region (`SetWindowRgn`) limits drawing *and* hit-testing to the
 //!   pill, so the rest of the window lets clicks through without any global
 //!   mouse hook.
+//! - `WS_EX_TRANSPARENT`, while the island is closed: the pill itself lets
+//!   clicks through too (to the browser tabs under it); the pointer's rest
+//!   on it is read with `GetCursorPos` instead (see `island::passthrough`).
 
 use std::ffi::c_void;
 use std::sync::atomic::{AtomicIsize, Ordering};
 
 use tauri::WebviewWindow;
 use windows::Win32::Foundation::HWND;
+use windows::Win32::Foundation::POINT;
 use windows::Win32::Graphics::Gdi::{
     CombineRgn, CreateRectRgn, DeleteObject, RGN_OR, SetWindowRgn,
 };
+use windows::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_LBUTTON};
 use windows::Win32::UI::WindowsAndMessaging::{
-    GWL_EXSTYLE, GetWindowLongPtrW, HWND_TOPMOST, SET_WINDOW_POS_FLAGS, SW_SHOWNOACTIVATE,
-    SWP_FRAMECHANGED, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SetWindowLongPtrW, SetWindowPos,
-    ShowWindow, WS_EX_APPWINDOW, WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW,
+    GWL_EXSTYLE, GetCursorPos, GetWindowLongPtrW, HWND_TOPMOST, SET_WINDOW_POS_FLAGS,
+    SW_SHOWNOACTIVATE, SWP_FRAMECHANGED, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SetWindowLongPtrW,
+    SetWindowPos, ShowWindow, WS_EX_APPWINDOW, WS_EX_LAYERED, WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW,
+    WS_EX_TRANSPARENT,
 };
 
 use crate::island::geometry::PhysRect;
@@ -108,6 +114,36 @@ pub fn show_island_window(window: &WebviewWindow) {
     // SAFETY: `hwnd` belongs to a live window owned by this process.
     unsafe {
         let _ = ShowWindow(hwnd, SW_SHOWNOACTIVATE);
+    }
+}
+
+/// Lets clicks go through the whole island (`true`), or lets it take them.
+/// Callable from any thread.
+pub fn set_island_click_through(on: bool) {
+    let Some(hwnd) = island_hwnd() else { return };
+    // SAFETY: a stale handle only makes these calls fail.
+    unsafe {
+        let current = GetWindowLongPtrW(hwnd, GWL_EXSTYLE) as u32;
+        let wanted = if on {
+            current | WS_EX_TRANSPARENT.0
+        } else {
+            current & !WS_EX_TRANSPARENT.0
+        };
+        if wanted != current {
+            SetWindowLongPtrW(hwnd, GWL_EXSTYLE, wanted as isize);
+        }
+    }
+}
+
+/// The pointer on the screen (physical pixels), and whether the left button
+/// is down.
+pub fn pointer() -> Option<(i32, i32, bool)> {
+    let mut at = POINT::default();
+    // SAFETY: reads into a local; a key state read has no side effect.
+    unsafe {
+        GetCursorPos(&mut at).ok()?;
+        let down = GetAsyncKeyState(i32::from(VK_LBUTTON.0)) < 0;
+        Some((at.x, at.y, down))
     }
 }
 

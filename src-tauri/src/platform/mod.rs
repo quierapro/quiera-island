@@ -16,36 +16,39 @@ mod windows;
 
 #[cfg(target_os = "linux")]
 pub use linux::{
-    capabilities, dismiss_notification, file_thumbnail, fixed_drives, focus_island,
-    install_crash_logger, island_has_focus, lan_addresses, launch_app, list_apps,
-    lower_thread_priority, notifications_quiet, prepare_island_window, read_controls,
-    restore_focus, set_app_mute, set_app_volume, set_autostart, set_default_output,
-    set_island_region, set_launcher_hotkey, set_master_mute, set_master_volume, set_radio,
-    set_webview_memory_low, share_files, show_island_window, start_clipboard_watch,
+    allow_island_camera, capabilities, dismiss_notification, file_thumbnail, fixed_drives,
+    focus_island, install_crash_logger, island_has_focus, lan_addresses, launch_app, list_apps,
+    lower_thread_priority, notifications_quiet, on_island_hotkey, pointer, prepare_island_window,
+    raise_island, read_controls, restore_focus, set_app_mute, set_app_volume, set_autostart,
+    set_default_output, set_island_click_through, set_island_hotkey, set_island_region,
+    set_launcher_hotkey, set_master_mute, set_master_volume, set_radio, set_webview_memory_low,
+    share_files, show_island_window, start_bluetooth_watch, start_clipboard_watch,
     start_launcher_hotkey, start_media, start_notification_watch, start_peek_watch,
     start_system_watch, system_prefers_french, wait_for_process_exit, watch_file_drops,
     watch_webview, write_clipboard,
 };
 #[cfg(target_os = "macos")]
 pub use macos::{
-    capabilities, dismiss_notification, file_thumbnail, fixed_drives, focus_island,
-    install_crash_logger, island_has_focus, lan_addresses, launch_app, list_apps,
-    lower_thread_priority, notifications_quiet, prepare_island_window, read_controls,
-    restore_focus, set_app_mute, set_app_volume, set_autostart, set_default_output,
-    set_island_region, set_launcher_hotkey, set_master_mute, set_master_volume, set_radio,
-    set_webview_memory_low, share_files, show_island_window, start_clipboard_watch,
+    allow_island_camera, capabilities, dismiss_notification, file_thumbnail, fixed_drives,
+    focus_island, install_crash_logger, island_has_focus, lan_addresses, launch_app, list_apps,
+    lower_thread_priority, notifications_quiet, on_island_hotkey, pointer, prepare_island_window,
+    raise_island, read_controls, restore_focus, set_app_mute, set_app_volume, set_autostart,
+    set_default_output, set_island_click_through, set_island_hotkey, set_island_region,
+    set_launcher_hotkey, set_master_mute, set_master_volume, set_radio, set_webview_memory_low,
+    share_files, show_island_window, start_bluetooth_watch, start_clipboard_watch,
     start_launcher_hotkey, start_media, start_notification_watch, start_peek_watch,
     start_system_watch, system_prefers_french, wait_for_process_exit, watch_file_drops,
     watch_webview, write_clipboard,
 };
 #[cfg(target_os = "windows")]
 pub use windows::{
-    capabilities, dismiss_notification, file_thumbnail, fixed_drives, focus_island,
-    install_crash_logger, island_has_focus, lan_addresses, launch_app, list_apps,
-    lower_thread_priority, notifications_quiet, prepare_island_window, read_controls,
-    restore_focus, set_app_mute, set_app_volume, set_autostart, set_default_output,
-    set_island_region, set_launcher_hotkey, set_master_mute, set_master_volume, set_radio,
-    set_webview_memory_low, share_files, show_island_window, start_clipboard_watch,
+    allow_island_camera, capabilities, dismiss_notification, file_thumbnail, fixed_drives,
+    focus_island, install_crash_logger, island_has_focus, lan_addresses, launch_app, list_apps,
+    lower_thread_priority, notifications_quiet, on_island_hotkey, pointer, prepare_island_window,
+    raise_island, read_controls, restore_focus, set_app_mute, set_app_volume, set_autostart,
+    set_default_output, set_island_click_through, set_island_hotkey, set_island_region,
+    set_launcher_hotkey, set_master_mute, set_master_volume, set_radio, set_webview_memory_low,
+    share_files, show_island_window, start_bluetooth_watch, start_clipboard_watch,
     start_launcher_hotkey, start_media, start_notification_watch, start_peek_watch,
     start_system_watch, system_prefers_french, wait_for_process_exit, watch_file_drops,
     watch_webview, write_clipboard,
@@ -74,6 +77,9 @@ pub enum MediaCommand {
     Seek(u64),
     SetShuffle(bool),
     SetRepeat(RepeatMode),
+    /// Show and control this source (a `MediaSource` id), not the one
+    /// chosen automatically, as long as it exists.
+    Select(u32),
 }
 
 /// Repeat setting of the media session (`"none"`, `"track"`, `"list"` in JSON).

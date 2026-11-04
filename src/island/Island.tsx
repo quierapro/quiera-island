@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useReducer, useState, type ReactNode, lazy, Suspense } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState, type ReactNode, lazy, Suspense } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { createIslandController } from "../machine/controller";
-import { initialState, reduce, surfaceOf, TIMER_ACTIVITY, type Surface, type Tab } from "../machine/island-machine";
+import { CALENDAR_ACTIVITY, CALENDAR_PEEK, initialState, reduce, surfaceOf, TIMER_ACTIVITY, type Surface, type Tab } from "../machine/island-machine";
 import { primaryActivity } from "../machine/arbiter";
 import { benchRequested, runBench } from "../dev/bench";
 // Development only: loaded on demand, so neither it nor its CSS ships.
@@ -33,13 +33,18 @@ import { launcherSize } from "../modules/launcher/search";
 import { onLauncher } from "../ipc/launcher";
 import { SYSTEM_PEEK_PREFIX, useSystemPeek, useSystemPeeks } from "../modules/system/store";
 import { SystemPeekView, systemPeekSize } from "../modules/system/SystemPeekView";
-import { setIslandMemory, type RegionRect } from "../ipc/island";
+import { onIslandNear, onIslandRest, onIslandToggle, setIslandMemory, setIslandPassThrough, type RegionRect } from "../ipc/island";
 import { useIslandRegion } from "./region";
 import { useSettings } from "../settings/store";
 import { startWelcome, useWelcome } from "../modules/welcome/store";
 import { WELCOME_PILL_SIZE, WELCOME_SIZE, WelcomePill, WelcomeTour } from "../modules/welcome/WelcomeViews";
 import { TIMER_ACTIVITY_SIZE, TimerActivity, TimerPanel, timerPanelSize } from "../modules/timer/TimerViews";
 import { useTimer } from "../modules/timer/store";
+import { CALENDAR_ACTIVITY_SIZE, CALENDAR_PEEK_SIZE, CalendarActivity, CalendarPanel, CalendarPeek } from "../modules/calendar/CalendarViews";
+import { agenda, agendaSize, byDay } from "../modules/calendar/format";
+import { startCalendar, useCalendarEvents, useNextMeeting } from "../modules/calendar/store";
+import type { CalendarEvent } from "../ipc/calendar";
+import { MIRROR_SIZE, MirrorView } from "../modules/mirror/MirrorView";
 import { BIRTH_IMPACT_MS, DURATIONS, REGION_HOLD_MS } from "./springs";
 import "./island.css";
 
@@ -50,6 +55,9 @@ const WELCOME_DELAY_MS = 1500;
 /** A running timer shows over the music; ringing, over almost everything. */
 const TIMER_PRIORITY = 20;
 const TIMER_RINGING_PRIORITY = 50;
+/** A meeting coming shows over the music, below the timer. */
+const CALENDAR_PRIORITY = 15;
+const CALENDAR_PEEK_MS = 6000;
 
 /** The bubble at the end of its rise, just before it meets the edge. */
 const RISEN: ShellTarget = { ...BIRTH, y: 0 };
@@ -63,6 +71,7 @@ const UNBORN: ShellTarget = { ...BIRTH, fill: 0 };
 function viewFor(
   surface: Surface,
   state: { tab: Tab; dragging: boolean; peekId: string | null; welcome: boolean; timer: boolean; timerSet: boolean },
+  calendar: { meeting: CalendarEvent | null; shown: boolean; events: readonly CalendarEvent[] },
   hasMedia: boolean,
   onLauncherRows: (rows: number) => void,
 ): { key: string; content: ReactNode } {
@@ -77,14 +86,18 @@ function viewFor(
     case "activity":
       if (welcome) return { key: "activity:welcome", content: <WelcomePill /> };
       if (timer) return { key: "activity:timer", content: <TimerActivity /> };
+      if (calendar.shown && calendar.meeting) return { key: "activity:calendar", content: <CalendarActivity event={calendar.meeting} /> };
       return { key: surface, content: <MediaActivity /> };
     case "peek":
       // Peeks of different kinds crossfade; a peek updated in place does not.
       if (peekId?.startsWith(SYSTEM_PEEK_PREFIX)) return { key: `peek:${peekId}`, content: <SystemPeekView /> };
+      if (peekId === CALENDAR_PEEK) return { key: "peek:calendar", content: calendar.meeting ? <CalendarPeek event={calendar.meeting} /> : null };
       return { key: "peek:media", content: <MediaPeek /> };
     case "expanded":
       // The wheels and the countdown crossfade.
       if (tab === "timer") return { key: timerSet ? "expanded:timer" : "expanded:timer-pick", content: <TimerPanel /> };
+      if (tab === "mirror") return { key: "expanded:mirror", content: <MirrorView /> };
+      if (tab === "calendar") return { key: "expanded:calendar", content: <CalendarPanel events={calendar.events} /> };
       if (tab === "shelf") return { key: "expanded:shelf", content: <ShelfView dragging={dragging} /> };
       if (tab === "clipboard") return { key: "expanded:clipboard", content: <ClipboardView /> };
       if (tab === "notifications") return { key: "expanded:notifications", content: <NotificationsView /> };
@@ -128,7 +141,13 @@ export function Island() {
 
   // Birth: the bubble rises, then meets the edge and becomes the island.
   useEffect(() => {
-    if (reducedMotion) return;
+    // Reduced motion skips the birth. It can turn on after the first frame
+    // (the settings arrive a moment later): the island is then born at once,
+    // instead of staying a bubble forever.
+    if (reducedMotion) {
+      setRisen(true);
+      return;
+    }
     setRisen(false);
     const t = setTimeout(() => setRisen(true), BIRTH_IMPACT_MS * timeScale);
     return () => clearTimeout(t);
@@ -147,27 +166,38 @@ export function Island() {
     };
   }, [controller]);
 
-  // A fullscreen app on the island's monitor hides it. Listen first, then
-  // ask, so a change between the two is not missed.
-  // Unless the settings keep it on screen.
+  // A fullscreen app on the island's monitor hides it, unless the settings
+  // keep it on screen. Listen first, then ask, so a change between the two
+  // is not missed. The shortcut shows or hides it by hand (`forced`), until
+  // the fullscreen changes: the next game hides it again.
   const hideInFullscreen = settings.general.hideInFullscreen;
+  const [fullscreen, setFullscreen] = useState(false);
+  const [forced, setForced] = useState<boolean | null>(null);
   useEffect(() => {
     let live = true;
     let unlisten: (() => void) | undefined;
-    const apply = (fullscreen: boolean) => dispatch({ type: "visibility", visible: !(fullscreen && hideInFullscreen) });
-    onFullscreen((on) => live && apply(on))
+    const apply = (on: boolean) => {
+      if (!live) return;
+      setFullscreen(on);
+      setForced(null);
+    };
+    onFullscreen(apply)
       .then((stop) => {
         if (live) unlisten = stop;
         else stop();
         return getFullscreen();
       })
-      .then((on) => live && apply(on))
+      .then(apply)
       .catch(() => {});
     return () => {
       live = false;
       unlisten?.();
     };
-  }, [hideInFullscreen]);
+  }, []);
+  const shown = forced ?? !(fullscreen && hideInFullscreen);
+  useEffect(() => dispatch({ type: "visibility", visible: shown }), [shown]);
+  const shownRef = useRef(shown);
+  shownRef.current = shown;
 
   // A hidden island cannot see the pointer leave.
   useEffect(() => {
@@ -237,7 +267,51 @@ export function Island() {
   }, [hasTimer, timerRinging]);
   const timing = hasTimer && primaryActivity(state.activities)?.id === TIMER_ACTIVITY;
 
+  // The calendar: a meeting coming is a live activity, announced once by a peek.
+  useEffect(() => startCalendar(), []);
+  const calendarEvents = useCalendarEvents();
+  const meeting = useNextMeeting(settings.calendar.remindMinutes * 60_000);
+  const meetingId = meeting?.id ?? null;
+  const announced = useRef(new Set<string>());
+  useEffect(() => {
+    if (!meeting) {
+      dispatch({ type: "activity.clear", id: CALENDAR_ACTIVITY });
+      return;
+    }
+    dispatch({ type: "activity.set", activity: { id: CALENDAR_ACTIVITY, priority: CALENDAR_PRIORITY } });
+    if (!announced.current.has(meeting.id) && meeting.start > Date.now()) {
+      announced.current.add(meeting.id);
+      controller.showPeek(CALENDAR_PEEK, CALENDAR_PEEK_MS);
+    }
+  }, [meetingId, controller]);
+  const meetingShown = Boolean(meeting) && primaryActivity(state.activities)?.id === CALENDAR_ACTIVITY;
+  const coming = agenda(calendarEvents, Date.now());
+
   const surface = surfaceOf(state);
+
+  // Closed, the island lets clicks go to the window under it (a browser's
+  // tabs); the backend says when the pointer rests on it, and it opens.
+  const closed = surface === "idle" || surface === "activity" || surface === "peek" || surface === "hidden";
+  const passThrough = settings.general.passThrough && closed && !state.hovered && !state.dragging;
+  useEffect(() => setIslandPassThrough(passThrough), [passThrough]);
+  // The pointer on it shows at once (it grows a little, as when hovered).
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    if (!passThrough) setNear(false);
+  }, [passThrough]);
+  useEffect(() => {
+    let live = true;
+    const stops: (() => void)[] = [];
+    const keep = (stop: () => void) => (live ? stops.push(stop) : stop());
+    onIslandRest(() => controller.pointerRest()).then(keep).catch(() => {});
+    onIslandNear((on) => setNear(on)).then(keep).catch(() => {});
+    // The shortcut: show the island (over a game), or hide it.
+    onIslandToggle(() => setForced(!shownRef.current)).then(keep).catch(() => {});
+    return () => {
+      live = false;
+      stops.forEach((stop) => stop());
+    };
+  }, [controller]);
 
   // A closed island asks WebView2 to keep its memory low; it is back to
   // normal as soon as the island opens (and the switch costs nothing seen).
@@ -261,9 +335,15 @@ export function Island() {
   if (surface === "launcher") size = launcherSize(launcherRows);
   if (surface === "activity" && welcoming) size = WELCOME_PILL_SIZE;
   if (surface === "activity" && timing) size = TIMER_ACTIVITY_SIZE;
+  if (surface === "activity" && meetingShown) size = CALENDAR_ACTIVITY_SIZE;
+  if (surface === "peek" && state.peek?.id === CALENDAR_PEEK) size = CALENDAR_PEEK_SIZE;
   if (surface === "expanded") {
     const [w, h, r] =
-      state.tab === "timer"
+      state.tab === "mirror"
+        ? MIRROR_SIZE
+        : state.tab === "calendar"
+        ? agendaSize(byDay(coming, Date.now()).length, coming.length)
+        : state.tab === "timer"
         ? timerPanelSize(timer)
         : state.tab === "shelf"
           ? [...shelfContentSize(shelfItems.length), 26]
@@ -280,7 +360,7 @@ export function Island() {
                     : CLOCK_PANEL_SIZE;
     size = showTabs ? [Math.max(w, 300), h + TAB_BAR_HEIGHT, r] : [w, h, r];
   }
-  const target = risen ? targetFor(surface, state.hovered, size) : RISEN;
+  const target = risen ? targetFor(surface, state.hovered || (near && passThrough), size) : RISEN;
   const viewSize = targetFor(surface, false, size);
   const tabOffset = showTabs ? TAB_BAR_HEIGHT : 0;
 
@@ -290,6 +370,7 @@ export function Island() {
   const view = viewFor(
     surface,
     { tab: state.tab, dragging: state.dragging, peekId: state.peek?.id ?? null, welcome: welcoming, timer: timing, timerSet: hasTimer },
+    { meeting, shown: meetingShown, events: calendarEvents },
     hasMedia,
     setLauncherRows,
   );
@@ -321,7 +402,7 @@ export function Island() {
               <TabBar
                 tab={state.tab}
                 hasMedia={hasMedia}
-                counts={{ shelf: shelfItems.length, clipboard: clipItems.length, notifications: notifItems.length }}
+                counts={{ shelf: shelfItems.length, clipboard: clipItems.length, notifications: notifItems.length, calendar: coming.length }}
                 order={settings.tabs.order}
                 hidden={settings.tabs.hidden}
                 onSelect={(tab) => dispatch({ type: "tab.select", tab })}

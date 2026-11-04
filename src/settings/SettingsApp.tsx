@@ -3,7 +3,10 @@ import { AnimatePresence, motion, Reorder } from "motion/react";
 import { listen } from "@tauri-apps/api/event";
 import { openLink } from "../ipc/notifications";
 import { checkForUpdates, getUpdateStatus, installUpdate, onUpdateStatus, type UpdateStatus } from "../ipc/updates";
-import { getHeldShortcut, getMonitors, SHORTCUTS, type Monitor, type Settings, type Shortcut } from "../ipc/settings";
+import { checkCalendarLink } from "../ipc/calendar";
+import { islandShortcutHeld, setShortcutRecording } from "../ipc/island";
+import { better, hotkeyLabel, isSingleKey, pressed } from "./hotkey";
+import { getHeldShortcut, getMonitors, SHORTCUTS, type Hotkey, type Monitor, type Settings, type Shortcut } from "../ipc/settings";
 import { updateSettings, useSettings } from "./store";
 import { localeOf, useLang, useT } from "../i18n";
 import type { Tab } from "../machine/island-machine";
@@ -13,11 +16,12 @@ import { tabFace } from "../island/TabBar";
 const ignore = () => {};
 const REPO = "https://github.com/quierapro/quiera-island";
 
-type Section = "general" | "tabs" | "launcher" | "media" | "notifications" | "clipboard" | "peeks" | "about";
+type Section = "general" | "tabs" | "calendar" | "launcher" | "media" | "notifications" | "clipboard" | "peeks" | "about";
 
 const SECTIONS: { id: Section; icon: ReactNode }[] = [
   { id: "general", icon: <Icon d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM4 12h2m12 0h2M12 4v2m0 12v2M6.3 6.3l1.4 1.4m8.6 8.6 1.4 1.4m0-11.4-1.4 1.4m-8.6 8.6-1.4 1.4" /> },
   { id: "tabs", icon: <Icon d="M3 9.5h18M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Zm2.5 2.2h3m2 0h3" /> },
+  { id: "calendar", icon: <Icon d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v12A1.5 1.5 0 0 1 19 20.5H5A1.5 1.5 0 0 1 3.5 19V7A1.5 1.5 0 0 1 5 5.5Zm-1.5 5h17M8 3.5v4m8-4v4" /> },
   { id: "launcher", icon: <Icon d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Zm5-2 4.5 4.5" /> },
   { id: "media", icon: <Icon d="M9 18V6l11-2v12M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm11-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /> },
   { id: "notifications", icon: <Icon d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15l1.5-2ZM10 20.5a2.2 2.2 0 0 0 4 0" /> },
@@ -100,6 +104,117 @@ function useSave() {
   return { save, error };
 }
 
+const NO_HOTKEY: Hotkey = { ctrl: false, alt: false, shift: false, win: false, key: 0, label: "", double: false };
+
+/**
+ * A shortcut recorded from the keyboard: click, press the keys, release
+ * them: what was held is the shortcut (a modifier alone too). Escape
+ * cancels; the × takes it away. A key alone can be asked twice. Says when
+ * another app already holds it.
+ */
+function ShortcutRecorder({ value, onChange }: { value: Hotkey; onChange(hotkey: Hotkey): void }) {
+  const messages = useT();
+  const t = messages.settings.general;
+  const names = { shift: messages.shortcut("Maj"), space: messages.shortcut("Espace"), none: t.noShortcut, twice: t.twice };
+  const [recording, setRecording] = useState(false);
+  const [pending, setPending] = useState("");
+  const [warning, setWarning] = useState<string | null>(null);
+  const change = useRef(onChange);
+  change.current = onChange;
+
+  useEffect(() => {
+    if (!recording) return;
+    // The current shortcut lets its keys through meanwhile.
+    setShortcutRecording(true);
+    let best: Hotkey | null = null;
+    let alone = false;
+    const down = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.key === "Escape" && !e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey) {
+        setRecording(false);
+        return;
+      }
+      if (e.repeat) return;
+      const recorded = pressed(e, names);
+      if (recorded.kind === "candidate") {
+        best = better(best, recorded.hotkey);
+        setPending(hotkeyLabel({ ...best, double: false }, names));
+        setWarning(null);
+      } else if (recorded.kind === "pending") {
+        setPending(recorded.label);
+      } else {
+        alone = true;
+      }
+    };
+    // Released: what was held is the shortcut.
+    const up = (e: KeyboardEvent) => {
+      e.preventDefault();
+      if (e.ctrlKey || e.altKey || e.shiftKey || e.metaKey) return;
+      if (best) {
+        change.current(best);
+        setRecording(false);
+      } else {
+        setWarning(alone ? t.shortcutAlone : t.shortcutModifiers);
+        setPending("");
+      }
+      best = null;
+      alone = false;
+    };
+    const leave = () => setRecording(false);
+    window.addEventListener("keydown", down, true);
+    window.addEventListener("keyup", up, true);
+    window.addEventListener("blur", leave);
+    return () => {
+      window.removeEventListener("keydown", down, true);
+      window.removeEventListener("keyup", up, true);
+      window.removeEventListener("blur", leave);
+      setShortcutRecording(false);
+      setPending("");
+    };
+  }, [recording]);
+
+  // Once set: does Windows give it?
+  const key = `${value.ctrl}${value.alt}${value.shift}${value.win}${value.key}${value.double}`;
+  useEffect(() => {
+    if (!value.key) return;
+    const timer = setTimeout(() => {
+      islandShortcutHeld()
+        .then((held) => setWarning(held ? null : t.shortcutTaken))
+        .catch(ignore);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [key]);
+
+  return (
+    <div className="hotkey-field">
+      <div className="hotkey-row">
+        <button
+          className={`hotkey ${recording ? "hotkey--recording" : ""} ${value.key ? "" : "hotkey--none"}`}
+          onClick={() => {
+            setWarning(null);
+            setRecording((r) => !r);
+          }}
+        >
+          {recording ? pending || t.pressKeys : hotkeyLabel(value, names)}
+        </button>
+        {value.key !== 0 && !recording && (
+          <button className="hotkey-clear" aria-label={t.clearShortcut} title={t.clearShortcut} onClick={() => onChange(NO_HOTKEY)}>
+            ×
+          </button>
+        )}
+      </div>
+      {isSingleKey(value) && !recording && (
+        <div className="hotkey-double">
+          <span>{t.pressTwice}</span>
+          <Toggle label={t.pressTwice} on={value.double} onChange={(double) => onChange({ ...value, double })} />
+        </div>
+      )}
+      {warning && <div className="hotkey-warning">{warning}</div>}
+    </div>
+  );
+}
+
 function General({ settings, save }: { settings: Settings; save: ReturnType<typeof useSave>["save"] }) {
   const [monitors, setMonitors] = useState<Monitor[]>([]);
   useEffect(() => {
@@ -140,6 +255,12 @@ function General({ settings, save }: { settings: Settings; save: ReturnType<type
       <Group title={t.behaviour}>
         <Row title={t.hover} description={t.hoverHint}>
           <Toggle label={t.hover} on={g.openOnHover} onChange={(on) => set({ openOnHover: on })} />
+        </Row>
+        <Row title={t.passThrough} description={t.passThroughHint}>
+          <Toggle label={t.passThrough} on={g.passThrough} onChange={(on) => set({ passThrough: on })} />
+        </Row>
+        <Row title={t.islandShortcut} description={t.islandShortcutHint}>
+          <ShortcutRecorder value={g.islandShortcut} onChange={(islandShortcut) => set({ islandShortcut })} />
         </Row>
         <Row title={t.fullscreen} description={t.fullscreenHint}>
           <Toggle label={t.fullscreen} on={g.hideInFullscreen} onChange={(on) => set({ hideInFullscreen: on })} />
@@ -224,6 +345,99 @@ function Tabs({ settings, save }: { settings: Settings; save: ReturnType<typeof 
         </Reorder.Group>
       </Group>
       <p className="tab-hint">{t.hint}</p>
+    </>
+  );
+}
+
+/** A secret link, recognisable but not shown whole: "Google · …a1b2". */
+function linkLabel(link: string): string {
+  let host = "";
+  try {
+    host = new URL(link.replace(/^webcal:/i, "https:")).hostname;
+  } catch {
+    return "…";
+  }
+  const name = host.includes("google.") ? "Google" : host.includes("outlook.") || host.includes("office365.") ? "Outlook" : host.includes("icloud.") ? "iCloud" : host;
+  const end = link.replace(/\.ics$/i, "").slice(-4);
+  return `${name} · …${end}`;
+}
+
+/** The calendars (secret iCal links) and the reminder. */
+function Calendar({ settings, save }: { settings: Settings; save: ReturnType<typeof useSave>["save"] }) {
+  const t = useT().settings.calendar;
+  const [link, setLink] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const links = settings.calendar.links;
+  const add = () => {
+    const value = link.trim();
+    if (!value || busy) return;
+    if (links.includes(value)) {
+      setMessage({ ok: false, text: t.already });
+      return;
+    }
+    setBusy(true);
+    setMessage(null);
+    checkCalendarLink(value)
+      .then((check) => {
+        save((s) => ({ ...s, calendar: { ...s.calendar, links: [...s.calendar.links, value] } }));
+        setLink("");
+        setMessage({ ok: true, text: t.added(check.name, check.upcoming) });
+      })
+      .catch((e) => setMessage({ ok: false, text: t.failed(String(e)) }))
+      .finally(() => setBusy(false));
+  };
+  const remove = (gone: string) => save((s) => ({ ...s, calendar: { ...s.calendar, links: s.calendar.links.filter((l) => l !== gone) } }));
+  return (
+    <>
+      <Group>
+        <Row title={t.links} description={t.linksHint} stacked>
+          <div className="cal-add">
+            <input
+              className="input"
+              value={link}
+              placeholder={t.placeholder}
+              spellCheck={false}
+              autoComplete="off"
+              onChange={(e) => setLink(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") add();
+              }}
+            />
+            <button className="button button--main" disabled={busy || !link.trim()} onClick={add}>
+              {busy ? t.checking : t.add}
+            </button>
+          </div>
+          {message && <div className={`cal-message ${message.ok ? "" : "cal-message--error"}`}>{message.text}</div>}
+          {links.length > 0 && (
+            <div className="cal-links">
+              {links.map((l) => (
+                <div key={l} className="cal-link">
+                  <span className="cal-link-name">📅 {linkLabel(l)}</span>
+                  <button className="cal-link-remove" onClick={() => remove(l)}>
+                    {t.remove}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </Row>
+        <Row title={t.remind} description={t.remindHint}>
+          <Choice
+            value={String(settings.calendar.remindMinutes)}
+            onChange={(v) => save((s) => ({ ...s, calendar: { ...s.calendar, remindMinutes: Number(v) } }))}
+            options={["5", "10", "15"].map((v) => ({ value: v, label: t.minutes(Number(v)) }))}
+          />
+        </Row>
+      </Group>
+      <Group title={t.how}>
+        <div className="cal-help">
+          <p>{t.google}</p>
+          <p>{t.outlook}</p>
+          <p>{t.icloud}</p>
+          <p className="cal-help-secret">{t.secret}</p>
+        </div>
+      </Group>
     </>
   );
 }
@@ -358,6 +572,9 @@ function Peeks({ settings, save }: { settings: Settings; save: ReturnType<typeof
       </Row>
       <Row title={t.audio} description={t.audioHint}>
         <Toggle label={t.audioLabel} on={p.audioDevice} onChange={(on) => set({ audioDevice: on })} />
+      </Row>
+      <Row title={t.bluetooth} description={t.bluetoothHint}>
+        <Toggle label={t.bluetoothLabel} on={p.bluetooth} onChange={(on) => set({ bluetooth: on })} />
       </Row>
       <Row title={t.caps} description={t.capsHint}>
         <Toggle label={t.capsLabel} on={p.capsLock} onChange={(on) => set({ capsLock: on })} />
@@ -494,6 +711,7 @@ export function SettingsApp() {
             {section !== "about" && <h1 className="page-title">{t.sections[section]}</h1>}
             {section === "general" && <General settings={settings} save={save} />}
             {section === "tabs" && <Tabs settings={settings} save={save} />}
+            {section === "calendar" && <Calendar settings={settings} save={save} />}
             {section === "launcher" && <Launcher settings={settings} save={save} />}
             {section === "media" && <Media settings={settings} save={save} />}
             {section === "notifications" && <Notifications settings={settings} save={save} />}

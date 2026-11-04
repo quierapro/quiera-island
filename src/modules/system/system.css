@@ -251,3 +251,13 @@
   object-fit: cover;
   border-radius: 7px;
 }
+
+/* ---- Bluetooth battery low ---- */
+
+.peek-icon--low {
+  color: #ff453a;
+}
+
+.peek-caption--low {
+  color: #ff453a;
+}

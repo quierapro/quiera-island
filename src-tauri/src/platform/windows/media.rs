@@ -18,7 +18,7 @@ use windows::Storage::Streams::DataReader;
 use windows::Win32::System::Com::{COINIT_MULTITHREADED, CoInitializeEx};
 use windows::core::RuntimeType;
 
-use crate::media::{Artwork, MediaSnapshot};
+use crate::media::{Artwork, MediaSnapshot, MediaSource};
 use crate::platform::{MediaCommand, MediaControl, RepeatMode};
 use windows::Media::MediaPlaybackAutoRepeatMode as AutoRepeat;
 
@@ -118,10 +118,19 @@ fn is_playing(session: &Session) -> bool {
         .is_ok_and(|status| status == Status::Playing)
 }
 
-/// The session to show. Windows' current one is not always right: it can
-/// stay on a paused video while music plays in another app. So what plays
-/// comes first, and while nothing plays the island stays where it was.
-fn pick(manager: &Manager, sessions: &[Session], bound: Option<&Session>) -> Option<Session> {
+/// The session to show. One the user chose comes first, while it exists.
+/// Otherwise Windows' current one is not always right: it can stay on a
+/// paused video while music plays in another app. So what plays comes
+/// first, and while nothing plays the island stays where it was.
+fn pick(
+    manager: &Manager,
+    sessions: &[Session],
+    bound: Option<&Session>,
+    chosen: Option<&Session>,
+) -> Option<Session> {
+    if let Some(chosen) = chosen.filter(|c| sessions.contains(c)) {
+        return Some(chosen.clone());
+    }
     let current = manager.GetCurrentSession().ok();
     current
         .iter()
@@ -164,6 +173,11 @@ fn run(
 
     let mut bound: Option<Bound> = None;
     let mut watched = Vec::new();
+    // Every session, each with an id that stays while it exists.
+    let mut sources: Vec<(Session, u32)> = Vec::new();
+    let mut next_id = 1u32;
+    // The source the user chose, while it exists.
+    let mut chosen: Option<Session> = None;
     // Title, artist and cover, re-read only when the app says they changed.
     let mut properties = Properties::default();
     let _ = tx.send(Msg::Rebind);
@@ -176,7 +190,22 @@ fn run(
                     .map(|list| list.into_iter().collect())
                     .unwrap_or_default();
                 watch_all(&sessions, &mut watched, &tx);
-                let current = pick(&manager, &sessions, bound.as_ref().map(|b| &b.session));
+                sources.retain(|(s, _)| sessions.contains(s));
+                for session in &sessions {
+                    if !sources.iter().any(|(s, _)| s == session) {
+                        sources.push((session.clone(), next_id));
+                        next_id += 1;
+                    }
+                }
+                if chosen.as_ref().is_some_and(|c| !sessions.contains(c)) {
+                    chosen = None;
+                }
+                let current = pick(
+                    &manager,
+                    &sessions,
+                    bound.as_ref().map(|b| &b.session),
+                    chosen.as_ref(),
+                );
                 let same = match (&bound, &current) {
                     (Some(b), Some(c)) => b.session == *c,
                     (None, None) => true,
@@ -190,7 +219,11 @@ fn run(
                 if let Some(b) = &bound {
                     properties = Properties::read(&b.session);
                 }
-                on_update(bound.as_ref().map(|b| snapshot(&b.session, &properties)));
+                on_update(
+                    bound
+                        .as_ref()
+                        .map(|b| snapshot(&b.session, &properties, &sources)),
+                );
             }
             Msg::Refresh {
                 properties: changed,
@@ -199,7 +232,13 @@ fn run(
                     if changed {
                         properties = Properties::read(&b.session);
                     }
-                    on_update(Some(snapshot(&b.session, &properties)));
+                    on_update(Some(snapshot(&b.session, &properties, &sources)));
+                }
+            }
+            Msg::Command(MediaCommand::Select(id)) => {
+                if let Some((session, _)) = sources.iter().find(|(_, i)| *i == id) {
+                    chosen = Some(session.clone());
+                    let _ = tx.send(Msg::Rebind);
                 }
             }
             Msg::Command(command) => {
@@ -269,7 +308,11 @@ pub(super) fn read_artwork(
     })
 }
 
-fn snapshot(session: &Session, properties: &Properties) -> MediaSnapshot {
+fn snapshot(
+    session: &Session,
+    properties: &Properties,
+    sources: &[(Session, u32)],
+) -> MediaSnapshot {
     let app_id = session
         .SourceAppUserModelId()
         .map(|s| s.to_string())
@@ -331,6 +374,17 @@ fn snapshot(session: &Session, properties: &Properties) -> MediaSnapshot {
         can_shuffle: enabled(|c| c.IsShuffleEnabled()),
         can_repeat: enabled(|c| c.IsRepeatEnabled()),
         artwork: properties.artwork.clone(),
+        sources: sources
+            .iter()
+            .map(|(s, id)| MediaSource {
+                id: *id,
+                playing: if s == session { playing } else { is_playing(s) },
+            })
+            .collect(),
+        source: sources
+            .iter()
+            .find(|(s, _)| s == session)
+            .map_or(0, |(_, id)| *id),
     }
 }
 
@@ -349,6 +403,8 @@ fn execute(session: &Session, command: MediaCommand) -> windows::core::Result<()
             session.TryChangePlaybackPositionAsync(ticks)?.join()?
         }
         MediaCommand::SetShuffle(active) => session.TryChangeShuffleActiveAsync(active)?.join()?,
+        // Handled by the worker: it picks the session.
+        MediaCommand::Select(_) => return Ok(()),
         MediaCommand::SetRepeat(mode) => {
             let mode = match mode {
                 RepeatMode::None => AutoRepeat::None,

@@ -170,6 +170,7 @@
 }
 
 .media-player {
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -361,4 +362,47 @@
 .lyric--seek:hover:not([data-distance="0"]) {
   color: rgba(255, 255, 255, 0.6);
   filter: none;
+}
+
+/* ---- Sources: page dots under the controls ---- */
+
+.media-sources {
+  position: absolute;
+  left: 50%;
+  bottom: -17px;
+  display: flex;
+  gap: 2px;
+  transform: translateX(-50%);
+}
+
+.media-source {
+  display: grid;
+  place-items: center;
+  height: 14px;
+  padding: 0 3px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.media-source-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.28);
+  transition: width 0.3s cubic-bezier(0.33, 1, 0.68, 1), background-color 0.2s ease;
+}
+
+.media-source--playing .media-source-dot {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.media-source:hover .media-source-dot {
+  background: rgba(255, 255, 255, 0.75);
+}
+
+/* The source shown: a little bar, as the iPhone's current page. */
+.media-source--on .media-source-dot {
+  width: 16px;
+  background: #fff;
 }

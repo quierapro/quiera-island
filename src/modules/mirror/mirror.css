@@ -1,0 +1,42 @@
+.mirror {
+  box-sizing: border-box;
+  height: 100%;
+  padding: 6px 12px 12px;
+}
+
+.mirror-frame {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #0d0d0f;
+}
+
+.mirror-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* A mirror: left is left. */
+  transform: scaleX(-1);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.mirror-frame--on .mirror-video {
+  opacity: 1;
+}
+
+.mirror-message {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 28px;
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+}

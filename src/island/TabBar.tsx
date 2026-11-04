@@ -7,6 +7,8 @@ import { BellIcon } from "../modules/notifications/icons";
 import { SlidersIcon } from "../modules/controls/icons";
 import { TrayIcon } from "../modules/shelf/icons";
 import { TimerIcon } from "../modules/timer/TimerViews";
+import { CalendarIcon } from "../modules/calendar/CalendarViews";
+import { MirrorIcon } from "../modules/mirror/MirrorView";
 import { useT, type Messages } from "../i18n";
 import { orderTabs, tabShown } from "./tabs";
 import "./tabs.css";
@@ -30,8 +32,12 @@ export function tabFace(id: Tab, labels: Messages["tabs"], hasMedia: boolean): {
       return hasMedia ? { label: labels.playing, icon: <NoteIcon size={17} /> } : { label: labels.clock, icon: <ClockIcon /> };
     case "timer":
       return { label: labels.timer, icon: <TimerIcon size={17} /> };
+    case "calendar":
+      return { label: labels.calendar, icon: <CalendarIcon size={17} /> };
     case "controls":
       return { label: labels.controls, icon: <SlidersIcon size={17} /> };
+    case "mirror":
+      return { label: labels.mirror, icon: <MirrorIcon size={17} /> };
     case "notifications":
       return { label: labels.notifications, icon: <BellIcon size={17} /> };
     case "shelf":
@@ -60,7 +66,8 @@ export function TabBar({ tab, hasMedia, counts, order, hidden, onSelect }: TabBa
     <div className="tabs" role="tablist">
       {tabs.map(({ id }) => {
         const { label, icon } = tabFace(id, labels, hasMedia);
-        const badge = counts[id];
+        // The agenda counts only to be shown, not as a badge.
+        const badge = id === "calendar" ? 0 : counts[id];
         return (
           <button
             key={id}

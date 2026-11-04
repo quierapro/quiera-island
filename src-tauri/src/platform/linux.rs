@@ -11,6 +11,12 @@ pub fn capabilities() -> Capabilities {
 
 pub fn prepare_island_window(_window: &WebviewWindow) {}
 
+pub fn set_island_click_through(_on: bool) {}
+
+pub fn pointer() -> Option<(i32, i32, bool)> {
+    None
+}
+
 pub fn show_island_window(window: &WebviewWindow) {
     let _ = window.show();
 }
@@ -89,6 +95,14 @@ pub fn set_app_mute(_path: &std::path::Path, _muted: bool) -> Result<(), String>
 
 pub fn start_launcher_hotkey(_handler: impl Fn() + Send + 'static) {}
 
+pub fn on_island_hotkey(_handler: impl Fn() + Send + Sync + 'static) {}
+
+pub fn raise_island() {}
+
+pub fn set_island_hotkey(_hotkey: &crate::settings::Hotkey) -> bool {
+    false
+}
+
 pub fn set_launcher_hotkey(_shortcut: Option<crate::settings::Shortcut>) -> bool {
     false
 }
@@ -140,6 +154,8 @@ pub fn file_thumbnail(_path: &std::path::Path, _size: u32) -> Option<Vec<u8>> {
 
 pub fn start_peek_watch(_handler: impl Fn(crate::peeks::SystemPeek) + Send + Sync + 'static) {}
 
+pub fn start_bluetooth_watch(_handler: impl Fn(crate::peeks::SystemPeek) + Send + Sync + 'static) {}
+
 pub fn share_files(_window: &WebviewWindow, _paths: &[std::path::PathBuf]) -> Result<(), String> {
     Err("not implemented on this platform yet".into())
 }
@@ -155,3 +171,5 @@ pub fn system_prefers_french() -> bool {
         .find_map(|v| std::env::var(v).ok().filter(|s| !s.is_empty()))
         .is_some_and(|l| l.to_lowercase().starts_with("fr"))
 }
+
+pub fn allow_island_camera(_window: &WebviewWindow) {}

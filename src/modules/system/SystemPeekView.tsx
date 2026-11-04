@@ -13,6 +13,7 @@ export function systemPeekSize(peek: SystemPeek | null): Size {
     case "power":
       return [290, 40, 20];
     case "audioDevice":
+    case "bluetooth":
       return [330, 50, 25];
     case "capsLock":
       return [220, 38, 19];
@@ -80,6 +81,38 @@ function DeviceGlyph({ form }: { form: string }) {
         <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4v-5ZM16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11" />
       )}
     </svg>
+  );
+}
+
+/** A Bluetooth device's look: keyboard, mouse, controller, or the Bluetooth mark. */
+function BluetoothGlyph({ device }: { device: string }) {
+  const paths: Record<string, string> = {
+    keyboard: "M4 7h16a1.5 1.5 0 0 1 1.5 1.5v7A1.5 1.5 0 0 1 20 17H4a1.5 1.5 0 0 1-1.5-1.5v-7A1.5 1.5 0 0 1 4 7Zm3 3.5h.01M10 10.5h.01M13 10.5h.01M16 10.5h.01M8 14h8",
+    mouse: "M12 3.5a5.5 5.5 0 0 1 5.5 5.5v6a5.5 5.5 0 0 1-11 0V9A5.5 5.5 0 0 1 12 3.5Zm0 0v5",
+    gamepad: "M7.5 8h9a4.5 4.5 0 0 1 4.3 5.8l-.9 3a2.3 2.3 0 0 1-3.9.8L14.5 16h-5l-1.5 1.6a2.3 2.3 0 0 1-3.9-.8l-.9-3A4.5 4.5 0 0 1 7.5 8Zm0 3v3m-1.5-1.5h3M15.5 11.5h.01M17.5 13.5h.01",
+    other: "M7 7.5l10 9-5 4.5v-18l5 4.5-10 9",
+  };
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d={paths[device] ?? paths.other} />
+    </svg>
+  );
+}
+
+/** A Bluetooth device connected with its battery, or its battery running low. */
+function Bluetooth({ name, device, battery, low }: { name: string; device: string; battery: number; low: boolean }) {
+  const t = useT().peeks;
+  return (
+    <div className="peek-row">
+      <span className={`peek-icon ${low ? "peek-icon--low" : ""}`}>
+        <BluetoothGlyph device={device} />
+      </span>
+      <span className="peek-text">
+        <span className={`peek-caption ${low ? "peek-caption--low" : ""}`}>{low ? t.batteryLow : t.connected}</span>
+        <span className="peek-title peek-title--ellipsis">{name}</span>
+      </span>
+      <BatteryRing percent={battery} />
+    </div>
   );
 }
 
@@ -236,6 +269,8 @@ export function SystemPeekView() {
       return <Power plugged={peek.plugged} percent={peek.percent} />;
     case "audioDevice":
       return <AudioDevice name={peek.name} form={peek.form} battery={peek.battery} />;
+    case "bluetooth":
+      return <Bluetooth name={peek.name} device={peek.device} battery={peek.battery} low={peek.low} />;
     case "capsLock":
       return <CapsLock on={peek.on} />;
     case "update":

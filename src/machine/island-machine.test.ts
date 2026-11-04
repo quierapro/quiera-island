@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { initialState, NOTIFICATION_PEEK, reduce, TIMER_ACTIVITY, surfaceOf, type IslandEvent, type IslandState } from "./island-machine";
+import { CALENDAR_ACTIVITY, CALENDAR_PEEK, initialState, NOTIFICATION_PEEK, reduce, TIMER_ACTIVITY, surfaceOf, type IslandEvent, type IslandState } from "./island-machine";
 
 function run(...events: IslandEvent[]): IslandState {
   return events.reduce(reduce, initialState);
@@ -68,6 +68,12 @@ describe("opening and closing", () => {
     // Music above it, or a peek over it: the timer is not what was shown.
     expect(run(timer, { type: "activity.set", activity: { id: "media", priority: 30 } }, { type: "press" }).tab).toBe("home");
     expect(run(timer, { type: "peek.show", id: "system:volume" }, { type: "press" }).tab).toBe("home");
+  });
+
+  it("opens on the agenda over a meeting coming, or its reminder", () => {
+    const meeting = { type: "activity.set", activity: { id: CALENDAR_ACTIVITY, priority: 15 } } as const;
+    expect(run(music, meeting, { type: "press" }).tab).toBe("calendar");
+    expect(run({ type: "peek.show", id: CALENDAR_PEEK }, { type: "press" }).tab).toBe("calendar");
   });
 
   it("ignores a press while hidden", () => {

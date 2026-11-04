@@ -4,6 +4,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 export type SystemPeek =
   | { kind: "power"; plugged: boolean; percent: number | null }
   | { kind: "audioDevice"; name: string; form: "headphones" | "headset" | "speakers" | "other"; battery: number | null }
+  | { kind: "bluetooth"; name: string; device: "keyboard" | "mouse" | "gamepad" | "other"; battery: number; low: boolean }
   | { kind: "capsLock"; on: boolean }
   | { kind: "update"; version: string }
   | { kind: "volume"; level: number; muted: boolean }

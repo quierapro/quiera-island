@@ -16,7 +16,9 @@ export interface TabDef {
 export const TABS: readonly TabDef[] = [
   { id: "home", when: "always", hideable: false },
   { id: "timer", when: "always", hideable: true },
+  { id: "calendar", when: "content", hideable: true },
   { id: "controls", when: "always", hideable: true },
+  { id: "mirror", when: "always", hideable: true },
   { id: "notifications", when: "content", hideable: true },
   { id: "shelf", when: "content", hideable: true },
   { id: "clipboard", when: "content", hideable: true },

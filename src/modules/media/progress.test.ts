@@ -3,6 +3,8 @@ import type { MediaState } from "../../ipc/media";
 import { formatRemaining, formatTime, mediaDecision, positionAt, trackKey } from "./progress";
 
 const track = (over: Partial<MediaState> = {}): MediaState => ({
+  sources: [],
+  source: 0,
   appId: "Spotify.exe",
   title: "Song",
   artist: "Artist",

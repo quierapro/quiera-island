@@ -19,13 +19,24 @@ export interface PeekState {
 }
 
 /** What the open panel shows: "home" is the player, or the clock without music. */
-export type Tab = "home" | "timer" | "controls" | "shelf" | "clipboard" | "notifications";
+export type Tab = "home" | "timer" | "calendar" | "controls" | "mirror" | "shelf" | "clipboard" | "notifications";
 
 /** The notification peek: opening the island over it leads to its tab. */
 export const NOTIFICATION_PEEK = "system:notification";
 
 /** The timer's live activity: opening the island over it leads to its tab. */
 export const TIMER_ACTIVITY = "timer";
+
+/** A meeting coming: its live activity and its reminder lead to the agenda. */
+export const CALENDAR_ACTIVITY = "calendar";
+export const CALENDAR_PEEK = "calendar";
+
+/** The tab that goes with a live activity, if one does. */
+function tabOfActivity(id: string | undefined): Tab | null {
+  if (id === TIMER_ACTIVITY) return "timer";
+  if (id === CALENDAR_ACTIVITY) return "calendar";
+  return null;
+}
 
 export interface IslandState {
   visible: boolean;
@@ -89,14 +100,14 @@ export function reduce(state: IslandState, event: IslandEvent): IslandState {
 
     case "press": {
       // Opening starts at home, or on what the closed island was showing:
-      // a notification, the timer.
+      // a notification, the timer, a meeting coming.
       if (!state.visible || state.open || state.launcher) return state;
-      const tab =
+      const tab: Tab =
         state.peek?.id === NOTIFICATION_PEEK
           ? "notifications"
-          : !state.peek && primaryActivity(state.activities)?.id === TIMER_ACTIVITY
-            ? "timer"
-            : "home";
+          : state.peek?.id === CALENDAR_PEEK
+            ? "calendar"
+            : ((!state.peek && tabOfActivity(primaryActivity(state.activities)?.id)) || "home");
       return { ...state, open: true, tab, peek: null };
     }
 

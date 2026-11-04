@@ -454,12 +454,59 @@ export function MediaExpanded() {
   return <Player state={state} accent={accent} />;
 }
 
+/** Swipes closer together than this count as one. */
+const SWIPE_PAUSE_MS = 450;
+
+/**
+ * Dots for the apps playing or paused, as an iPhone's page dots: the one
+ * shown is a little bar, the ones playing are brighter. A dot shows its app.
+ */
+function Sources({ state }: { state: MediaState }) {
+  const t = useT().media;
+  if (state.sources.length < 2) return null;
+  return (
+    <div className="media-sources" role="tablist" aria-label={t.sources}>
+      {state.sources.map((s, i) => (
+        <button
+          key={s.id}
+          role="tab"
+          aria-selected={s.id === state.source}
+          aria-label={t.source(i + 1, state.sources.length)}
+          className={`media-source ${s.id === state.source ? "media-source--on" : ""} ${s.playing ? "media-source--playing" : ""}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (s.id !== state.source) media.select(s.id).catch(ignore);
+          }}
+        >
+          <span className="media-source-dot" />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** A sideways swipe (trackpad, tilted wheel) goes to the next or previous source. */
+function useSourceSwipe(state: MediaState) {
+  const last = useRef(0);
+  return (e: React.WheelEvent) => {
+    if (state.sources.length < 2 || Math.abs(e.deltaX) < 30 || Math.abs(e.deltaX) < Math.abs(e.deltaY)) return;
+    const now = Date.now();
+    if (now - last.current < SWIPE_PAUSE_MS) return;
+    last.current = now;
+    const at = state.sources.findIndex((s) => s.id === state.source);
+    const step = e.deltaX > 0 ? 1 : -1;
+    const next = state.sources[(at + step + state.sources.length) % state.sources.length];
+    if (next) media.select(next.id).catch(ignore);
+  };
+}
+
 function Player({ state, accent }: { state: MediaState; accent: string }) {
   const t = useT().media;
   const clock = usePlaybackClock(state);
   const lines = useLyrics(state);
+  const swipe = useSourceSwipe(state);
   return (
-    <div className="media-expanded" style={accentStyle(accent)}>
+    <div className="media-expanded" style={accentStyle(accent)} onWheel={swipe}>
       <div className="media-player">
         <div className="media-head">
           <Art url={state.artwork} size={60} radius={14} />
@@ -476,6 +523,7 @@ function Player({ state, accent }: { state: MediaState; accent: string }) {
           <SkipButton back={false} disabled={!state.canNext} onPress={() => media.next().catch(ignore)} />
           <RepeatButton state={state} />
         </div>
+        <Sources state={state} />
       </div>
       {lines && <Lyrics key={trackKey(state)} lines={lines} clock={clock} canSeek={state.canSeek} />}
     </div>

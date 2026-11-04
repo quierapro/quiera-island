@@ -39,6 +39,20 @@ describe("hover intent", () => {
   });
 });
 
+describe("pointer rest", () => {
+  it("opens at once when the backend saw the pointer rest (clicks going through)", () => {
+    const open = createIslandController((e) => events.push(e), TIMING);
+    open.pointerRest();
+    expect(types()).toEqual(["hover.start", "press"]);
+    open.dispose();
+  });
+
+  it("only hovers when opening on hover is off", () => {
+    controller.pointerRest();
+    expect(types()).toEqual(["hover.start"]);
+  });
+});
+
 describe("hover grace", () => {
   function hover() {
     controller.pointerEnter();

@@ -26,6 +26,14 @@ pub struct Artwork {
     pub mime: String,
 }
 
+/// One app playing or paused (Spotify, a browser…), for the island to
+/// switch between them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+pub struct MediaSource {
+    pub id: u32,
+    pub playing: bool,
+}
+
 /// What the platform reports about the current media session.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct MediaSnapshot {
@@ -48,6 +56,9 @@ pub struct MediaSnapshot {
     pub can_shuffle: bool,
     pub can_repeat: bool,
     pub artwork: Option<Arc<Artwork>>,
+    /// Every source, in a stable order, and the one shown.
+    pub sources: Vec<MediaSource>,
+    pub source: u32,
 }
 
 /// Mirrors `MediaState` in `src/ipc/media.ts`.
@@ -72,6 +83,8 @@ pub struct MediaState {
     pub can_repeat: bool,
     /// URL of the cover art, served by the `quiera-art` protocol.
     pub artwork: Option<String>,
+    pub sources: Vec<MediaSource>,
+    pub source: u32,
 }
 
 pub fn artwork_key(art: &Artwork) -> String {
@@ -108,6 +121,8 @@ pub fn state_from(snapshot: &MediaSnapshot) -> MediaState {
             .artwork
             .as_deref()
             .map(|a| artwork_url(&artwork_key(a))),
+        sources: snapshot.sources.clone(),
+        source: snapshot.source,
     }
 }
 
@@ -228,6 +243,12 @@ fn send(command: MediaCommand) -> Result<(), String> {
         }
         None => Err("media control is not available on this platform".into()),
     }
+}
+
+/// Shows and controls another source (a `MediaSource` id).
+#[tauri::command]
+pub fn media_select(id: u32) -> Result<(), String> {
+    send(MediaCommand::Select(id))
 }
 
 #[tauri::command]

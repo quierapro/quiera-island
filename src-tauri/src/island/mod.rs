@@ -3,6 +3,7 @@
 //! reports (the drawn pill) clicks go to the windows underneath.
 
 pub mod geometry;
+pub mod passthrough;
 
 use geometry::{LogicalRect, PhysRect, island_window_rect, region_to_physical};
 use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize, WebviewWindow};
@@ -10,6 +11,8 @@ use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize, WebviewWindow};
 use crate::platform;
 
 pub const LABEL: &str = "island";
+/// The island's shortcut was pressed: the interface shows or hides it.
+pub const TOGGLE_EVENT: &str = "island://toggle";
 
 /// Large enough for the biggest expanded state plus shadow and flares
 /// (docs/02-decisions-design-fonctionnalites.md §3.4).
@@ -25,6 +28,7 @@ pub fn setup(handle: &AppHandle) -> tauri::Result<()> {
         .expect("the island window is declared in tauri.conf.json");
     place(&window)?;
     platform::prepare_island_window(&window);
+    platform::allow_island_camera(&window);
     platform::show_island_window(&window);
     Ok(())
 }
@@ -63,12 +67,55 @@ pub fn place(window: &WebviewWindow) -> tauri::Result<()> {
     );
     window.set_size(PhysicalSize::new(rect.width as u32, rect.height as u32))?;
     window.set_position(PhysicalPosition::new(rect.x, rect.y))?;
+    passthrough::remember_origin(rect.x, rect.y);
     log::info!(
         "island placed at {:?} (scale {})",
         rect,
         monitor.scale_factor()
     );
     Ok(())
+}
+
+/// The island's shortcut shows and hides it (over a game in fullscreen,
+/// where it hides by itself). Held by the launcher's shortcut thread.
+pub fn start_shortcut(app: &AppHandle) {
+    let app = app.clone();
+    platform::on_island_hotkey(move || {
+        use tauri::Emitter;
+        // A fullscreen game can sit above other topmost windows.
+        platform::raise_island();
+        let _ = app.emit(TOGGLE_EVENT, ());
+    });
+    apply_shortcut();
+}
+
+/// Whether Windows gave the island's shortcut (false: another app holds it).
+static SHORTCUT_HELD: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(true);
+
+/// Holds the shortcut the settings ask for (none when there is none).
+pub fn apply_shortcut() {
+    let wanted = crate::settings::get().general.island_shortcut;
+    let held = platform::set_island_hotkey(&wanted) || wanted.is_none();
+    if !held {
+        log::warn!("the island's shortcut is taken by another app");
+    }
+    SHORTCUT_HELD.store(held, std::sync::atomic::Ordering::Relaxed);
+}
+
+/// Whether the island's shortcut works (another app may hold it).
+#[tauri::command]
+pub fn island_shortcut_held() -> bool {
+    SHORTCUT_HELD.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+/// While a new shortcut is recorded, the current one lets its keys through.
+#[tauri::command]
+pub fn island_shortcut_recording(recording: bool) {
+    if recording {
+        platform::set_island_hotkey(&crate::settings::Hotkey::none());
+    } else {
+        apply_shortcut();
+    }
 }
 
 /// Asks the web view to keep its memory low while the island is closed.
@@ -121,6 +168,8 @@ pub fn set_island_region(window: WebviewWindow, rects: Vec<LogicalRect>) -> Resu
         return Err(format!("too many region rectangles: {}", rects.len()));
     }
     let scale = window.scale_factor().map_err(|e| e.to_string())?;
-    platform::set_island_region(&window, &region_to_physical(&rects, scale));
+    let rects = region_to_physical(&rects, scale);
+    passthrough::remember_shape(&rects);
+    platform::set_island_region(&window, &rects);
     Ok(())
 }

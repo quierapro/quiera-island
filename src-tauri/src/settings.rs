@@ -25,6 +25,7 @@ pub struct Settings {
     pub version: u32,
     pub general: General,
     pub tabs: Tabs,
+    pub calendar: Calendar,
     pub launcher: Launcher,
     pub media: Media,
     pub notifications: Notifications,
@@ -39,6 +40,7 @@ impl Default for Settings {
             version: VERSION,
             general: General::default(),
             tabs: Tabs::default(),
+            calendar: Calendar::default(),
             launcher: Launcher::default(),
             media: Media::default(),
             notifications: Notifications::default(),
@@ -68,6 +70,12 @@ pub struct General {
     pub hide_in_fullscreen: bool,
     /// Opens the panel on hover; otherwise on click.
     pub open_on_hover: bool,
+    /// Closed, the island lets clicks go to the window under it (a browser's
+    /// tabs); it opens when the pointer rests on it.
+    pub pass_through: bool,
+    /// Shows and hides the island from the keyboard.
+    #[serde(deserialize_with = "lenient_hotkey")]
+    pub island_shortcut: Hotkey,
     pub motion: Motion,
     /// Looks for a new version now and then (GitHub releases).
     pub check_updates: bool,
@@ -92,6 +100,8 @@ impl Default for General {
             screen: None,
             hide_in_fullscreen: true,
             open_on_hover: true,
+            pass_through: true,
+            island_shortcut: Hotkey::default(),
             motion: Motion::System,
             check_updates: true,
             language: Language::System,
@@ -111,6 +121,62 @@ pub enum Shortcut {
     CtrlShiftSpace,
     #[serde(rename = "Alt+Q")]
     AltQ,
+}
+
+/// A shortcut people record themselves: modifiers and one key (Windows'
+/// virtual-key code; 0 for none), with its name as they saw it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct Hotkey {
+    pub ctrl: bool,
+    pub alt: bool,
+    pub shift: bool,
+    pub win: bool,
+    pub key: u32,
+    pub label: String,
+    /// A key alone pressed twice in a row (Ctrl, Ctrl).
+    pub double: bool,
+}
+
+impl Hotkey {
+    pub fn none() -> Self {
+        Hotkey {
+            ctrl: false,
+            alt: false,
+            shift: false,
+            win: false,
+            key: 0,
+            label: String::new(),
+            double: false,
+        }
+    }
+
+    pub fn is_none(&self) -> bool {
+        self.key == 0
+    }
+}
+
+/// Ctrl+Alt+I.
+impl Default for Hotkey {
+    fn default() -> Self {
+        Hotkey {
+            ctrl: true,
+            alt: true,
+            key: u32::from(b'I'),
+            label: "Ctrl+Alt+I".into(),
+            ..Hotkey::none()
+        }
+    }
+}
+
+/// A shortcut as recorded, or the default for anything else (an older
+/// file's text): one unreadable field must not set the whole file aside.
+fn lenient_hotkey<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Hotkey, D::Error> {
+    let value = serde_json::Value::deserialize(deserializer)?;
+    Ok(match value {
+        serde_json::Value::String(s) if s == "off" => Hotkey::none(),
+        other => serde_json::from_value(other).unwrap_or_default(),
+    })
 }
 
 impl Shortcut {
@@ -195,6 +261,8 @@ impl Default for Clipboard {
 pub struct Peeks {
     pub power: bool,
     pub audio_device: bool,
+    /// Bluetooth devices connecting with their battery, and low batteries.
+    pub bluetooth: bool,
     pub caps_lock: bool,
     pub volume: bool,
 }
@@ -204,6 +272,7 @@ impl Default for Peeks {
         Self {
             power: true,
             audio_device: true,
+            bluetooth: true,
             caps_lock: true,
             volume: true,
         }
@@ -218,13 +287,31 @@ pub struct Shelf {
 }
 
 /// The island's tabs: in which order, and which are hidden. Ids are
-/// strings so that a plugin's tab can join later; an id this version does
-/// not know is kept, not dropped. An empty order is the default one.
+/// strings: one this version does not know (from a newer one) is kept, not
+/// dropped. An empty order is the default one.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(default, rename_all = "camelCase")]
 pub struct Tabs {
     pub order: Vec<String>,
     pub hidden: Vec<String>,
+}
+
+/// The calendar: its iCal links (secret: never logged), and how long before
+/// a meeting the island says so.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct Calendar {
+    pub links: Vec<String>,
+    pub remind_minutes: u32,
+}
+
+impl Default for Calendar {
+    fn default() -> Self {
+        Self {
+            links: Vec::new(),
+            remind_minutes: 10,
+        }
+    }
 }
 
 impl Settings {
@@ -233,6 +320,7 @@ impl Settings {
         // Version 1 is the first: nothing to bring up yet.
         self.version = VERSION;
         self.media.lyrics_offset_ms = self.media.lyrics_offset_ms.clamp(-5000, 5000);
+        self.calendar.remind_minutes = self.calendar.remind_minutes.clamp(1, 60);
         self
     }
 }
@@ -381,6 +469,31 @@ mod tests {
             std::env::temp_dir().join(format!("quiera-settings-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         dir.join(FILE)
+    }
+
+    #[test]
+    fn reads_a_recorded_shortcut_and_tolerates_old_text() {
+        let mut settings = Settings::default();
+        settings.general.island_shortcut = Hotkey {
+            win: true,
+            key: 0x78,
+            label: "Win+F9".into(),
+            ..Hotkey::none()
+        };
+        let json = serde_json::to_string(&settings).unwrap();
+        let back: Settings = serde_json::from_str(&json).unwrap();
+        assert_eq!(
+            back.general.island_shortcut,
+            settings.general.island_shortcut
+        );
+        // What a development build wrote before: the defaults, not an error.
+        let old = r#"{ "general": { "islandShortcut": "Alt+Maj+Espace", "openOnHover": false } }"#;
+        let read: Settings = serde_json::from_str(old).unwrap();
+        assert_eq!(read.general.island_shortcut, Hotkey::default());
+        assert!(!read.general.open_on_hover);
+        let off: Settings =
+            serde_json::from_str(r#"{ "general": { "islandShortcut": "off" } }"#).unwrap();
+        assert!(off.general.island_shortcut.is_none());
     }
 
     #[test]

@@ -1,14 +1,15 @@
-//! The launcher on Windows: its global shortcut, the apps it can open, and
-//! handing the keyboard to the island and back.
+//! The launcher on Windows: its global shortcut (and the island's, held by
+//! the same thread), the apps it can open, and handing the keyboard to the
+//! island and back.
 //!
 //! Apps come from the shell's Applications folder (`shell:AppsFolder`):
 //! what the Start menu lists, Store and classic apps alike, each with the id
 //! that opens it.
 
 use std::ffi::c_void;
-use std::sync::Mutex;
 use std::sync::atomic::{AtomicIsize, Ordering};
 use std::sync::mpsc::{self, Sender};
+use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
 
 use tauri::WebviewWindow;
@@ -17,7 +18,7 @@ use windows::Win32::Storage::FileSystem::{GetDriveTypeW, GetLogicalDrives};
 use windows::Win32::System::Com::{COINIT_APARTMENTTHREADED, CoInitializeEx, CoTaskMemFree};
 use windows::Win32::System::Threading::GetCurrentThreadId;
 use windows::Win32::UI::Input::KeyboardAndMouse::{
-    HOT_KEY_MODIFIERS, MOD_ALT, MOD_CONTROL, MOD_NOREPEAT, MOD_SHIFT, RegisterHotKey,
+    HOT_KEY_MODIFIERS, MOD_ALT, MOD_CONTROL, MOD_NOREPEAT, MOD_SHIFT, MOD_WIN, RegisterHotKey,
     UnregisterHotKey, VK_SPACE,
 };
 use windows::Win32::UI::Shell::{
@@ -30,7 +31,33 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 
 use crate::launcher::LaunchApp;
-use crate::settings::Shortcut;
+use crate::settings::{Hotkey, Shortcut};
+
+/// The shortcuts' ids on their thread.
+const LAUNCHER_KEY: i32 = 1;
+const ISLAND_KEY: i32 = 2;
+
+/// What the island's shortcut does.
+static ISLAND_HANDLER: OnceLock<Box<dyn Fn() + Send + Sync>> = OnceLock::new();
+
+/// The keys of a recorded shortcut; None when there is none.
+fn hotkey_keys(hotkey: &Hotkey) -> Option<(HOT_KEY_MODIFIERS, u32)> {
+    if hotkey.is_none() {
+        return None;
+    }
+    let mut modifiers = 0;
+    for (on, flag) in [
+        (hotkey.ctrl, MOD_CONTROL.0),
+        (hotkey.alt, MOD_ALT.0),
+        (hotkey.shift, MOD_SHIFT.0),
+        (hotkey.win, MOD_WIN.0),
+    ] {
+        if on {
+            modifiers |= flag;
+        }
+    }
+    Some((HOT_KEY_MODIFIERS(modifiers), hotkey.key))
+}
 
 /// The keys of each shortcut.
 fn keys(shortcut: Shortcut) -> (HOT_KEY_MODIFIERS, u32) {
@@ -43,9 +70,24 @@ fn keys(shortcut: Shortcut) -> (HOT_KEY_MODIFIERS, u32) {
     }
 }
 
-/// A change for the shortcut's thread: the shortcut to hold (None: none)
-/// and where to answer whether Windows gave it.
-type Request = (Option<Shortcut>, Sender<bool>);
+/// A change for the shortcut's thread, and where to answer whether Windows
+/// accepted it.
+enum Change {
+    /// The keys a shortcut (its id) holds; None: none.
+    Keys(i32, Option<(HOT_KEY_MODIFIERS, u32)>),
+    /// The island's shortcut when Windows cannot hold it (a modifier alone,
+    /// a double press): its key watched by a hook; None: none.
+    Watch(Option<Hotkey>),
+}
+
+type Request = (Change, Sender<bool>);
+
+/// The island's shortcut was used (pressed, or tapped as chosen).
+pub(super) fn fire_island() {
+    if let Some(island) = ISLAND_HANDLER.get() {
+        island();
+    }
+}
 
 /// The shortcut thread: its request channel and its id, to wake it.
 static THREAD: Mutex<Option<(Sender<Request>, u32)>> = Mutex::new(None);
@@ -69,14 +111,20 @@ pub fn start_launcher_hotkey(handler: impl Fn() + Send + 'static) {
                 let _ = ready_tx.send(());
                 while GetMessageW(&mut msg, None, 0, 0).as_bool() {
                     match msg.message {
+                        WM_HOTKEY if msg.wParam.0 == ISLAND_KEY as usize => fire_island(),
                         WM_HOTKEY => handler(),
                         WM_APP => {
-                            for (shortcut, answer) in rx.try_iter() {
-                                let _ = UnregisterHotKey(None, 1);
-                                let held = shortcut.is_none_or(|s| {
-                                    let (modifiers, key) = keys(s);
-                                    RegisterHotKey(None, 1, modifiers | MOD_NOREPEAT, key).is_ok()
-                                });
+                            for (change, answer) in rx.try_iter() {
+                                let held = match change {
+                                    Change::Keys(id, keys) => {
+                                        let _ = UnregisterHotKey(None, id);
+                                        keys.is_none_or(|(modifiers, key)| {
+                                            RegisterHotKey(None, id, modifiers | MOD_NOREPEAT, key)
+                                                .is_ok()
+                                        })
+                                    }
+                                    Change::Watch(hotkey) => super::key_tap::watch(hotkey.as_ref()),
+                                };
                                 let _ = answer.send(held);
                             }
                         }
@@ -94,11 +142,32 @@ pub fn start_launcher_hotkey(handler: impl Fn() + Send + 'static) {
 
 /// Holds `shortcut` (or none). False when another app already holds it.
 pub fn set_launcher_hotkey(shortcut: Option<Shortcut>) -> bool {
+    request(Change::Keys(LAUNCHER_KEY, shortcut.map(keys)))
+}
+
+/// What the island's shortcut does (once, at start).
+pub fn on_island_hotkey(handler: impl Fn() + Send + Sync + 'static) {
+    let _ = ISLAND_HANDLER.set(Box::new(handler));
+}
+
+/// Holds the island's shortcut (none when there is none). False when
+/// another app already holds it.
+pub fn set_island_hotkey(hotkey: &Hotkey) -> bool {
+    if super::key_tap::wants_hook(hotkey) {
+        request(Change::Keys(ISLAND_KEY, None));
+        request(Change::Watch(Some(hotkey.clone())))
+    } else {
+        request(Change::Watch(None));
+        request(Change::Keys(ISLAND_KEY, hotkey_keys(hotkey)))
+    }
+}
+
+fn request(change: Change) -> bool {
     let Some((tx, thread)) = THREAD.lock().unwrap_or_else(|e| e.into_inner()).clone() else {
         return false;
     };
     let (answer_tx, answer_rx) = mpsc::channel();
-    if tx.send((shortcut, answer_tx)).is_err() {
+    if tx.send((change, answer_tx)).is_err() {
         return false;
     }
     // SAFETY: wakes the shortcut thread, which reads the request.
