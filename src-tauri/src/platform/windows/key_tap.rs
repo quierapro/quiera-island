@@ -217,7 +217,7 @@ mod tests {
     fn copy_then_paste_quickly_never_fires() {
         let t = Instant::now();
         let mut ctrl = Detector::new(CONTROL, true);
-        for (i, letter) in [b'C', b'V'].into_iter().enumerate() {
+        for (i, letter) in b"CV".iter().copied().enumerate() {
             let at = t + ms(250 * i as u64);
             ctrl.step(0xA2, true, at);
             ctrl.step(u32::from(letter), true, at + ms(40));
