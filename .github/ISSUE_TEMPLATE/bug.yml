@@ -14,7 +14,7 @@ body:
     attributes:
       label: Quiera version / Version de Quiera
       description: Settings › About. / Réglages › À propos.
-      placeholder: "0.1.4"
+      placeholder: "0.1.5"
     validations:
       required: true
   - type: input

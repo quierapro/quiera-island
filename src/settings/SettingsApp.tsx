@@ -647,16 +647,20 @@ function Updates({ settings, save }: { settings: Settings; save: ReturnType<type
   );
 }
 
-/** Quiera's icon (`src-tauri/icons/source.svg`): the island, its cover and its bars. */
+/** Quiera's icon (`src-tauri/icons/source.svg`): the cloud of quiera.eu. */
 function AppLogo() {
   return (
-    <svg className="about-mark" viewBox="0 0 1024 1024" role="img" aria-label="Quiera">
-      <rect width="1024" height="1024" rx="232" fill="#0b0b0c" />
-      <rect x="192" y="402" width="640" height="220" rx="110" fill="#f3f3f4" />
-      <rect x="262" y="452" width="120" height="120" rx="34" fill="#0b0b0c" />
-      <rect x="640" y="462" width="26" height="100" rx="13" fill="#0b0b0c" />
-      <rect x="690" y="432" width="26" height="160" rx="13" fill="#0b0b0c" />
-      <rect x="740" y="477" width="26" height="70" rx="13" fill="#0b0b0c" />
+    <svg className="about-mark" viewBox="0 0 64 64" role="img" aria-label="Quiera">
+      <g fill="#7136ff">
+        <circle cx="32.2" cy="26.9" r="16.6" />
+        <circle cx="17.7" cy="36.5" r="13.7" />
+        <circle cx="46.3" cy="36.5" r="13.7" />
+        <ellipse cx="32" cy="42" rx="17" ry="13.3" />
+      </g>
+      <g fill="#fff">
+        <rect x="21.9" y="26.8" width="7.8" height="14" rx="3.9" transform="rotate(-9 25.8 33.8)" />
+        <rect x="34.6" y="23.7" width="7.8" height="14" rx="3.9" transform="rotate(-9 38.5 30.7)" />
+      </g>
     </svg>
   );
 }
