@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Code signing policy · Quiera</title>
-    <meta name="description" content="How Quiera's Windows releases are built and signed, who approves them, and what the app sends over the network." />
+    <title>Release and signing policy · Quiera</title>
+    <meta name="description" content="How Quiera's Windows releases are built, how to check them, who approves them, and what the app sends over the network." />
     <link rel="canonical" href="https://quiera.eu/code-signing/" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/legal.css" />
@@ -13,20 +13,37 @@
   <body>
     <main>
       <a class="back" href="/">← Quiera</a>
-      <h1>Code signing policy</h1>
+      <h1>Release and signing policy</h1>
       <p class="lead">
-        Free code signing provided by <a href="https://about.signpath.io">SignPath.io</a>, certificate by
-        <a href="https://signpath.org">SignPath Foundation</a>.
+        Quiera's Windows installer is not signed with a code-signing certificate yet, so Windows SmartScreen may warn about it the first
+        time. Here is how each release is built, and how you can check what you install.
       </p>
 
-      <h2>What is signed</h2>
+      <h2>How releases are built</h2>
       <p>
-        The Windows installer of each Quiera release (<code>Quiera-Setup-x64.exe</code>), published on
+        The Windows installer of each Quiera release (<code>Quiera-Setup-x64.exe</code>) is published on
         <a href="https://github.com/quierapro/quiera-island/releases">GitHub Releases</a>. Every installer is built by
         <a href="https://github.com/quierapro/quiera-island/blob/main/.github/workflows/release.yml">GitHub Actions</a> from the tagged
-        commit of the public repository, <a href="https://github.com/quierapro/quiera-island">quierapro/quiera-island</a>, and each
-        signing request is approved by hand before the release is published. Nothing built elsewhere is signed.
+        commit of the public repository, <a href="https://github.com/quierapro/quiera-island">quierapro/quiera-island</a>. Nothing built
+        elsewhere is published.
       </p>
+
+      <h2>How to check what you install</h2>
+      <ul>
+        <li>
+          <strong>Checksum</strong>: each release carries <code>Quiera-Setup-x64.exe.sha256</code>, the SHA-256 of its installer. In
+          PowerShell, <code>Get-FileHash Quiera-Setup-x64.exe</code> must print the same value.
+        </li>
+        <li>
+          <strong>Updates</strong>: the update packages Quiera installs by itself are signed with the project's update key, and the app
+          checks that signature before installing anything.
+        </li>
+        <li>
+          <strong>winget</strong>: the manifest submitted to Microsoft's catalogue pins the installer's SHA-256, and winget refuses a file
+          that doesn't match.
+        </li>
+      </ul>
+      <p>If Quiera is ever signed with a code-signing certificate, this page will name its provider.</p>
 
       <h2>Team roles</h2>
       <ul>
@@ -36,7 +53,7 @@
         </li>
         <li>Approvers: <a href="https://github.com/quierapro">quierapro</a>.</li>
       </ul>
-      <p>All team members use multi-factor authentication on GitHub and SignPath.</p>
+      <p>All team members use multi-factor authentication on GitHub.</p>
 
       <h2>Privacy</h2>
       <p>
@@ -53,6 +70,10 @@
         <li>
           <strong>Updates</strong>: Quiera reads the list of releases on GitHub at start and every six hours; no personal data is sent
           (Settings › About). GitHub's privacy statement applies to that request.
+        </li>
+        <li>
+          <strong>Calendar</strong>: only if the user pastes a calendar's iCal link, Quiera downloads it from that address every 15
+          minutes. The link stays on the PC and is never written in the logs (Settings › Calendar).
         </li>
         <li>
           <strong>Send to a phone</strong>: when the user asks, files go straight from the PC to the phone over the local network, never

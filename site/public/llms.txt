@@ -6,14 +6,18 @@
 
 - Lecteur de musique universel : toute appli qui annonce sa lecture à Windows (Spotify, Deezer, YouTube dans le navigateur…), avec pochette, progression, aléatoire et répétition.
 - Paroles synchronisées mot à mot, depuis LRCLIB.
-- Lanceur façon Spotlight (Alt+Espace, modifiable) : applis, fichiers de tous les disques, calculs, recherche web ; « images », « vidéos », « musique », « documents » filtrent par type.
+- Plusieurs sources audio à la fois : des points sous le lecteur passent de l'une à l'autre.
+- Agenda : lien iCal (Google, Outlook, iCloud), réunion annoncée quelques minutes avant, bouton Rejoindre pour Teams, Meet, Zoom ou Webex.
+- Minuteur : « 5 min », « 1h30 » ou « pomodoro » dans le lanceur, ou des roues ; compte à rebours dans la pilule.
+- Miroir : un aperçu de la webcam avant une visio, rien n'est enregistré.
+- Lanceur façon Spotlight (Alt+Espace, modifiable) : applis, fichiers de tous les disques, calculs, minuteurs, recherche web ; « images », « vidéos », « musique », « documents » filtrent par type.
 - Notifications de Windows sur l'île ; un clic ouvre l'appli. Le mode Ne pas déranger est respecté.
 - Contrôles rapides : Wi-Fi, Bluetooth, volume général, sortie audio, volume par application.
 - Shelf : des fichiers glissés sur l'île, gardés sous la main, et envoyés au téléphone par QR code (réseau local, sans appli, lien valable 10 minutes) ou par le panneau Partager de Windows.
 - Mises à jour : proposées par l'appli, vérifiées par signature avant installation.
 - Historique du presse-papiers, en mémoire seulement.
-- Aperçus système : chargeur, casque et sa batterie, Verr. Maj, volume.
-- Se cache pendant les jeux et vidéos en plein écran.
+- Aperçus système : chargeur, casque, clavier et souris Bluetooth avec leur batterie (alerte sous 15 %), Verr. Maj, volume.
+- Se cache pendant les jeux et vidéos en plein écran ; un raccourci au choix (Ctrl+Alt+I par défaut, une touche, ou une touche pressée deux fois) l'affiche ou la cache. Fermée, l'île laisse passer les clics.
 
 ## Plateformes
 
@@ -22,6 +26,6 @@
 
 ## Liens
 
-- Site : https://quiera.eu/
+- Site : https://quiera.eu/ (English: https://quiera.eu/en/)
 - Code source : https://github.com/quierapro/quiera-island
 - Téléchargement : https://github.com/quierapro/quiera-island/releases/latest

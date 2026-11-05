@@ -1,7 +1,8 @@
 /**
- * What the demo island shows. Songs, lyrics, people and files are all
- * invented: the page shows how Quiera looks, not anyone's content.
+ * What the demo island shows. Songs, lyrics, people, meetings and files are
+ * all invented: the page shows how Quiera looks, not anyone's content.
  */
+import type { Lang } from "../i18n";
 
 export interface LyricLine {
   start: number;
@@ -12,6 +13,8 @@ export interface LyricLine {
 export interface Track {
   title: string;
   artist: string;
+  /** The app playing it: the player switches between them (its dots). */
+  app: string;
   durationMs: number;
   cover: string;
   lyrics: LyricLine[] | null;
@@ -26,53 +29,100 @@ function lyrics(lines: string[], durationMs: number, every: number): LyricLine[]
   return out;
 }
 
-export const TRACKS: Track[] = [
-  {
-    title: "Néons",
-    artist: "Les Nuits Claires",
-    durationMs: 195_000,
-    cover: "radial-gradient(circle at 30% 25%, #ffb36b 0, transparent 45%), radial-gradient(circle at 75% 80%, #ff4f8b 0, transparent 50%), linear-gradient(135deg, #3a1c71, #d76d77 60%, #ffaf7b)",
-    lyrics: lyrics(
-      [
-        "Les rues s'allument une à une",
-        "On marche sans savoir où",
-        "La ville respire sous la lune",
-        "Et la nuit n'est qu'à nous",
-        "On danse sous les néons",
-        "Les couleurs plein les yeux",
-        "On oublie jusqu'à nos noms",
-        "Le ciel devient lumineux",
-      ],
-      195_000,
-      3600,
-    ),
-  },
-  {
-    title: "Minuit sur la ville",
-    artist: "Orage Doux",
-    durationMs: 222_000,
-    cover: "radial-gradient(circle at 70% 30%, #9be7ff 0, transparent 40%), linear-gradient(160deg, #0f2027, #203a43 50%, #2c7da0)",
-    lyrics: lyrics(
-      [
-        "Il est minuit sur la ville",
-        "Les fenêtres parlent bas",
-        "Tout paraît simple et fragile",
-        "Quand tu marches avec moi",
-        "Les voitures font des vagues",
-        "Sur le bitume mouillé",
-      ],
-      222_000,
-      4000,
-    ),
-  },
-  {
-    title: "Bleu outremer",
-    artist: "Saison Basse",
-    durationMs: 178_000,
-    cover: "radial-gradient(circle at 30% 70%, #4facfe 0, transparent 50%), linear-gradient(200deg, #00c6fb, #005bea)",
-    lyrics: null,
-  },
-];
+const NEON = "radial-gradient(circle at 30% 25%, #ffb36b 0, transparent 45%), radial-gradient(circle at 75% 80%, #ff4f8b 0, transparent 50%), linear-gradient(135deg, #3a1c71, #d76d77 60%, #ffaf7b)";
+const MIDNIGHT = "radial-gradient(circle at 70% 30%, #9be7ff 0, transparent 40%), linear-gradient(160deg, #0f2027, #203a43 50%, #2c7da0)";
+const BLUE = "radial-gradient(circle at 30% 70%, #4facfe 0, transparent 50%), linear-gradient(200deg, #00c6fb, #005bea)";
+
+/** Three sources playing at once, as in the app: music, a video, a film. */
+export function tracks(lang: Lang): Track[] {
+  return lang === "fr"
+    ? [
+        {
+          title: "Néons",
+          artist: "Les Nuits Claires",
+          app: "Spotify",
+          durationMs: 195_000,
+          cover: NEON,
+          lyrics: lyrics(
+            [
+              "Les rues s'allument une à une",
+              "On marche sans savoir où",
+              "La ville respire sous la lune",
+              "Et la nuit n'est qu'à nous",
+              "On danse sous les néons",
+              "Les couleurs plein les yeux",
+              "On oublie jusqu'à nos noms",
+              "Le ciel devient lumineux",
+            ],
+            195_000,
+            3600,
+          ),
+        },
+        {
+          title: "Minuit sur la ville",
+          artist: "Orage Doux",
+          app: "YouTube",
+          durationMs: 222_000,
+          cover: MIDNIGHT,
+          lyrics: lyrics(
+            [
+              "Il est minuit sur la ville",
+              "Les fenêtres parlent bas",
+              "Tout paraît simple et fragile",
+              "Quand tu marches avec moi",
+              "Les voitures font des vagues",
+              "Sur le bitume mouillé",
+            ],
+            222_000,
+            4000,
+          ),
+        },
+        { title: "Bleu outremer", artist: "Saison Basse", app: "Netflix", durationMs: 178_000, cover: BLUE, lyrics: null },
+      ]
+    : [
+        {
+          title: "Neon Lights",
+          artist: "The Clear Nights",
+          app: "Spotify",
+          durationMs: 195_000,
+          cover: NEON,
+          lyrics: lyrics(
+            [
+              "The streets light up one by one",
+              "We walk with nowhere to go",
+              "The city breathes beneath the moon",
+              "And the night is ours alone",
+              "We dance under neon lights",
+              "Colours filling up our eyes",
+              "We forget our names tonight",
+              "Till the morning starts to rise",
+            ],
+            195_000,
+            3600,
+          ),
+        },
+        {
+          title: "Midnight Over Town",
+          artist: "Soft Storm",
+          app: "YouTube",
+          durationMs: 222_000,
+          cover: MIDNIGHT,
+          lyrics: lyrics(
+            [
+              "It's midnight over town",
+              "The windows whisper low",
+              "Everything feels light and fragile",
+              "When you walk with me so slow",
+              "The cars draw silver waves",
+              "Across the rain-soaked road",
+            ],
+            222_000,
+            4000,
+          ),
+        },
+        { title: "Ultramarine", artist: "Low Season", app: "Netflix", durationMs: 178_000, cover: BLUE, lyrics: null },
+      ];
+}
 
 export interface DemoNotification {
   id: number;
@@ -85,20 +135,31 @@ export interface DemoNotification {
 }
 
 let nextId = 1;
-const NOTIFICATIONS: Omit<DemoNotification, "id" | "minutesAgo">[] = [
-  { app: "Discord", letter: "D", color: "#5865f2", title: "Léa", body: "On se retrouve à 20 h devant le ciné ?" },
-  { app: "Outlook", letter: "O", color: "#0a64c9", title: "Point d'équipe déplacé", body: "La réunion de demain passe à 15 h 30, même salle." },
-  { app: "WhatsApp", letter: "W", color: "#1fa855", title: "Maman", body: "Tu rentres pour le dîner ce soir ?" },
-  { app: "Steam", letter: "S", color: "#1b2838", title: "Téléchargement terminé", body: "Votre jeu est installé et prêt à être lancé." },
-  { app: "Teams", letter: "T", color: "#5b5fc7", title: "Hugo a partagé un fichier", body: "maquette-v3.fig · « Dis-moi ce que tu en penses »" },
-];
+type NotificationText = Omit<DemoNotification, "id" | "minutesAgo">;
+const NOTIFICATIONS: Record<Lang, NotificationText[]> = {
+  fr: [
+    { app: "Discord", letter: "D", color: "#5865f2", title: "Léa", body: "On se retrouve à 20 h devant le ciné ?" },
+    { app: "Outlook", letter: "O", color: "#0a64c9", title: "Point d'équipe déplacé", body: "La réunion de demain passe à 15 h 30, même salle." },
+    { app: "WhatsApp", letter: "W", color: "#1fa855", title: "Maman", body: "Tu rentres pour le dîner ce soir ?" },
+    { app: "Steam", letter: "S", color: "#1b2838", title: "Téléchargement terminé", body: "Votre jeu est installé et prêt à être lancé." },
+    { app: "Teams", letter: "T", color: "#5b5fc7", title: "Hugo a partagé un fichier", body: "maquette-v3.fig · « Dis-moi ce que tu en penses »" },
+  ],
+  en: [
+    { app: "Discord", letter: "D", color: "#5865f2", title: "Lea", body: "Meet you at 8 pm in front of the cinema?" },
+    { app: "Outlook", letter: "O", color: "#0a64c9", title: "Team meeting moved", body: "Tomorrow's meeting moves to 3:30 pm, same room." },
+    { app: "WhatsApp", letter: "W", color: "#1fa855", title: "Mum", body: "Are you coming home for dinner tonight?" },
+    { app: "Steam", letter: "S", color: "#1b2838", title: "Download complete", body: "Your game is installed and ready to play." },
+    { app: "Teams", letter: "T", color: "#5b5fc7", title: "Hugo shared a file", body: "mockup-v3.fig · “Let me know what you think”" },
+  ],
+};
 
-export function makeNotification(index: number): DemoNotification {
-  return { ...NOTIFICATIONS[index % NOTIFICATIONS.length], id: nextId++, minutesAgo: 0 };
+export function makeNotification(index: number, lang: Lang): DemoNotification {
+  const list = NOTIFICATIONS[lang];
+  return { ...list[index % list.length], id: nextId++, minutesAgo: 0 };
 }
 
-export function initialNotifications(): DemoNotification[] {
-  return [makeNotification(1), makeNotification(2)].map((n, i) => ({ ...n, minutesAgo: 4 + i * 9 }));
+export function initialNotifications(lang: Lang): DemoNotification[] {
+  return [makeNotification(1, lang), makeNotification(2, lang)].map((n, i) => ({ ...n, minutesAgo: 4 + i * 9 }));
 }
 
 export type LaunchKind = "app" | "image" | "video" | "music" | "document";
@@ -111,33 +172,51 @@ export interface LaunchItem {
   color?: string;
 }
 
-export const APPS: LaunchItem[] = [
-  { kind: "app", title: "Spotify", letter: "S", color: "#1db954" },
-  { kind: "app", title: "Discord", letter: "D", color: "#5865f2" },
-  { kind: "app", title: "Google Chrome", letter: "C", color: "#e8a317" },
-  { kind: "app", title: "Explorateur de fichiers", letter: "E", color: "#e9b949" },
-  { kind: "app", title: "Visual Studio Code", letter: "V", color: "#1f8ad2" },
-  { kind: "app", title: "Bloc-notes", letter: "B", color: "#3a7bd5" },
-  { kind: "app", title: "Paint", letter: "P", color: "#e0457b" },
-  { kind: "app", title: "Calculatrice", letter: "C", color: "#4a4a52" },
-  { kind: "app", title: "Paramètres", letter: "P", color: "#5a5a64" },
-  { kind: "app", title: "Steam", letter: "S", color: "#1b2838" },
-  { kind: "app", title: "Microsoft Word", letter: "W", color: "#2b579a" },
-  { kind: "app", title: "Microsoft Excel", letter: "X", color: "#217346" },
-];
+export function apps(lang: Lang): LaunchItem[] {
+  const fr = lang === "fr";
+  return [
+    { kind: "app", title: "Spotify", letter: "S", color: "#1db954" },
+    { kind: "app", title: "Discord", letter: "D", color: "#5865f2" },
+    { kind: "app", title: "Google Chrome", letter: "C", color: "#e8a317" },
+    { kind: "app", title: fr ? "Explorateur de fichiers" : "File Explorer", letter: fr ? "E" : "F", color: "#e9b949" },
+    { kind: "app", title: "Visual Studio Code", letter: "V", color: "#1f8ad2" },
+    { kind: "app", title: fr ? "Bloc-notes" : "Notepad", letter: fr ? "B" : "N", color: "#3a7bd5" },
+    { kind: "app", title: "Paint", letter: "P", color: "#e0457b" },
+    { kind: "app", title: fr ? "Calculatrice" : "Calculator", letter: "C", color: "#4a4a52" },
+    { kind: "app", title: fr ? "Paramètres" : "Settings", letter: fr ? "P" : "S", color: "#5a5a64" },
+    { kind: "app", title: "Steam", letter: "S", color: "#1b2838" },
+    { kind: "app", title: "Microsoft Word", letter: "W", color: "#2b579a" },
+    { kind: "app", title: "Microsoft Excel", letter: "X", color: "#217346" },
+  ];
+}
 
-export const FILES: LaunchItem[] = [
-  { kind: "document", title: "rapport-de-stage.pdf", sub: "Documents · hier" },
-  { kind: "document", title: "Rapport budget 2026.xlsx", sub: "D:\\Projets · 12 oct." },
-  { kind: "image", title: "vacances-plage.jpg", sub: "Images · 14 août" },
-  { kind: "image", title: "photo-du-chat.png", sub: "Bureau · lundi" },
-  { kind: "image", title: "capture-ecran-2026.png", sub: "Images\\Captures · aujourd'hui" },
-  { kind: "video", title: "cours-de-maths.mp4", sub: "Vidéos · 2 oct." },
-  { kind: "video", title: "anniversaire-mamie.mov", sub: "D:\\Souvenirs · 3 juin" },
-  { kind: "music", title: "playlist-ete.mp3", sub: "Musique · 21 juil." },
-  { kind: "document", title: "CV-2026.docx", sub: "Documents · 9 sept." },
-  { kind: "document", title: "notes-reunion.txt", sub: "Bureau · aujourd'hui" },
-];
+export function files(lang: Lang): LaunchItem[] {
+  return lang === "fr"
+    ? [
+        { kind: "document", title: "rapport-de-stage.pdf", sub: "Documents · hier" },
+        { kind: "document", title: "Rapport budget 2026.xlsx", sub: "D:\\Projets · 12 oct." },
+        { kind: "image", title: "vacances-plage.jpg", sub: "Images · 14 août" },
+        { kind: "image", title: "photo-du-chat.png", sub: "Bureau · lundi" },
+        { kind: "image", title: "capture-ecran-2026.png", sub: "Images\\Captures · aujourd'hui" },
+        { kind: "video", title: "cours-de-maths.mp4", sub: "Vidéos · 2 oct." },
+        { kind: "video", title: "anniversaire-mamie.mov", sub: "D:\\Souvenirs · 3 juin" },
+        { kind: "music", title: "playlist-ete.mp3", sub: "Musique · 21 juil." },
+        { kind: "document", title: "CV-2026.docx", sub: "Documents · 9 sept." },
+        { kind: "document", title: "notes-reunion.txt", sub: "Bureau · aujourd'hui" },
+      ]
+    : [
+        { kind: "document", title: "internship-report.pdf", sub: "Documents · yesterday" },
+        { kind: "document", title: "Budget report 2026.xlsx", sub: "D:\\Projects · 12 Oct" },
+        { kind: "image", title: "beach-holiday.jpg", sub: "Pictures · 14 Aug" },
+        { kind: "image", title: "cat-photo.png", sub: "Desktop · Monday" },
+        { kind: "image", title: "screenshot-2026.png", sub: "Pictures\\Screenshots · today" },
+        { kind: "video", title: "maths-lesson.mp4", sub: "Videos · 2 Oct" },
+        { kind: "video", title: "grandma-birthday.mov", sub: "D:\\Memories · 3 Jun" },
+        { kind: "music", title: "summer-playlist.mp3", sub: "Music · 21 Jul" },
+        { kind: "document", title: "CV-2026.docx", sub: "Documents · 9 Sep" },
+        { kind: "document", title: "meeting-notes.txt", sub: "Desktop · today" },
+      ];
+}
 
 export interface AppVolume {
   name: string;
@@ -147,7 +226,8 @@ export interface AppVolume {
   muted: boolean;
 }
 
-export const OUTPUTS = ["Haut-parleurs", "Casque sans fil", "Écran HDMI"];
+export const outputs = (lang: Lang) =>
+  lang === "fr" ? ["Haut-parleurs", "Casque sans fil", "Écran HDMI"] : ["Speakers", "Wireless headphones", "HDMI display"];
 
 export const APP_VOLUMES: AppVolume[] = [
   { name: "Spotify", letter: "S", color: "#1db954", level: 80, muted: false },
@@ -170,11 +250,18 @@ export function makeClip(text: string, minutesAgo = 0): ClipItem {
   return { id: nextClip++, kind, text: text.trim(), minutesAgo };
 }
 
-export const INITIAL_CLIPS = [
-  makeClip("https://github.com/quierapro/quiera-island", 2),
-  makeClip("Rendez-vous jeudi 14 h, 12 rue des Lilas, 2e étage.", 6),
-  makeClip("Merci pour ton retour, je corrige ça ce soir !", 15),
-];
+export const initialClips = (lang: Lang) =>
+  lang === "fr"
+    ? [
+        makeClip("https://github.com/quierapro/quiera-island", 2),
+        makeClip("Rendez-vous jeudi 14 h, 12 rue des Lilas, 2e étage.", 6),
+        makeClip("Merci pour ton retour, je corrige ça ce soir !", 15),
+      ]
+    : [
+        makeClip("https://github.com/quierapro/quiera-island", 2),
+        makeClip("See you Thursday at 2 pm, 12 Lilac Street, 2nd floor.", 6),
+        makeClip("Thanks for the feedback, I'll fix it tonight!", 15),
+      ];
 
 /** A desktop file the visitor can drag onto the island. */
 export interface DesktopFile {
@@ -183,11 +270,44 @@ export interface DesktopFile {
   kind: "image" | "document" | "music";
 }
 
-export const DESKTOP_FILES: DesktopFile[] = [
-  { name: "vacances.jpg", size: 2_480_000, kind: "image" },
-  { name: "rapport.pdf", size: 812_000, kind: "document" },
-  { name: "playlist-ete.mp3", size: 6_200_000, kind: "music" },
-];
+export const desktopFiles = (lang: Lang): DesktopFile[] =>
+  lang === "fr"
+    ? [
+        { name: "vacances.jpg", size: 2_480_000, kind: "image" },
+        { name: "rapport.pdf", size: 812_000, kind: "document" },
+        { name: "playlist-ete.mp3", size: 6_200_000, kind: "music" },
+      ]
+    : [
+        { name: "holiday.jpg", size: 2_480_000, kind: "image" },
+        { name: "report.pdf", size: 812_000, kind: "document" },
+        { name: "summer-playlist.mp3", size: 6_200_000, kind: "music" },
+      ];
+
+/** A meeting or an event of the demo's calendar, minutes from now. */
+export interface DemoEvent {
+  id: string;
+  title: string;
+  /** Minutes from now; whole days for "allDay". */
+  inMinutes: number;
+  lengthMinutes: number;
+  service: "Meet" | "Teams" | "Zoom" | null;
+  location: string;
+  /** Days from today (0 today, 1 tomorrow). */
+  day: number;
+}
+
+export const demoEvents = (lang: Lang): DemoEvent[] =>
+  lang === "fr"
+    ? [
+        { id: "daily", title: "Daily de l'équipe", inMinutes: 10, lengthMinutes: 15, service: "Meet", location: "", day: 0 },
+        { id: "review", title: "Revue du sprint", inMinutes: 190, lengthMinutes: 60, service: "Teams", location: "", day: 0 },
+        { id: "sport", title: "Sport", inMinutes: 1500, lengthMinutes: 60, service: null, location: "Salle de sport", day: 1 },
+      ]
+    : [
+        { id: "daily", title: "Team stand-up", inMinutes: 10, lengthMinutes: 15, service: "Meet", location: "", day: 0 },
+        { id: "review", title: "Sprint review", inMinutes: 190, lengthMinutes: 60, service: "Teams", location: "", day: 0 },
+        { id: "sport", title: "Gym", inMinutes: 1500, lengthMinutes: 60, service: null, location: "Gym", day: 1 },
+      ];
 
 /**
  * A real QR code, made by Quiera's own code (src-tauri/src/share.rs): in the

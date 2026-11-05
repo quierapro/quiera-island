@@ -70,14 +70,14 @@ The design documents explain the choices behind the project:
 [analysis and plan](docs/01-analyse-et-plan.md) and
 [decisions, design and features](docs/02-decisions-design-fonctionnalites.md).
 
-## Code signing policy
+## Release and signing policy
 
-Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+The Windows installer is not signed with a code-signing certificate yet, so SmartScreen may warn the first time. Each release carries the installer's SHA-256 (`Quiera-Setup-x64.exe.sha256`), and the update packages the app installs by itself are signed and checked before installing.
 
 - Committers and reviewers: [quierapro](https://github.com/quierapro); pull requests from other people are reviewed before they are merged.
 - Approvers: [quierapro](https://github.com/quierapro).
 
-Installers are built by GitHub Actions from the tagged commit of this repository. Details, and what Quiera sends over the network (lyrics lookup, update check), are in the [code signing policy](https://quiera.eu/code-signing/) and the [privacy policy](https://quiera.eu/confidentialite/).
+Installers are built by GitHub Actions from the tagged commit of this repository. Details, and what Quiera sends over the network (lyrics lookup, update check), are in the [release and signing policy](https://quiera.eu/code-signing/) and the [privacy policy](https://quiera.eu/confidentialite/).
 
 ## License
 

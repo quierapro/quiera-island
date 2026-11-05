@@ -5,12 +5,15 @@ import "@fontsource-variable/inter";
 import "@fontsource-variable/urbanist";
 import "./demo/island.css";
 import App from "./App";
+import type { Lang } from "./i18n";
 import "./styles.css";
 
 const root = document.getElementById("root") as HTMLElement;
+// Each language has its own page: quiera.eu in French, quiera.eu/en/ in English.
+const lang: Lang = document.documentElement.lang === "en" || location.pathname.startsWith("/en/") ? "en" : "fr";
 const app = (
   <React.StrictMode>
-    <App />
+    <App lang={lang} />
   </React.StrictMode>
 );
 

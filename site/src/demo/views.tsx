@@ -33,6 +33,8 @@ import {
   WifiIcon,
 } from "./icons";
 import type { LaunchRow } from "./launcher";
+import { localeOf, useLang, useTr, type Tr } from "../i18n";
+import { CalendarIcon, MirrorIcon, SourceDots, TimerIcon } from "./extra";
 
 export type Size = [width: number, height: number, radius: number];
 
@@ -84,7 +86,7 @@ export function Shell({ size, grow, viewKey, children, ...handlers }: ShellProps
 
 /* ---------------------------------------------------------------- Tabs */
 
-export type Tab = "home" | "controls" | "notifications" | "shelf" | "clipboard";
+export type Tab = "home" | "timer" | "calendar" | "controls" | "mirror" | "notifications" | "shelf" | "clipboard";
 
 export function TabBar({
   tab,
@@ -94,17 +96,24 @@ export function TabBar({
 }: {
   tab: Tab;
   hasMedia: boolean;
-  counts: { notifications: number; shelf: number; clipboard: number };
+  counts: { notifications: number; shelf: number; clipboard: number; calendar: number };
   onSelect(tab: Tab): void;
 }) {
-  const tabs: { id: Tab; label: string; icon: ReactNode; badge?: number }[] = [
-    { id: "home", label: hasMedia ? "Lecture" : "Heure", icon: hasMedia ? <NoteIcon size={17} /> : <ClockIcon /> },
-    { id: "controls", label: "Contrôles", icon: <SlidersIcon size={17} /> },
+  const tr = useTr();
+  // As in the app: home, the timer, controls and the mirror always; the
+  // others once they hold something.
+  const always: Tab[] = ["home", "timer", "controls", "mirror"];
+  const tabs: { id: Tab; label: string; icon: ReactNode; badge?: number; count?: number }[] = [
+    { id: "home", label: hasMedia ? tr("Lecture", "Playing") : tr("Heure", "Clock"), icon: hasMedia ? <NoteIcon size={17} /> : <ClockIcon /> },
+    { id: "timer", label: tr("Minuteur", "Timer"), icon: <TimerIcon size={17} /> },
+    { id: "calendar", label: tr("Agenda", "Calendar"), icon: <CalendarIcon size={17} />, count: counts.calendar },
+    { id: "controls", label: tr("Contrôles", "Controls"), icon: <SlidersIcon size={17} /> },
+    { id: "mirror", label: tr("Miroir", "Mirror"), icon: <MirrorIcon size={17} /> },
     { id: "notifications", label: "Notifications", icon: <BellIcon size={17} />, badge: counts.notifications },
     { id: "shelf", label: "Shelf", icon: <TrayIcon size={18} />, badge: counts.shelf },
-    { id: "clipboard", label: "Presse-papiers", icon: <ClipboardIcon size={17} />, badge: counts.clipboard },
+    { id: "clipboard", label: tr("Presse-papiers", "Clipboard"), icon: <ClipboardIcon size={17} />, badge: counts.clipboard },
   ];
-  const shown = tabs.filter((t) => t.id === "home" || t.id === "controls" || (t.badge ?? 0) > 0 || t.id === tab);
+  const shown = tabs.filter((t) => always.includes(t.id) || (t.count ?? t.badge ?? 0) > 0 || t.id === tab);
   return (
     <div className="tabs" role="tablist" style={{ height: TAB_BAR_HEIGHT }}>
       {shown.map((t) => (
@@ -143,20 +152,22 @@ export function useNow(intervalMs: number, active = true): number {
   return now;
 }
 
-const time = (d: Date) => d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+const time = (d: Date, locale: string) => d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
 
 export function ClockIdle() {
   const now = useNow(10_000);
-  return <div className="clock-idle">{now ? time(new Date(now)) : ""}</div>;
+  const locale = localeOf(useLang());
+  return <div className="clock-idle">{now ? time(new Date(now), locale) : ""}</div>;
 }
 
 export function ClockPanel() {
   const ms = useNow(10_000);
+  const locale = localeOf(useLang());
   const now = new Date(ms);
-  const day = ms ? now.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }) : "";
+  const day = ms ? now.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" }) : "";
   return (
     <div className="clock-panel">
-      <div className="clock-panel-time">{ms ? time(now) : ""}</div>
+      <div className="clock-panel-time">{ms ? time(now, locale) : ""}</div>
       <div className="clock-panel-day">{day.charAt(0).toUpperCase() + day.slice(1)}</div>
     </div>
   );
@@ -230,6 +241,9 @@ export function Player({
   shuffle,
   repeat,
   actions,
+  sources,
+  source,
+  onSource,
 }: {
   track: Track;
   pos: number;
@@ -237,7 +251,12 @@ export function Player({
   shuffle: boolean;
   repeat: "off" | "all" | "track";
   actions: PlayerActions;
+  /** The apps playing, for the dots under the controls. */
+  sources: { app: string; playing: boolean }[];
+  source: number;
+  onSource(i: number): void;
 }) {
+  const tr = useTr();
   return (
     <div className="media-expanded">
       <div className="media-player">
@@ -259,36 +278,37 @@ export function Player({
               max={track.durationMs}
               step={1000}
               value={Math.min(pos, track.durationMs)}
-              aria-label="Position dans le morceau"
+              aria-label={tr("Position dans le morceau", "Position in the track")}
               onChange={(e) => actions.seek(Number(e.target.value))}
             />
           </div>
           <span className="media-time media-time--end">-{mmss(track.durationMs - pos)}</span>
         </div>
         <div className="media-controls">
-          <button type="button" className={`media-btn media-btn--small ${shuffle ? "media-btn--on" : ""}`} aria-label="Lecture aléatoire" aria-pressed={shuffle} onClick={actions.toggleShuffle}>
+          <button type="button" className={`media-btn media-btn--small ${shuffle ? "media-btn--on" : ""}`} aria-label={tr("Lecture aléatoire", "Shuffle")} aria-pressed={shuffle} onClick={actions.toggleShuffle}>
             <ShuffleIcon size={18} />
           </button>
-          <button type="button" className="media-btn" aria-label="Précédent" onClick={() => actions.skip(-1)}>
+          <button type="button" className="media-btn" aria-label={tr("Précédent", "Previous")} onClick={() => actions.skip(-1)}>
             <SkipIcon size={22} back />
           </button>
-          <button type="button" className="media-btn media-btn--play" aria-label={playing ? "Pause" : "Lecture"} onClick={actions.toggle}>
+          <button type="button" className="media-btn media-btn--play" aria-label={playing ? "Pause" : tr("Lecture", "Play")} onClick={actions.toggle}>
             <span key={playing ? "pause" : "play"} className="media-btn-glyph">
               {playing ? <PauseIcon size={28} /> : <PlayIcon size={28} />}
             </span>
           </button>
-          <button type="button" className="media-btn" aria-label="Suivant" onClick={() => actions.skip(1)}>
+          <button type="button" className="media-btn" aria-label={tr("Suivant", "Next")} onClick={() => actions.skip(1)}>
             <SkipIcon size={22} />
           </button>
           <button
             type="button"
             className={`media-btn media-btn--small ${repeat !== "off" ? "media-btn--on" : ""}`}
-            aria-label="Répéter"
+            aria-label={tr("Répéter", "Repeat")}
             onClick={actions.cycleRepeat}
           >
             <RepeatIcon size={18} one={repeat === "track"} />
           </button>
         </div>
+        <SourceDots sources={sources} active={source} onSelect={onSource} />
       </div>
       {track.lyrics && <Lyrics lines={track.lyrics} pos={pos} onSeek={actions.seek} />}
     </div>
@@ -373,6 +393,7 @@ export function Launcher({
   onPick(i: number): void;
   onHover(i: number): void;
 }) {
+  const tr = useTr();
   return (
     <div className="launch">
       <div className="launch-bar">
@@ -381,8 +402,8 @@ export function Launcher({
           ref={inputRef}
           className="launch-input"
           value={query}
-          placeholder="Rechercher des applis, des fichiers…"
-          aria-label="Rechercher"
+          placeholder={tr("Une app, un fichier, « 5 min », un calcul…", "An app, a file, “5 min”, a calculation…")}
+          aria-label={tr("Rechercher", "Search")}
           spellCheck={false}
           autoComplete="off"
           onChange={(e) => onQuery(e.target.value)}
@@ -400,8 +421,8 @@ export function Launcher({
               onPointerEnter={() => onHover(i)}
               onClick={() => onPick(i)}
             >
-              <LaunchRowContent row={row} />
-              {i === active && <span className="launch-hint">{row.type === "calc" ? "Copier" : "Entrée"}</span>}
+              <LaunchRowContent row={row} tr={tr} />
+              {i === active && <span className="launch-hint">{row.type === "calc" ? tr("Copier", "Copy") : row.type === "timer" ? tr("Lancer ↵", "Start ↵") : tr("Entrée", "Enter")}</span>}
             </div>
           ))}
         </div>
@@ -410,8 +431,28 @@ export function Launcher({
   );
 }
 
-function LaunchRowContent({ row }: { row: LaunchRow }) {
+/** "5 min", "1 h 30 min", "45 s". */
+export function durationName(ms: number): string {
+  const total = Math.round(ms / 1000);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  return [h && `${h} h`, m && `${m} min`, s && `${s} s`].filter(Boolean).join(" ") || "0 s";
+}
+
+function LaunchRowContent({ row, tr }: { row: LaunchRow; tr: Tr }) {
   switch (row.type) {
+    case "timer":
+      return (
+        <>
+          <span className="launch-icon launch-icon--glyph">
+            <TimerIcon />
+          </span>
+          <span className="launch-title">
+            {row.pomodoro ? "Pomodoro" : tr("Minuteur", "Timer")} {durationName(row.ms)}
+          </span>
+        </>
+      );
     case "calc":
       return (
         <>
@@ -427,7 +468,7 @@ function LaunchRowContent({ row }: { row: LaunchRow }) {
           <span className="launch-icon launch-icon--glyph">
             <GearIcon />
           </span>
-          <span className="launch-title">Réglages de Quiera</span>
+          <span className="launch-title">{tr("Réglages de Quiera", "Quiera settings")}</span>
         </>
       );
     case "web":
@@ -436,7 +477,7 @@ function LaunchRowContent({ row }: { row: LaunchRow }) {
           <span className="launch-icon launch-icon--glyph">
             <GlobeIcon />
           </span>
-          <span className="launch-title">Rechercher « {row.query} » sur le web</span>
+          <span className="launch-title">{tr(`Rechercher « ${row.query} » sur le web`, `Search the web for “${row.query}”`)}</span>
         </>
       );
     case "item":
@@ -467,7 +508,7 @@ export function notificationsSize(count: number): [number, number] {
   return [460, 38 + Math.min(count, 3) * 70];
 }
 
-const ago = (minutes: number) => (minutes < 1 ? "à l'instant" : `il y a ${minutes} min`);
+const ago = (minutes: number, tr: Tr) => (minutes < 1 ? tr("à l'instant", "just now") : tr(`il y a ${minutes} min`, `${minutes} min ago`));
 
 export function Notifications({
   items,
@@ -480,11 +521,12 @@ export function Notifications({
   onDismiss(id: number): void;
   onClear(): void;
 }) {
+  const tr = useTr();
   if (items.length === 0) {
     return (
       <div className="notif-empty">
         <BellIcon size={22} />
-        Aucune notification
+        {tr("Aucune notification", "No notifications")}
       </div>
     );
   }
@@ -495,7 +537,7 @@ export function Notifications({
           {items.length} notification{items.length > 1 ? "s" : ""}
         </span>
         <button type="button" className="notif-clear" onClick={onClear}>
-          Tout effacer
+          {tr("Tout effacer", "Clear all")}
         </button>
       </div>
       <div className="notif-list">
@@ -505,7 +547,7 @@ export function Notifications({
             <div className="notif-content">
               <div className="notif-meta">
                 <span className="notif-app">{n.app}</span>
-                <span className="notif-time">{ago(n.minutesAgo)}</span>
+                <span className="notif-time">{ago(n.minutesAgo, tr)}</span>
               </div>
               <div className="notif-title">{n.title}</div>
               <div className="notif-body">{n.body}</div>
@@ -513,7 +555,7 @@ export function Notifications({
             <button
               type="button"
               className="notif-dismiss"
-              aria-label="Retirer"
+              aria-label={tr("Retirer", "Dismiss")}
               onClick={(e) => {
                 e.stopPropagation();
                 onDismiss(n.id);
@@ -565,6 +607,7 @@ function PillSlider({
   onLevel(level: number): void;
   onIcon(): void;
 }) {
+  const tr = useTr();
   const ref = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState(false);
   const levelAt = (x: number) => {
@@ -599,11 +642,11 @@ function PillSlider({
     >
       <div className="ctl-pill-fill" style={{ width: `${muted ? 0 : level}%` }} />
       <div className="ctl-pill-content">
-        <button type="button" className="ctl-pill-icon" aria-label={muted ? "Rétablir le son" : "Couper le son"} onClick={onIcon}>
+        <button type="button" className="ctl-pill-icon" aria-label={muted ? tr("Rétablir le son", "Unmute") : tr("Couper le son", "Mute")} onClick={onIcon}>
           {icon}
         </button>
         <span className="ctl-pill-label">{label}</span>
-        <span className="ctl-pill-value">{muted ? "Muet" : level}</span>
+        <span className="ctl-pill-value">{muted ? tr("Muet", "Muted") : level}</span>
       </div>
     </div>
   );
@@ -628,6 +671,8 @@ export function Controls({
   outputs: string[];
   onChange(next: Partial<ControlsState>): void;
 }) {
+  const tr = useTr();
+  const on = (state: boolean) => (state ? tr("Activé", "On") : tr("Désactivé", "Off"));
   return (
     <div className="ctl">
       <div className="ctl-toggles">
@@ -637,7 +682,7 @@ export function Controls({
           </span>
           <span className="ctl-toggle-text">
             <span className="ctl-toggle-label">Wi-Fi</span>
-            <span className="ctl-toggle-state">{state.wifi ? "Activé" : "Désactivé"}</span>
+            <span className="ctl-toggle-state">{on(state.wifi)}</span>
           </span>
         </button>
         <button type="button" className={`ctl-toggle ${state.bluetooth ? "ctl-toggle--on" : ""}`} aria-pressed={state.bluetooth} onClick={() => onChange({ bluetooth: !state.bluetooth })}>
@@ -646,12 +691,12 @@ export function Controls({
           </span>
           <span className="ctl-toggle-text">
             <span className="ctl-toggle-label">Bluetooth</span>
-            <span className="ctl-toggle-state">{state.bluetooth ? "Activé" : "Désactivé"}</span>
+            <span className="ctl-toggle-state">{on(state.bluetooth)}</span>
           </span>
         </button>
       </div>
       <button type="button" className={`ctl-current ${state.outputsOpen ? "ctl-current--open" : ""}`} onClick={() => onChange({ outputsOpen: !state.outputsOpen })}>
-        <span className="ctl-current-label">Sortie</span>
+        <span className="ctl-current-label">{tr("Sortie", "Output")}</span>
         <span className="ctl-current-name">{outputs[state.output]}</span>
         <span style={{ transform: state.outputsOpen ? "rotate(180deg)" : undefined, transition: "transform .2s", display: "grid" }}>
           <ChevronIcon />
@@ -667,7 +712,7 @@ export function Controls({
         onIcon={() => onChange({ muted: !state.muted })}
       />
       <div className="ctl-section">
-        <div className="ctl-caption">{state.outputsOpen ? "Sorties audio" : "Applications"}</div>
+        <div className="ctl-caption">{state.outputsOpen ? tr("Sorties audio", "Audio outputs") : tr("Applications", "Apps")}</div>
         <div className="ctl-list">
           {state.outputsOpen
             ? outputs.map((name, i) => (
@@ -708,11 +753,13 @@ export function shelfSize(count: number): [number, number] {
   return count === 0 ? [380, 120] : [560, 150];
 }
 
-export function formatSize(bytes: number): string {
-  if (bytes < 1000) return `${bytes} o`;
-  if (bytes < 1_000_000) return `${Math.round(bytes / 1000)} Ko`;
-  if (bytes < 1_000_000_000) return `${(bytes / 1_000_000).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} Mo`;
-  return `${(bytes / 1_000_000_000).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} Go`;
+export function formatSize(bytes: number, fr: boolean): string {
+  const [b, k, m, g] = fr ? ["o", "Ko", "Mo", "Go"] : ["B", "KB", "MB", "GB"];
+  const locale = fr ? "fr-FR" : "en-GB";
+  if (bytes < 1000) return `${bytes} ${b}`;
+  if (bytes < 1_000_000) return `${Math.round(bytes / 1000)} ${k}`;
+  if (bytes < 1_000_000_000) return `${(bytes / 1_000_000).toLocaleString(locale, { maximumFractionDigits: 1 })} ${m}`;
+  return `${(bytes / 1_000_000_000).toLocaleString(locale, { maximumFractionDigits: 1 })} ${g}`;
 }
 
 export function Shelf({
@@ -728,11 +775,13 @@ export function Shelf({
   onClear(): void;
   onSend(): void;
 }) {
+  const tr = useTr();
+  const fr = useLang() === "fr";
   if (items.length === 0) {
     return (
       <div className={`shelf-empty ${target ? "shelf-empty--target" : ""}`}>
         <TrayIcon size={22} />
-        Déposez des fichiers ici
+        {tr("Déposez des fichiers ici", "Drop files here")}
       </div>
     );
   }
@@ -740,15 +789,15 @@ export function Shelf({
     <div className={`shelf ${target ? "shelf--target" : ""}`}>
       <div className="shelf-head">
         <span className="shelf-count">
-          {items.length} fichier{items.length > 1 ? "s" : ""}
+          {tr(`${items.length} fichier${items.length > 1 ? "s" : ""}`, `${items.length} file${items.length > 1 ? "s" : ""}`)}
         </span>
         <span className="shelf-head-actions">
           <button type="button" className="shelf-clear" onClick={onSend}>
             <PhoneIcon size={11} />
-            Envoyer au téléphone
+            {tr("Envoyer au téléphone", "Send to phone")}
           </button>
           <button type="button" className="shelf-clear" onClick={onClear}>
-            Tout retirer
+            {tr("Tout retirer", "Remove all")}
           </button>
         </span>
       </div>
@@ -757,12 +806,12 @@ export function Shelf({
           <div key={item.id} className="shelf-tile" title={item.name}>
             <div className={`shelf-thumb ${item.thumb ? "shelf-thumb--image" : ""}`}>
               {item.thumb ? <img src={item.thumb} alt="" /> : <FileGlyph kind={item.kind} size={44} />}
-              <button type="button" className="shelf-remove" aria-label={`Retirer ${item.name}`} onClick={() => onRemove(item.id)}>
+              <button type="button" className="shelf-remove" aria-label={tr(`Retirer ${item.name}`, `Remove ${item.name}`)} onClick={() => onRemove(item.id)}>
                 <CloseIcon size={9} />
               </button>
             </div>
             <div className="shelf-name">{item.name}</div>
-            <div className="shelf-size">{formatSize(item.size)}</div>
+            <div className="shelf-size">{formatSize(item.size, fr)}</div>
           </div>
         ))}
       </div>
@@ -772,23 +821,26 @@ export function Shelf({
 
 /** Sending to a phone: in the demo, the code opens this site. */
 export function PhoneShare({ what, onBack }: { what: string; onBack(): void }) {
+  const tr = useTr();
   const side = SITE_QR.size + 4;
   return (
     <div className="shelf">
       <div className="phone-share">
         <div className="phone-qr">
-          <svg viewBox={`-2 -2 ${side} ${side}`} shapeRendering="crispEdges" role="img" aria-label="QR code vers quiera.eu">
+          <svg viewBox={`-2 -2 ${side} ${side}`} shapeRendering="crispEdges" role="img" aria-label={tr("QR code vers quiera.eu", "QR code to quiera.eu")}>
             <rect x="-2" y="-2" width={side} height={side} fill="#fff" />
             <path d={SITE_QR.path} fill="#000" />
           </svg>
         </div>
         <div className="phone-text">
-          <span className="phone-title">Scanne avec ton téléphone</span>
+          <span className="phone-title">{tr("Scanne avec ton téléphone", "Scan with your phone")}</span>
           <span className="phone-name">{what}</span>
-          <span className="phone-sub">Même Wi-Fi que le PC · expire dans 10:00. Ici, le code ouvre quiera.eu.</span>
+          <span className="phone-sub">
+            {tr("Même Wi-Fi que le PC · expire dans 10:00. Ici, le code ouvre quiera.eu.", "Same Wi-Fi as the PC · expires in 10:00. Here, the code opens quiera.eu.")}
+          </span>
           <div className="phone-actions">
             <button type="button" className="phone-btn" onClick={onBack}>
-              Retour
+              {tr("Retour", "Back")}
             </button>
           </div>
         </div>
@@ -804,11 +856,12 @@ export function clipboardSize(count: number): [number, number] {
 }
 
 export function Clipboard({ items, copied, onCopy, onClear }: { items: ClipItem[]; copied: number | null; onCopy(item: ClipItem): void; onClear(): void }) {
+  const tr = useTr();
   if (items.length === 0) {
     return (
       <div className="clip-empty">
         <ClipboardIcon size={22} />
-        Ce que vous copiez apparaîtra ici
+        {tr("Ce que vous copiez apparaîtra ici", "What you copy will show here")}
       </div>
     );
   }
@@ -816,15 +869,15 @@ export function Clipboard({ items, copied, onCopy, onClear }: { items: ClipItem[
     <div className="clip">
       <div className="clip-head">
         <span className="clip-count">
-          {items.length} élément{items.length > 1 ? "s" : ""}
+          {tr(`${items.length} élément${items.length > 1 ? "s" : ""}`, `${items.length} item${items.length > 1 ? "s" : ""}`)}
         </span>
         <button type="button" className="clip-clear" onClick={onClear}>
-          Tout effacer
+          {tr("Tout effacer", "Clear all")}
         </button>
       </div>
       <div className="clip-row">
         {items.map((item) => (
-          <div key={item.id} className="clip-card" onClick={() => onCopy(item)} title="Cliquer pour copier">
+          <div key={item.id} className="clip-card" onClick={() => onCopy(item)} title={tr("Cliquer pour copier", "Click to copy")}>
             <div className="clip-body">
               {item.kind === "link" ? (
                 <div className="clip-link">
@@ -838,11 +891,11 @@ export function Clipboard({ items, copied, onCopy, onClear }: { items: ClipItem[
                 <p className="clip-text">{item.text}</p>
               )}
             </div>
-            <div className="clip-foot">{item.kind === "link" ? "Lien" : `${item.text.length} caractères`}</div>
+            <div className="clip-foot">{item.kind === "link" ? tr("Lien", "Link") : tr(`${item.text.length} caractères`, `${item.text.length} characters`)}</div>
             {copied === item.id && (
               <div className="clip-copied">
                 <CheckIcon size={14} />
-                Copié
+                {tr("Copié", "Copied")}
               </div>
             )}
           </div>
@@ -857,6 +910,7 @@ export function Clipboard({ items, copied, onCopy, onClear }: { items: ClipItem[
 export type SystemPeek =
   | { kind: "power"; level: number }
   | { kind: "headset"; battery: number }
+  | { kind: "bluetooth"; device: "keyboard" | "mouse"; name: string; battery: number; low: boolean }
   | { kind: "caps"; on: boolean }
   | { kind: "volume"; level: number }
   | { kind: "copied"; text: string }
@@ -867,6 +921,7 @@ export function systemPeekSize(peek: SystemPeek): Size {
     case "power":
       return [290, 40, 20];
     case "headset":
+    case "bluetooth":
       return [330, 50, 25];
     case "caps":
       return [220, 38, 19];
@@ -879,7 +934,27 @@ export function systemPeekSize(peek: SystemPeek): Size {
   }
 }
 
+/** Battery as a ring, filled to the level, as in the app; red when low. */
+function BatteryRing({ battery }: { battery: number }) {
+  const c = 2 * Math.PI * 12;
+  return (
+    <span className="peek-ring">
+      <svg width="30" height="30" viewBox="0 0 30 30">
+        <circle className="peek-ring-track" cx="15" cy="15" r="12" />
+        <circle className={`peek-ring-fill ${battery <= 20 ? "peek-ring-fill--low" : ""}`} cx="15" cy="15" r="12" strokeDasharray={`${(c * battery) / 100} ${c}`} />
+      </svg>
+      <span className="peek-ring-text">{battery}</span>
+    </span>
+  );
+}
+
+const DEVICE_PATHS = {
+  keyboard: "M4 7h16a1.5 1.5 0 0 1 1.5 1.5v7A1.5 1.5 0 0 1 20 17H4a1.5 1.5 0 0 1-1.5-1.5v-7A1.5 1.5 0 0 1 4 7Zm3 3.5h.01M10 10.5h.01M13 10.5h.01M16 10.5h.01M8 14h8",
+  mouse: "M12 3.5a5.5 5.5 0 0 1 5.5 5.5v6a5.5 5.5 0 0 1-11 0V9A5.5 5.5 0 0 1 12 3.5Zm0 0v5",
+};
+
 export function SystemPeekView({ peek }: { peek: SystemPeek }) {
+  const tr = useTr();
   switch (peek.kind) {
     case "power":
       return (
@@ -890,38 +965,45 @@ export function SystemPeekView({ peek }: { peek: SystemPeek }) {
             </span>
             <span className="peek-battery-tip" />
           </span>
-          <span className="peek-title">En charge</span>
+          <span className="peek-title">{tr("En charge", "Charging")}</span>
           <span className="peek-value peek-value--good">{peek.level} %</span>
         </div>
       );
-    case "headset": {
-      const c = 2 * Math.PI * 12;
+    case "headset":
       return (
         <div className="peek-row">
           <span className="peek-icon">
             <HeadphonesIcon size={17} />
           </span>
           <span className="peek-text">
-            <span className="peek-caption">Connecté</span>
-            <span className="peek-title peek-title--ellipsis">Casque sans fil</span>
+            <span className="peek-caption">{tr("Connecté", "Connected")}</span>
+            <span className="peek-title peek-title--ellipsis">{tr("Casque sans fil", "Wireless headphones")}</span>
           </span>
-          <span className="peek-ring">
-            <svg width="30" height="30" viewBox="0 0 30 30">
-              <circle className="peek-ring-track" cx="15" cy="15" r="12" />
-              <circle className="peek-ring-fill" cx="15" cy="15" r="12" strokeDasharray={`${(c * peek.battery) / 100} ${c}`} />
-            </svg>
-            <span className="peek-ring-text">{peek.battery}</span>
-          </span>
+          <BatteryRing battery={peek.battery} />
         </div>
       );
-    }
+    case "bluetooth":
+      return (
+        <div className="peek-row">
+          <span className={`peek-icon ${peek.low ? "peek-icon--low" : ""}`}>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d={DEVICE_PATHS[peek.device]} />
+            </svg>
+          </span>
+          <span className="peek-text">
+            <span className={`peek-caption ${peek.low ? "peek-caption--low" : ""}`}>{peek.low ? tr("Batterie faible", "Battery low") : tr("Connecté", "Connected")}</span>
+            <span className="peek-title peek-title--ellipsis">{peek.name}</span>
+          </span>
+          <BatteryRing battery={peek.battery} />
+        </div>
+      );
     case "caps":
       return (
         <div className="peek-row">
           <span className="peek-key">
             <CapsIcon />
           </span>
-          <span className="peek-title">Verr. Maj</span>
+          <span className="peek-title">{tr("Verr. Maj", "Caps Lock")}</span>
           <span className={`peek-dot ${peek.on ? "peek-dot--on" : ""}`} />
         </div>
       );
@@ -951,7 +1033,7 @@ export function SystemPeekView({ peek }: { peek: SystemPeek }) {
         <div className="peek-row">
           {peek.file ? <FileGlyph kind={peek.file} size={24} /> : <Letter letter={peek.letter} color={peek.color} size={24} radius={7} />}
           <span className="peek-title peek-title--ellipsis">{peek.title}</span>
-          <span className="peek-value">s'ouvre…</span>
+          <span className="peek-value">{tr("s'ouvre…", "opening…")}</span>
         </div>
       );
   }

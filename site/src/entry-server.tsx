@@ -2,15 +2,16 @@
 import { renderToString } from "react-dom/server";
 import { prerender } from "react-dom/static";
 import App from "./App";
+import type { Lang } from "./i18n";
 
-export { DOWNLOAD, FAQS, REPO } from "./content";
+export { DOWNLOAD, REPO, faqs } from "./content";
 
 /**
  * The whole page, the lazy demo included, as plain HTML. A first pass loads
  * the demo; the second renders everything in place, without the hidden blocks
  * and inline scripts a streamed render would leave.
  */
-export async function render(): Promise<string> {
-  await prerender(<App />);
-  return renderToString(<App />);
+export async function render(lang: Lang): Promise<string> {
+  await prerender(<App lang={lang} />);
+  return renderToString(<App lang={lang} />);
 }

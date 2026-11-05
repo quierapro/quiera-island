@@ -31,6 +31,12 @@
           couper : Réglages › À propos › Rechercher automatiquement.
         </li>
         <li>
+          <strong>Votre agenda, si vous l'ajoutez.</strong> Quand vous collez le lien iCal d'un agenda (Google, Outlook, iCloud…), Quiera
+          le télécharge directement à cette adresse, puis tous les quarts d'heure. Le lien reste sur votre PC, dans les réglages, et
+          n'est jamais écrit dans le journal ; les événements sont gardés en mémoire. Rien ne passe par un serveur de Quiera. Pour
+          couper : Réglages › Agenda, retirez le lien.
+        </li>
+        <li>
           <strong>Ce que vous demandez.</strong> Une recherche web lancée depuis le lanceur s'ouvre dans votre navigateur ; un lien d'une
           notification aussi.
         </li>
@@ -41,6 +47,11 @@
         <li>Les notifications et l'historique du presse-papiers : gardés en mémoire seulement, effacés à la fermeture de Quiera.</li>
         <li>Le Shelf : les chemins de vos fichiers (jamais copiés), enregistrés seulement si vous gardez le Shelf entre deux sessions.</li>
         <li>L'index des fichiers du lanceur : les noms des fichiers, en mémoire.</li>
+        <li>
+          Le miroir : l'image de la webcam s'affiche dans l'île seulement pendant que l'onglet est ouvert. Elle n'est ni enregistrée ni
+          envoyée.
+        </li>
+        <li>Les batteries des appareils Bluetooth : lues auprès de Windows, affichées, jamais envoyées.</li>
         <li>Les réglages, dans le dossier de Quiera (<code>%APPDATA%\app.quiera</code>).</li>
         <li>
           Le journal (<code>%LOCALAPPDATA%\app.quiera\logs</code>) : des événements techniques, jamais le titre d'un morceau, le contenu
@@ -63,11 +74,12 @@
 
       <h2 id="english">In English</h2>
       <p>
-        Quiera runs on your PC, with no account, no advertising and no telemetry. Only two things go over the Internet: to find the lyrics of
+        Quiera runs on your PC, with no account, no advertising and no telemetry. Only three things go over the Internet: to find the lyrics of
         the playing track, its title, artist, album and duration are sent to <a href="https://lrclib.net">LRCLIB</a> (and to NetEase only if
-        that option, off by default, is turned on); and Quiera reads the list of releases on GitHub at start and every six hours, sending no
-        personal data. Both can be turned off in the settings or in the welcome shown on first launch, and the installer shows this notice.
-        Notifications and the clipboard history stay in memory only; Shelf files are kept by path; sending files to a phone goes over the
+        that option, off by default, is turned on); Quiera reads the list of releases on GitHub at start and every six hours, sending no
+        personal data; and, only if you paste a calendar's iCal link, Quiera downloads that calendar from its address every 15 minutes,
+        keeping the link on your PC and never writing it in its logs. Each can be turned off in the settings or in the welcome shown on first launch, and the installer shows this notice.
+        Notifications and the clipboard history stay in memory only; Shelf files are kept by path; the webcam mirror records and sends nothing; sending files to a phone goes over the
         local network only, when you ask. Visits to the quiera.eu website are counted by Vercel Web Analytics, without cookies; the app
         itself sends no statistics.
       </p>

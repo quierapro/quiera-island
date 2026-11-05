@@ -1620,3 +1620,620 @@
 .launch-input:focus-visible {
   outline: none;
 }
+
+
+/* ================================================================
+   Newer views, copied from the app (src/modules/timer, calendar,
+   mirror, media, system). Keep in step with them.
+   ================================================================ */
+
+/* Apple's timer orange, and the green of its Start button. */
+.timer-activity,
+.timer-live,
+.timer-picker {
+  --timer: #ff9f0a;
+  --timer-soft: rgba(255, 159, 10, 0.22);
+  --start: #30d158;
+  --start-soft: rgba(48, 209, 88, 0.2);
+}
+
+/* ---- Closed island ---- */
+
+.timer-activity {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  padding: 0 16px 0 12px;
+  color: var(--timer);
+}
+
+.timer-activity-time {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.2px;
+}
+
+.timer-activity--paused {
+  opacity: 0.55;
+}
+
+.timer-activity--ringing .timer-activity-time,
+.timer-live--ringing .timer-live-time {
+  animation: timer-blink 1s steps(2, jump-none) infinite;
+}
+
+.timer-bell {
+  display: grid;
+  place-items: center;
+  animation: timer-shake 1s ease-in-out infinite;
+}
+
+@keyframes timer-blink {
+  from { opacity: 1; }
+  to { opacity: 0.45; }
+}
+
+@keyframes timer-shake {
+  0%, 50%, 100% { transform: rotate(0); }
+  10%, 30% { transform: rotate(-14deg); }
+  20%, 40% { transform: rotate(14deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timer-bell,
+  .timer-activity--ringing .timer-activity-time,
+  .timer-live--ringing .timer-live-time {
+    animation: none;
+  }
+}
+
+.timer-ring {
+  flex: none;
+}
+
+.timer-ring-track,
+.timer-ring-left {
+  fill: none;
+  stroke-width: 2.5;
+}
+
+.timer-ring-track {
+  stroke: var(--timer-soft);
+}
+
+.timer-ring-left {
+  stroke: var(--timer);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.9s linear;
+}
+
+/* ---- Open: the countdown ---- */
+
+.timer-live {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  padding: 0 24px 0 20px;
+}
+
+.timer-live-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.timer-circle {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.timer-circle:hover {
+  filter: brightness(1.25);
+}
+
+.timer-circle:active {
+  transform: scale(0.94);
+}
+
+.timer-circle--gray {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--text-1);
+}
+
+.timer-circle--orange {
+  background: var(--timer-soft);
+  color: var(--timer);
+}
+
+.timer-live-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  color: var(--timer);
+}
+
+.timer-live-name {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.timer-live-time {
+  font-family: var(--font-display);
+  font-size: 42px;
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.timer-live--paused .timer-live-time {
+  opacity: 0.6;
+}
+
+/* ---- Open: the wheels ---- */
+
+.timer-picker {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  padding: 0 24px 0 18px;
+}
+
+.timer-wheels {
+  position: relative;
+  display: flex;
+}
+
+/* The selected row, across the three wheels. */
+.timer-wheels-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.09);
+  pointer-events: none;
+}
+
+.timer-wheel {
+  position: relative;
+  width: 74px;
+  height: 90px;
+  overflow: hidden;
+  outline: none;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  /* Rows fade out toward the top and the bottom. */
+  mask-image: linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent);
+}
+
+.timer-wheel:active {
+  cursor: grabbing;
+}
+
+/* The rows start one row down: row 0 sits in the middle at rest. */
+.timer-wheel-rows {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 30px;
+  will-change: transform;
+}
+
+.timer-wheel-row {
+  height: 30px;
+  padding-right: 38px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  line-height: 30px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+  transition: color 0.15s ease;
+}
+
+.timer-wheel-row--on {
+  color: var(--text-1);
+}
+
+/* The unit, fixed in the band beside the number. */
+.timer-wheel-unit {
+  position: absolute;
+  left: 40px;
+  top: 30px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 30px;
+  color: var(--text-1);
+  pointer-events: none;
+}
+
+.timer-round {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  font: 600 13px var(--font-ui);
+  cursor: pointer;
+  /* The ring inside the edge, as on Apple's round buttons. */
+  box-shadow: inset 0 0 0 2px #000, inset 0 0 0 3.5px currentColor;
+  transition: filter 0.15s ease, transform 0.15s ease, opacity 0.15s ease;
+}
+
+.timer-round:hover:not(:disabled) {
+  filter: brightness(1.2);
+}
+
+.timer-round:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.timer-round:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.timer-round--start {
+  background: var(--start-soft);
+  color: var(--start);
+}
+
+/* The calendar's colour: Apple's blue. */
+.cal-activity,
+.cal-peek,
+.cal-panel {
+  --cal: #0a84ff;
+}
+
+/* ---- Closed island ---- */
+
+.cal-activity {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  padding: 0 16px 0 13px;
+  color: var(--cal);
+}
+
+.cal-activity-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-1);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.cal-activity-when {
+  flex: none;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Peek ---- */
+
+.cal-peek {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  height: 100%;
+  padding: 0 10px 0 16px;
+}
+
+.cal-peek-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: rgba(10, 132, 255, 0.2);
+  color: var(--cal);
+}
+
+.cal-peek-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.cal-peek-title {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.cal-peek-when {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--cal);
+}
+
+/* ---- Join ---- */
+
+.cal-join {
+  flex: none;
+  height: 28px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--cal);
+  color: #fff;
+  font: 600 12px var(--font-ui);
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.cal-join:hover {
+  filter: brightness(1.15);
+}
+
+.cal-join:active {
+  transform: scale(0.95);
+}
+
+.cal-join--compact {
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 15px;
+}
+
+/* ---- Agenda ---- */
+
+.cal-panel {
+  box-sizing: border-box;
+  height: 100%;
+  padding: 10px 14px 10px;
+  overflow: hidden;
+}
+
+.cal-day + .cal-day {
+  margin-top: 2px;
+}
+
+.cal-day-name {
+  margin: 0;
+  padding: 0 6px;
+  height: 22px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 22px;
+  color: var(--text-3);
+  text-transform: capitalize;
+}
+
+.cal-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 46px;
+  padding: 0 6px;
+  border-radius: 12px;
+}
+
+.cal-row--live {
+  background: rgba(10, 132, 255, 0.12);
+}
+
+.cal-bar {
+  flex: none;
+  width: 3px;
+  height: 28px;
+  border-radius: 2px;
+  background: var(--cal);
+}
+
+.cal-time {
+  flex: none;
+  width: 52px;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+}
+
+.cal-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.cal-title,
+.cal-sub {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.cal-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cal-sub {
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+
+.mirror {
+  box-sizing: border-box;
+  height: 100%;
+  padding: 6px 12px 12px;
+}
+
+.mirror-frame {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #0d0d0f;
+}
+
+.mirror-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* A mirror: left is left. */
+  transform: scaleX(-1);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.mirror-frame--on .mirror-video {
+  opacity: 1;
+}
+
+.mirror-message {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 28px;
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+}
+
+
+/* The demo's mirror: a drawn stand-in for the webcam. */
+.mirror-demo {
+  position: relative;
+  background: radial-gradient(circle at 50% 35%, #3a3550, #16151d 70%);
+}
+
+.mirror-demo-light {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 30% 20%, rgba(255, 214, 170, 0.35), transparent 55%);
+  animation: mirror-breathe 6s ease-in-out infinite alternate;
+}
+
+@keyframes mirror-breathe {
+  to { transform: translateX(6%); opacity: 0.7; }
+}
+
+.mirror-demo-person {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 70%;
+  transform: translateX(-50%);
+  fill: rgba(8, 8, 12, 0.85);
+}
+
+.mirror-demo-note {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.media-player {
+  position: relative;
+}
+
+/* ---- Sources: page dots under the controls ---- */
+
+.media-sources {
+  position: absolute;
+  left: 50%;
+  bottom: -17px;
+  display: flex;
+  gap: 2px;
+  transform: translateX(-50%);
+}
+
+.media-source {
+  display: grid;
+  place-items: center;
+  height: 14px;
+  padding: 0 3px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.media-source-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.28);
+  transition: width 0.3s cubic-bezier(0.33, 1, 0.68, 1), background-color 0.2s ease;
+}
+
+.media-source--playing .media-source-dot {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.media-source:hover .media-source-dot {
+  background: rgba(255, 255, 255, 0.75);
+}
+
+/* The source shown: a little bar, as the iPhone's current page. */
+.media-source--on .media-source-dot {
+  width: 16px;
+  background: #fff;
+}
+
+/* ---- Bluetooth battery low ---- */
+
+.peek-icon--low {
+  color: #ff453a;
+}
+
+.peek-caption--low {
+  color: #ff453a;
+}
+
+
+.peek-ring-fill--low {
+  stroke: #ff9f0a;
+}
+
+/* ---- The game scene: the island hides, the shortcut brings it back ---- */
+
+.isl-stage {
+  transition: opacity 0.28s ease, translate 0.36s var(--spring);
+}
+
+.isl-stage--hidden {
+  opacity: 0;
+  translate: 0 -24px;
+  pointer-events: none;
+}
