@@ -1,13 +1,13 @@
 {
-    "version": "0.1.1",
+    "version": "0.1.5",
     "description": "A Dynamic Island for Windows: music with synced lyrics, a launcher, notifications and quick controls.",
     "homepage": "https://quiera.eu",
     "license": "GPL-3.0-or-later",
     "notes": "Quiera needs the Microsoft Edge WebView2 runtime, included in Windows 11.",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/quierapro/quiera-island/releases/download/v0.1.1/Quiera-Setup-x64.exe#/dl.7z",
-            "hash": "a6c5c4810c320b63b8eadab73aa2a1adc535f1649aa6eecad96bc9fd0047744f"
+            "url": "https://github.com/quierapro/quiera-island/releases/download/v0.1.5/Quiera-Setup-x64.exe#/dl.7z",
+            "hash": "1c8c84058021ca973f259755decc2e1e1128b98c1747ef1cddffc8d7d1dc9b53"
         }
     },
     "pre_install": "Remove-Item -LiteralPath (Join-Path $dir '$PLUGINSDIR') -Recurse -Force -ErrorAction SilentlyContinue",
