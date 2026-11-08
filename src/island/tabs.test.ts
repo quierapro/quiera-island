@@ -6,11 +6,11 @@ const ids = (order: string[]) => orderTabs(order).map((t) => t.id);
 
 describe("orderTabs", () => {
   it("keeps the default order when the settings give none", () => {
-    expect(ids([])).toEqual(["home", "timer", "calendar", "controls", "mirror", "notifications", "shelf", "clipboard"]);
+    expect(ids([])).toEqual(["home", "timer", "calendar", "agents", "controls", "mirror", "notifications", "shelf", "clipboard"]);
   });
 
   it("follows the settings, the tabs they omit after, home always first", () => {
-    expect(ids(["clipboard", "home", "controls"])).toEqual(["home", "clipboard", "controls", "timer", "calendar", "mirror", "notifications", "shelf"]);
+    expect(ids(["clipboard", "home", "controls"])).toEqual(["home", "clipboard", "controls", "timer", "calendar", "agents", "mirror", "notifications", "shelf"]);
   });
 
   it("ignores ids it does not know (a removed plugin)", () => {

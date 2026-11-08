@@ -1,6 +1,8 @@
 //! Windows implementation: the primary target. Features are switched on here
 //! as each development step lands and passes its checks.
 
+mod agent_pipe;
+mod agent_window;
 mod autostart;
 mod bluetooth;
 mod clipboard;
@@ -18,10 +20,15 @@ mod notifications;
 mod peeks;
 mod process;
 mod share;
+mod sound;
 mod system_events;
 mod thumbnail;
 mod webview;
 
+pub use agent_pipe::{send_agent_message, serve_agent_pipe};
+pub use agent_window::{
+    agent_window, focus_window, process_running, short_path, window_in_front, window_title,
+};
 pub use autostart::set_autostart;
 pub use bluetooth::start_bluetooth_watch;
 pub use clipboard::{start_clipboard_watch, write_clipboard};
@@ -46,8 +53,9 @@ pub use notifications::{
     dismiss_notification, launch_app, notifications_quiet, start_notification_watch,
 };
 pub use peeks::start_peek_watch;
-pub use process::{lower_thread_priority, wait_for_process_exit};
+pub use process::{lower_thread_priority, start_in_terminal, wait_for_process_exit};
 pub use share::share_files;
+pub use sound::play_system_sound;
 pub use system_events::start_system_watch;
 pub use thumbnail::file_thumbnail;
 pub use webview::{allow_island_camera, set_webview_memory_low, watch_webview};

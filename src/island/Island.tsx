@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useReducer, useRef, useState, type ReactNode, lazy, Suspense } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { createIslandController } from "../machine/controller";
-import { CALENDAR_ACTIVITY, CALENDAR_PEEK, initialState, reduce, surfaceOf, TIMER_ACTIVITY, type Surface, type Tab } from "../machine/island-machine";
+import { AGENTS_ACTIVITY, AGENTS_PEEK, CALENDAR_ACTIVITY, CALENDAR_PEEK, initialState, reduce, surfaceOf, TIMER_ACTIVITY, type Surface, type Tab } from "../machine/island-machine";
 import { primaryActivity } from "../machine/arbiter";
 import { benchRequested, runBench } from "../dev/bench";
 // Development only: loaded on demand, so neither it nor its CSS ships.
 const DebugPanel = import.meta.env.DEV ? lazy(() => import("../dev/DebugPanel").then((m) => ({ default: m.DebugPanel }))) : null;
 import { getFullscreen, onFullscreen } from "../ipc/system";
-import { BIRTH, targetBox, targetFor, type ShellTarget } from "./geometry";
+import { BIRTH, MAX_ISLAND_HEIGHT, targetBox, targetFor, type ShellTarget, type Size } from "./geometry";
 import { IslandShell } from "./IslandShell";
 import { useMedia } from "../modules/media/store";
 import { useMediaActivity } from "../modules/media/useMediaActivity";
@@ -19,6 +19,7 @@ import { ShelfView } from "../modules/shelf/ShelfView";
 import { startShelf, useShelf } from "../modules/shelf/store";
 import { useFileDrop } from "../modules/shelf/useFileDrop";
 import { TAB_BAR_HEIGHT, TabBar } from "./TabBar";
+import { orderTabs, tabShown } from "./tabs";
 import { clipboardContentSize } from "../modules/clipboard/format";
 import { ClipboardView } from "../modules/clipboard/ClipboardView";
 import { startClipboard, useClipboard } from "../modules/clipboard/store";
@@ -41,10 +42,27 @@ import { WELCOME_PILL_SIZE, WELCOME_SIZE, WelcomePill, WelcomeTour } from "../mo
 import { TIMER_ACTIVITY_SIZE, TimerActivity, TimerPanel, timerPanelSize } from "../modules/timer/TimerViews";
 import { useTimer } from "../modules/timer/store";
 import { CALENDAR_ACTIVITY_SIZE, CALENDAR_PEEK_SIZE, CalendarActivity, CalendarPanel, CalendarPeek } from "../modules/calendar/CalendarViews";
-import { agenda, agendaSize, byDay } from "../modules/calendar/format";
+import { agenda, agendaSize, byDay, fitAgenda } from "../modules/calendar/format";
 import { startCalendar, useCalendarEvents, useNextMeeting } from "../modules/calendar/store";
 import type { CalendarEvent } from "../ipc/calendar";
 import { MIRROR_SIZE, MirrorView } from "../modules/mirror/MirrorView";
+import {
+  AGENTS_ACTIVITY_SIZE,
+  AGENTS_OFFER_SIZE,
+  AGENTS_PEEK_SIZE,
+  AGENTS_REQUEST_SIZE,
+  AgentsActivity,
+  AgentsOffer,
+  AgentsPanel,
+  AgentsPeek,
+  AgentsQuestion,
+  AgentsRequest,
+} from "../modules/agents/AgentsViews";
+import { PLAN_CARD_SIZE, agentNews, agentsLayout, diffCardSize, leadSession, needsYou, questionCardSize } from "../modules/agents/format";
+import { startAgents, useAgentSessions, useAgentsUsage } from "../modules/agents/store";
+import { listen } from "@tauri-apps/api/event";
+import { agentSound, connectClaude, onAgentsOffer, type AgentSession, type AgentUsage } from "../ipc/agents";
+import { updateSettings } from "../settings/store";
 import { BIRTH_IMPACT_MS, DURATIONS, REGION_HOLD_MS } from "./springs";
 import "./island.css";
 
@@ -58,6 +76,43 @@ const TIMER_RINGING_PRIORITY = 50;
 /** A meeting coming shows over the music, below the timer. */
 const CALENDAR_PRIORITY = 15;
 const CALENDAR_PEEK_MS = 6000;
+/** An agent at work shows over the music; one waiting for its user, over the timer. */
+const AGENTS_WORKING_PRIORITY = 12;
+const AGENTS_WAITING_PRIORITY = 40;
+const AGENTS_DONE_PEEK_MS = 5000;
+const AGENTS_WAITING_PEEK_MS = 8000;
+/** Claude Code found running: the offer to follow it, and its answer. */
+const AGENTS_OFFER_PEEK = "agents:offer";
+const AGENTS_OFFER_MS = 15_000;
+const AGENTS_OFFER_DONE_MS = 4000;
+/** The tab bar's side padding, and the room each of its buttons takes. */
+const TAB_BAR_PADDING = 44;
+const TAB_SLOT = 38;
+/** Hovering a session row this long shows its steps. */
+const AGENT_FOCUS_DELAY_MS = 120;
+
+/** What the agents give the island to show. */
+interface AgentsView {
+  lead: { session: AgentSession; more: number } | null;
+  shown: boolean;
+  peek: AgentSession | null;
+  /** The open panel: its rows, the session in focus and how many of its steps. */
+  layout: ReturnType<typeof agentsLayout>;
+  /** Each AI's usage limits. */
+  usage: readonly AgentUsage[];
+  onFocus(id: string): void;
+  onShow(): void;
+  offer: { state: "ask" | "done" | "failed"; onConnect(): void; onLater(): void } | null;
+}
+
+/** A permission or a question asked on the island: the card's size. */
+function requestSize(session: AgentSession): Size {
+  const request = session.request!;
+  if (request.questions) return questionCardSize(request.questions);
+  if (request.tool === "ExitPlanMode" && request.detail) return PLAN_CARD_SIZE;
+  if (request.diff) return diffCardSize(request.diff);
+  return AGENTS_REQUEST_SIZE;
+}
 
 /** The bubble at the end of its rise, just before it meets the edge. */
 const RISEN: ShellTarget = { ...BIRTH, y: 0 };
@@ -71,7 +126,8 @@ const UNBORN: ShellTarget = { ...BIRTH, fill: 0 };
 function viewFor(
   surface: Surface,
   state: { tab: Tab; dragging: boolean; peekId: string | null; welcome: boolean; timer: boolean; timerSet: boolean },
-  calendar: { meeting: CalendarEvent | null; shown: boolean; events: readonly CalendarEvent[] },
+  calendar: { meeting: CalendarEvent | null; shown: boolean; coming: readonly CalendarEvent[] },
+  agents: AgentsView,
   hasMedia: boolean,
   onLauncherRows: (rows: number) => void,
 ): { key: string; content: ReactNode } {
@@ -87,17 +143,36 @@ function viewFor(
       if (welcome) return { key: "activity:welcome", content: <WelcomePill /> };
       if (timer) return { key: "activity:timer", content: <TimerActivity /> };
       if (calendar.shown && calendar.meeting) return { key: "activity:calendar", content: <CalendarActivity event={calendar.meeting} /> };
+      if (agents.shown && agents.lead) {
+        const { session, more } = agents.lead;
+        // A permission asked: the question itself, not just the pill.
+        if (session.request) {
+          const key = `activity:agents-request:${session.request.id}`;
+          return { key, content: session.request.questions ? <AgentsQuestion session={session} /> : <AgentsRequest session={session} /> };
+        }
+        const usage = agents.usage.find((u) => u.agent === session.agent);
+        return { key: "activity:agents", content: <AgentsActivity session={session} more={more} usage={usage} /> };
+      }
       return { key: surface, content: <MediaActivity /> };
     case "peek":
       // Peeks of different kinds crossfade; a peek updated in place does not.
       if (peekId?.startsWith(SYSTEM_PEEK_PREFIX)) return { key: `peek:${peekId}`, content: <SystemPeekView /> };
       if (peekId === CALENDAR_PEEK) return { key: "peek:calendar", content: calendar.meeting ? <CalendarPeek event={calendar.meeting} /> : null };
+      if (peekId === AGENTS_PEEK) return { key: "peek:agents", content: agents.peek ? <AgentsPeek session={agents.peek} /> : null };
+      if (peekId === AGENTS_OFFER_PEEK) return { key: "peek:agents-offer", content: agents.offer ? <AgentsOffer {...agents.offer} /> : null };
       return { key: "peek:media", content: <MediaPeek /> };
     case "expanded":
       // The wheels and the countdown crossfade.
       if (tab === "timer") return { key: timerSet ? "expanded:timer" : "expanded:timer-pick", content: <TimerPanel /> };
       if (tab === "mirror") return { key: "expanded:mirror", content: <MirrorView /> };
-      if (tab === "calendar") return { key: "expanded:calendar", content: <CalendarPanel events={calendar.events} /> };
+      if (tab === "calendar") return { key: "expanded:calendar", content: <CalendarPanel events={calendar.coming} /> };
+      if (tab === "agents") {
+        const { rows, focus, steps } = agents.layout;
+        return {
+          key: "expanded:agents",
+          content: <AgentsPanel rows={rows} focusId={focus} steps={steps} usage={agents.usage} onFocus={agents.onFocus} onShow={agents.onShow} />,
+        };
+      }
       if (tab === "shelf") return { key: "expanded:shelf", content: <ShelfView dragging={dragging} /> };
       if (tab === "clipboard") return { key: "expanded:clipboard", content: <ClipboardView /> };
       if (tab === "notifications") return { key: "expanded:notifications", content: <NotificationsView /> };
@@ -133,7 +208,6 @@ export function Island() {
   const systemReduced = useReducedMotion() ?? false;
   const motionSetting = settings.general.motion;
   const reducedMotion = motionSetting === "reduced" || (motionSetting === "system" && systemReduced);
-  useEffect(() => controller.setOpenOnHover(settings.general.openOnHover), [controller, settings.general.openOnHover]);
   const [timeScale, setTimeScale] = useState(1);
   const [birth, setBirth] = useState(0);
   const [risen, setRisen] = useState(reducedMotion);
@@ -285,9 +359,132 @@ export function Island() {
     }
   }, [meetingId, controller]);
   const meetingShown = Boolean(meeting) && primaryActivity(state.activities)?.id === CALENDAR_ACTIVITY;
-  const coming = agenda(calendarEvents, Date.now());
+  // As many as fit under the tab bar: a taller island would be cut flat.
+  const coming = fitAgenda(agenda(calendarEvents, Date.now()), Date.now(), MAX_ISLAND_HEIGHT - TAB_BAR_HEIGHT);
+
+  // AI agents: one at work is a live activity, above the music; one that
+  // waits for its user, above almost everything. Finishing, or starting to
+  // wait, is announced by a peek.
+  useEffect(() => startAgents(), []);
+  const agentSessions = useAgentSessions();
+  const agentLead = leadSession(agentSessions);
+  const agentActive = agentLead !== null;
+  const agentWaiting = agentLead ? needsYou(agentLead.session) : false;
+  useEffect(() => {
+    if (!agentActive) {
+      dispatch({ type: "activity.clear", id: AGENTS_ACTIVITY });
+      return;
+    }
+    dispatch({ type: "activity.set", activity: { id: AGENTS_ACTIVITY, priority: agentWaiting ? AGENTS_WAITING_PRIORITY : AGENTS_WORKING_PRIORITY } });
+  }, [agentActive, agentWaiting]);
+  const agentsShown = agentActive && primaryActivity(state.activities)?.id === AGENTS_ACTIVITY;
+  // The agents tab follows the session under the pointer, showing its steps.
+  // A short wait first: crossing rows with the pointer does not make the panel jump.
+  const [agentFocus, setAgentFocus] = useState<string | null>(null);
+  const focusTimer = useRef<number | undefined>(undefined);
+  const focusAgentRow = (id: string) => {
+    clearTimeout(focusTimer.current);
+    focusTimer.current = window.setTimeout(() => setAgentFocus(id), AGENT_FOCUS_DELAY_MS);
+  };
+  useEffect(() => () => clearTimeout(focusTimer.current), []);
+  const agentsUsage = useAgentsUsage();
+  const agentsPanel = agentsLayout(agentSessions, agentFocus, MAX_ISLAND_HEIGHT - TAB_BAR_HEIGHT, agentsUsage.length > 0);
+  const [agentPeek, setAgentPeek] = useState<AgentSession | null>(null);
+  const agentsBefore = useRef(agentSessions);
+  useEffect(() => {
+    const news = agentNews(agentsBefore.current, agentSessions);
+    agentsBefore.current = agentSessions;
+    if (!news) return;
+    agentSound(news.kind).catch(() => {});
+    // A permission held for the island shows as its own card, not a peek.
+    if (news.session.request) return;
+    setAgentPeek(news.session);
+    controller.showPeek(AGENTS_PEEK, news.kind === "done" ? AGENTS_DONE_PEEK_MS : AGENTS_WAITING_PEEK_MS);
+  }, [agentSessions, controller]);
+
+  // Development aid: a test opens the island on a tab (see agents.rs, DevOpen).
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    let live = true;
+    let unlisten: (() => void) | undefined;
+    listen<string>("island://dev-open", (e) => {
+      if (e.payload === "close") {
+        dispatch({ type: "close" });
+        return;
+      }
+      dispatch({ type: "press" });
+      dispatch({ type: "tab.select", tab: e.payload as Tab });
+    })
+      .then((stop) => {
+        if (live) unlisten = stop;
+        else stop();
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+      unlisten?.();
+    };
+  }, []);
+
+  // A permission or a question to answer shows as its card: a peek still on
+  // screen (it started to wait a moment before asking) gives way at once.
+  const requestId = agentLead?.session.request?.id ?? null;
+  const peekId = state.peek?.id;
+  useEffect(() => {
+    if (requestId !== null && peekId === AGENTS_PEEK) dispatch({ type: "peek.expire", id: AGENTS_PEEK });
+  }, [requestId, peekId]);
+
+  // Claude Code started, and Quiera does not follow it yet: offer to, once.
+  const [offer, setOffer] = useState<"ask" | "done" | "failed" | null>(null);
+  useEffect(() => {
+    let live = true;
+    let unlisten: (() => void) | undefined;
+    onAgentsOffer(() => {
+      setOffer("ask");
+      controller.showPeek(AGENTS_OFFER_PEEK, AGENTS_OFFER_MS);
+    })
+      .then((stop) => {
+        if (live) unlisten = stop;
+        else stop();
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+      unlisten?.();
+    };
+  }, [controller]);
+  const answerOffer = (connect: boolean) => {
+    updateSettings((s) => ({ ...s, agents: { ...s.agents, claudeAsked: true } })).catch(() => {});
+    if (!connect) {
+      dispatch({ type: "peek.expire", id: AGENTS_OFFER_PEEK });
+      return;
+    }
+    connectClaude(true)
+      .then((status) => setOffer(status.claude === "on" ? "done" : "failed"))
+      .catch(() => setOffer("failed"))
+      .finally(() => controller.showPeek(AGENTS_OFFER_PEEK, AGENTS_OFFER_DONE_MS));
+  };
 
   const surface = surfaceOf(state);
+  // What each tab holds: whether it is in the bar, and the bar's width.
+  const tabCounts: Partial<Record<Tab, number>> = {
+    shelf: shelfItems.length,
+    clipboard: clipItems.length,
+    notifications: notifItems.length,
+    calendar: coming.length,
+    agents: agentSessions.length + agentsUsage.length,
+  };
+  /** The open island is at least as wide as its tab bar (the tabs, and the settings at the end). */
+  const tabsWidth = (counts: Partial<Record<Tab, number>>) =>
+    TAB_BAR_PADDING + (orderTabs(settings.tabs.order).filter((def) => tabShown(def, state.tab, counts[def.id] ?? 0, settings.tabs.hidden)).length + 1) * TAB_SLOT;
+
+  // Buttons on the closed island (a permission, an offer, a way back to a
+  // terminal): hovering them must not open the island under the pointer.
+  const agentsButtons =
+    (surface === "activity" && agentsShown && Boolean(agentLead?.session.request)) ||
+    (surface === "peek" && (state.peek?.id === AGENTS_PEEK || state.peek?.id === AGENTS_OFFER_PEEK));
+  const openOnHover = settings.general.openOnHover && !agentsButtons;
+  useEffect(() => controller.setOpenOnHover(openOnHover), [controller, openOnHover]);
 
   // Closed, the island lets clicks go to the window under it (a browser's
   // tabs); the backend says when the pointer rests on it, and it opens.
@@ -337,12 +534,17 @@ export function Island() {
   if (surface === "activity" && timing) size = TIMER_ACTIVITY_SIZE;
   if (surface === "activity" && meetingShown) size = CALENDAR_ACTIVITY_SIZE;
   if (surface === "peek" && state.peek?.id === CALENDAR_PEEK) size = CALENDAR_PEEK_SIZE;
+  if (surface === "activity" && agentsShown && agentLead) size = agentLead.session.request ? requestSize(agentLead.session) : AGENTS_ACTIVITY_SIZE;
+  if (surface === "peek" && state.peek?.id === AGENTS_PEEK) size = AGENTS_PEEK_SIZE;
+  if (surface === "peek" && state.peek?.id === AGENTS_OFFER_PEEK) size = AGENTS_OFFER_SIZE;
   if (surface === "expanded") {
     const [w, h, r] =
       state.tab === "mirror"
         ? MIRROR_SIZE
         : state.tab === "calendar"
         ? agendaSize(byDay(coming, Date.now()).length, coming.length)
+        : state.tab === "agents"
+        ? agentsPanel.size
         : state.tab === "timer"
         ? timerPanelSize(timer)
         : state.tab === "shelf"
@@ -358,7 +560,7 @@ export function Island() {
                   : hasMedia
                     ? (size ?? CLOCK_PANEL_SIZE)
                     : CLOCK_PANEL_SIZE;
-    size = showTabs ? [Math.max(w, 300), h + TAB_BAR_HEIGHT, r] : [w, h, r];
+    size = showTabs ? [Math.max(w, 300, tabsWidth(tabCounts)), h + TAB_BAR_HEIGHT, r] : [w, h, r];
   }
   const target = risen ? targetFor(surface, state.hovered || (near && passThrough), size) : RISEN;
   const viewSize = targetFor(surface, false, size);
@@ -370,7 +572,18 @@ export function Island() {
   const view = viewFor(
     surface,
     { tab: state.tab, dragging: state.dragging, peekId: state.peek?.id ?? null, welcome: welcoming, timer: timing, timerSet: hasTimer },
-    { meeting, shown: meetingShown, events: calendarEvents },
+    { meeting, shown: meetingShown, coming },
+    {
+      lead: agentLead,
+      shown: agentsShown,
+      peek: agentPeek,
+      layout: agentsPanel,
+      usage: agentsUsage,
+      onFocus: focusAgentRow,
+      // A question is answered on its card: the island closes onto it.
+      onShow: () => dispatch({ type: "close" }),
+      offer: offer && { state: offer, onConnect: () => answerOffer(true), onLater: () => answerOffer(false) },
+    },
     hasMedia,
     setLauncherRows,
   );
@@ -402,7 +615,8 @@ export function Island() {
               <TabBar
                 tab={state.tab}
                 hasMedia={hasMedia}
-                counts={{ shelf: shelfItems.length, clipboard: clipItems.length, notifications: notifItems.length, calendar: coming.length }}
+                counts={tabCounts}
+                badges={{ agents: agentSessions.filter(needsYou).length }}
                 order={settings.tabs.order}
                 hidden={settings.tabs.hidden}
                 onSelect={(tab) => dispatch({ type: "tab.select", tab })}

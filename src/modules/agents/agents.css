@@ -1,0 +1,787 @@
+/* Each state's colour: purple at work, orange waiting, green done. */
+.agent--working {
+  --agent: #bf5af2;
+}
+
+.agent--waiting {
+  --agent: #ff9f0a;
+}
+
+.agent--done {
+  --agent: #30d158;
+}
+
+.agent--failed {
+  --agent: #ff453a;
+}
+
+.agent--ready {
+  --agent: var(--text-3);
+}
+
+.agent--danger {
+  --agent: #ff453a;
+}
+
+/* ---- Closed island ---- */
+
+.agent-activity {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  padding: 0 16px 0 13px;
+}
+
+.agent-icon {
+  display: grid;
+  flex: none;
+  color: var(--agent);
+}
+
+.agent--working .agent-icon {
+  animation: agent-spin 2.4s linear infinite;
+}
+
+.agent--waiting .agent-icon {
+  animation: agent-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes agent-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes agent-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.agent-activity-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.agent--waiting .agent-activity-text {
+  color: var(--agent);
+}
+
+.agent-activity-side {
+  flex: none;
+  max-width: 110px;
+  overflow: hidden;
+  color: var(--text-2);
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ---- Peek ---- */
+
+.agent-peek {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  height: 100%;
+  padding: 0 16px;
+}
+
+.agent-peek-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--agent) 22%, transparent);
+  color: var(--agent);
+}
+
+.agent-peek-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.agent-peek-title,
+.agent-peek-state {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.agent-peek-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.agent-peek-state {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--agent);
+}
+
+/* ---- Open panel ---- */
+
+.agent-panel {
+  box-sizing: border-box;
+  height: 100%;
+  padding: 10px 14px;
+  overflow-y: auto;
+}
+
+.agent-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  height: 50px;
+}
+
+.agent-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--agent);
+}
+
+.agent--working .agent-dot,
+.agent--waiting .agent-dot {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--agent) 22%, transparent);
+  animation: agent-pulse 1.6s ease-in-out infinite;
+}
+
+.agent-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.agent-title,
+.agent-sub {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.agent-title {
+  font-size: 13.5px;
+  font-weight: 650;
+}
+
+.agent-name {
+  margin-left: 7px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+.agent-sub {
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.agent--waiting .agent-sub {
+  color: var(--agent);
+  font-weight: 600;
+}
+
+.agent-time {
+  flex: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.agent-empty {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-icon,
+  .agent-dot {
+    animation: none !important;
+  }
+}
+
+/* ---- Links back to the terminal ---- */
+
+.agent-row--link,
+.agent-peek--link {
+  cursor: pointer;
+}
+
+.agent-row--link {
+  margin: 0 -8px;
+  padding: 0 8px;
+  border-radius: 12px;
+  transition: background-color 0.15s ease;
+}
+
+.agent-row--link:hover {
+  background: var(--fill-active, rgba(255, 255, 255, 0.08));
+}
+
+.agent-peek-go {
+  display: grid;
+  flex: none;
+  color: var(--text-3);
+}
+
+/* ---- A permission asked ---- */
+
+.agent-request {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  height: 100%;
+  padding: 14px 16px 14px;
+}
+
+.agent-request-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.agent-request-who {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.agent-request-verb {
+  flex: none;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--agent);
+}
+
+.agent-request-what {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.agent-request-what code {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-family: "Cascadia Mono", "Cascadia Code", Consolas, ui-monospace, monospace;
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.agent-request-size {
+  flex: none;
+  font-size: 12px;
+  font-weight: 650;
+  color: #30d158;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Answers ---- */
+
+.agent-answers {
+  display: flex;
+  gap: 8px;
+}
+
+.agent-answers--compact {
+  flex: none;
+  gap: 6px;
+}
+
+.agent-button {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-1);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    transform 0.1s ease;
+}
+
+.agent-answers--compact .agent-button {
+  flex: none;
+  height: 26px;
+  padding: 0 11px;
+  border-radius: 13px;
+  font-size: 12px;
+}
+
+.agent-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.agent-button:active {
+  transform: scale(0.96);
+}
+
+.agent-button--quiet svg {
+  opacity: 0.6;
+}
+
+.agent-button--main {
+  background: #fff;
+  color: #000;
+}
+
+.agent-button--main:hover {
+  background: rgba(255, 255, 255, 0.86);
+}
+
+/* ---- Claude Code found: an offer ---- */
+
+.agent-offer {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  height: 100%;
+  padding: 0 12px 0 14px;
+}
+
+.agent-offer-text {
+  overflow: hidden;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.agent-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ---- A plan to approve ---- */
+
+.agent-request-plan {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  color: var(--text-2);
+  cursor: auto;
+  user-select: text;
+}
+
+/* ---- A question ---- */
+
+.agent-question-text {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 17px;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.agent-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.agent-option {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-1);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    transform 0.1s ease;
+}
+
+.agent-option:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.agent-option:active {
+  transform: scale(0.98);
+}
+
+.agent-option--on {
+  background: color-mix(in srgb, var(--agent) 30%, transparent);
+}
+
+.agent-option-label {
+  flex: none;
+  max-width: 60%;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 650;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.agent-option-desc {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 12px;
+  color: var(--text-3);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.agent-check {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--text-3);
+  border-radius: 4px;
+}
+
+.agent-option--on .agent-check {
+  border-color: var(--agent);
+  background: var(--agent);
+  box-shadow: inset 0 0 0 2px #000;
+}
+
+/* ---- A session's latest steps ---- */
+
+.agent-steps {
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 6px 19px;
+  padding-left: 10px;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.agent-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  min-width: 0;
+}
+
+.agent-step-icon {
+  display: grid;
+  flex: none;
+  color: var(--text-3);
+}
+
+.agent-step-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.agent-step--failed .agent-step-icon,
+.agent-step-failed {
+  color: #ff453a;
+}
+
+.agent-step-failed {
+  flex: none;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.agent-step-open {
+  display: grid;
+  flex: none;
+  color: var(--text-3);
+  transition: color 0.15s ease;
+}
+
+.agent-step--link {
+  margin: 0 -8px;
+  padding: 0 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.agent-step--link:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.agent-step--link:hover .agent-step-open,
+.agent-step--link:hover .agent-step-text {
+  color: var(--text-1);
+}
+
+/* ---- A change to allow: its lines ---- */
+
+.agent-request--diff {
+  gap: 8px;
+}
+
+.agent-diff {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 6px 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  font-family: "Cascadia Mono", "Cascadia Code", Consolas, ui-monospace, monospace;
+  font-size: 11.5px;
+  line-height: 17px;
+  cursor: auto;
+  user-select: text;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+
+.agent-diff-line {
+  display: flex;
+  min-width: max-content;
+  padding-right: 10px;
+}
+
+.agent-diff-sign {
+  flex: none;
+  width: 22px;
+  text-align: center;
+  color: var(--text-3);
+}
+
+.agent-diff-text {
+  white-space: pre;
+  color: var(--text-2);
+}
+
+.agent-diff-line--add {
+  background: rgba(48, 209, 88, 0.14);
+}
+
+.agent-diff-line--add .agent-diff-sign,
+.agent-diff-line--add .agent-diff-text {
+  color: #7ee2a0;
+}
+
+.agent-diff-line--del {
+  background: rgba(255, 69, 58, 0.14);
+}
+
+.agent-diff-line--del .agent-diff-sign,
+.agent-diff-line--del .agent-diff-text {
+  color: #ff8a80;
+}
+
+/* ---- Usage limits ---- */
+
+.usage-ring-track {
+  stroke: rgba(255, 255, 255, 0.16);
+}
+
+.usage-ring-fill {
+  stroke: #fff;
+  transition: stroke-dasharray 0.4s ease;
+}
+
+.usage-ring--high .usage-ring-fill {
+  stroke: #ff9f0a;
+}
+
+.usage-ring--full .usage-ring-fill {
+  stroke: #ff453a;
+}
+
+.agent-activity-usage {
+  display: grid;
+  flex: none;
+}
+
+.usage-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 34px;
+  padding: 0 2px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.usage-agent {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.usage-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-2);
+}
+
+.usage-window {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.usage-percent {
+  font-size: 12px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.usage-length {
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+
+.agent-empty--short {
+  height: 50px;
+}
+
+.agent-request-plan,
+.agent-panel {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+
+/* ---- Buttons: icon only, small, held ---- */
+
+.agent-button--icon {
+  flex: none;
+  width: 34px;
+  padding: 0;
+  color: var(--text-2);
+}
+
+.agent-button--small {
+  flex: none;
+  height: 26px;
+  padding: 0 12px;
+  border-radius: 13px;
+  font-size: 12px;
+}
+
+.agent-request-verb--danger {
+  font-weight: 700;
+}
+
+.agent-button--danger {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 69, 58, 0.22);
+  color: #ffb4ae;
+}
+
+.agent-button--danger:hover {
+  background: rgba(255, 69, 58, 0.3);
+}
+
+.agent-hold-fill {
+  position: absolute;
+  inset: 0;
+  background: #ff453a;
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.agent-button--holding .agent-hold-fill {
+  transform: scaleX(1);
+  transition: transform var(--hold) linear;
+}
+
+.agent-hold-label {
+  position: relative;
+}
+
+.agent-button--holding {
+  color: #fff;
+}
+
+/* ---- A typed answer ---- */
+
+.agent-type {
+  display: flex;
+}
+
+.agent-type-input {
+  flex: 1;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-1);
+  font: inherit;
+  font-size: 13px;
+  user-select: text;
+}
+
+.agent-type-input:focus {
+  border-color: var(--agent);
+}
+
+/* ---- Usage: a limit about to be reached ---- */
+
+.usage-soon {
+  font-size: 11.5px;
+  font-weight: 650;
+  color: #ff9f0a;
+}
+
+.agent-context .agent-step-text {
+  color: var(--text-3);
+}

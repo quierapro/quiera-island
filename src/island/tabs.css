@@ -46,3 +46,10 @@
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
+
+/* The settings: at the far end, a step apart from the tabs. */
+.tab--settings {
+  margin-left: auto;
+  min-width: 30px;
+  padding: 0 7px;
+}

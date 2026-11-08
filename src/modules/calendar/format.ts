@@ -57,7 +57,16 @@ export function clock(ms: number, locale?: string): string {
   return new Date(ms).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
 }
 
-/** The open panel: a title line per day, a row per event. */
+/** The open panel: a title line per day, a row per event (as calendar.css lays them out). */
 export function agendaSize(days: number, rows: number): Size {
-  return [420, 14 + days * 22 + rows * 46 + 10, 26];
+  // Nothing coming: room for a line saying so.
+  if (rows === 0) return [420, 70, 26];
+  return [420, 20 + days * 22 + Math.max(0, days - 1) * 2 + rows * 46, 26];
+}
+
+/** The coming events that fit in `maxHeight`: the latest ones give way. */
+export function fitAgenda(events: readonly CalendarEvent[], now: number, maxHeight: number): CalendarEvent[] {
+  const list = [...events];
+  while (list.length > 1 && agendaSize(byDay(list, now).length, list.length)[1] > maxHeight) list.pop();
+  return list;
 }

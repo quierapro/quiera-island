@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { launchAgent } from "../../ipc/agents";
+import { AgentsIcon } from "../agents/AgentsViews";
 import { closeLauncher, getLauncherApps, launchApp, openFile, searchFiles, type FileHit, type LauncherApp } from "../../ipc/launcher";
 import { openLink } from "../../ipc/notifications";
 import { openSettings } from "../../ipc/settings";
@@ -79,7 +81,7 @@ function Icon({ src, name }: { src: string; name: string }) {
   );
 }
 
-function Row({ result, selected, copied }: { result: Result; selected: boolean; copied: boolean }) {
+function Row({ result, selected, copied, agentMissing = false }: { result: Result; selected: boolean; copied: boolean; agentMissing?: boolean }) {
   const messages = useT();
   const t = messages.launcher;
   const locale = localeOf(useLang());
@@ -139,6 +141,18 @@ function Row({ result, selected, copied }: { result: Result; selected: boolean; 
           <span className="launch-hint">{selected ? t.open : "Quiera"}</span>
         </>
       );
+    case "agent":
+      return (
+        <>
+          <span className="launch-icon launch-icon--glyph launch-icon--agent">
+            <AgentsIcon size={18} />
+          </span>
+          <span className="launch-title">
+            {messages.agents.launch(messages.agents.name(result.agent))} : <strong>{result.task}</strong>
+          </span>
+          <span className="launch-hint">{agentMissing ? messages.agents.launchMissing(messages.agents.name(result.agent)) : selected ? t.start : messages.agents.launchHint}</span>
+        </>
+      );
     case "web":
       return (
         <>
@@ -169,6 +183,8 @@ export function Launcher({ onRows }: { onRows(rows: number): void }) {
   const [files, setFiles] = useState<{ query: string; hits: FileHit[]; ready: boolean }>({ query: "", hits: [], ready: true });
   const [selected, setSelected] = useState(0);
   const [copied, setCopied] = useState(false);
+  // The agent asked for is not installed: its row says so.
+  const [missing, setMissing] = useState<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const usage = useMemo(readUsage, []);
 
@@ -252,6 +268,11 @@ export function Launcher({ onRows }: { onRows(rows: number): void }) {
           .then(() => closeLauncher(false))
           .catch(ignore);
         break;
+      case "agent":
+        launchAgent(result.agent, result.task)
+          .then(() => closeLauncher(false))
+          .catch(() => setMissing(result.id));
+        break;
       case "web":
         openLink(`https://www.google.com/search?q=${encodeURIComponent(result.query)}`)
           .then(() => closeLauncher(false))
@@ -305,7 +326,7 @@ export function Launcher({ onRows }: { onRows(rows: number): void }) {
                 run(result, e.ctrlKey);
               }}
             >
-              <Row result={result} selected={i === selected} copied={copied && result.kind === "calc"} />
+              <Row result={result} selected={i === selected} copied={copied && result.kind === "calc"} agentMissing={missing === result.id} />
             </div>
           ))}
         </div>

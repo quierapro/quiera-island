@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion, Reorder } from "motion/react";
 import { listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { openLink } from "../ipc/notifications";
 import { checkForUpdates, getUpdateStatus, installUpdate, onUpdateStatus, type UpdateStatus } from "../ipc/updates";
 import { checkCalendarLink } from "../ipc/calendar";
+import { connectAgent, getAgentsStatus, startAgentsPhone, stopAgentsPhone, type AgentsStatus, type HookStatus } from "../ipc/agents";
+import type { PhoneLink } from "../ipc/shelf";
 import { islandShortcutHeld, setShortcutRecording } from "../ipc/island";
 import { better, hotkeyLabel, isSingleKey, pressed } from "./hotkey";
 import { getHeldShortcut, getMonitors, SHORTCUTS, type Hotkey, type Monitor, type Settings, type Shortcut } from "../ipc/settings";
@@ -16,12 +19,13 @@ import { tabFace } from "../island/TabBar";
 const ignore = () => {};
 const REPO = "https://github.com/quierapro/quiera-island";
 
-type Section = "general" | "tabs" | "calendar" | "launcher" | "media" | "notifications" | "clipboard" | "peeks" | "about";
+type Section = "general" | "tabs" | "calendar" | "agents" | "launcher" | "media" | "notifications" | "clipboard" | "peeks" | "about";
 
 const SECTIONS: { id: Section; icon: ReactNode }[] = [
   { id: "general", icon: <Icon d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM4 12h2m12 0h2M12 4v2m0 12v2M6.3 6.3l1.4 1.4m8.6 8.6 1.4 1.4m0-11.4-1.4 1.4m-8.6 8.6-1.4 1.4" /> },
   { id: "tabs", icon: <Icon d="M3 9.5h18M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Zm2.5 2.2h3m2 0h3" /> },
   { id: "calendar", icon: <Icon d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v12A1.5 1.5 0 0 1 19 20.5H5A1.5 1.5 0 0 1 3.5 19V7A1.5 1.5 0 0 1 5 5.5Zm-1.5 5h17M8 3.5v4m8-4v4" /> },
+  { id: "agents", icon: <Icon d="M12 3c.6 4.6 3.4 7.4 8 8-4.6.6-7.4 3.4-8 8-.6-4.6-3.4-7.4-8-8 4.6-.6 7.4-3.4 8-8Z" /> },
   { id: "launcher", icon: <Icon d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14Zm5-2 4.5 4.5" /> },
   { id: "media", icon: <Icon d="M9 18V6l11-2v12M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm11-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /> },
   { id: "notifications", icon: <Icon d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15l1.5-2ZM10 20.5a2.2 2.2 0 0 0 4 0" /> },
@@ -442,6 +446,133 @@ function Calendar({ settings, save }: { settings: Settings; save: ReturnType<typ
   );
 }
 
+/** AI agents: hooking Quiera into Claude Code, or out; answering from the island. */
+function Agents({ settings, save }: { settings: Settings; save: ReturnType<typeof useSave>["save"] }) {
+  const t = useT().settings.agents;
+  const [status, setStatus] = useState<AgentsStatus | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    getAgentsStatus().then(setStatus).catch(ignore);
+  }, []);
+  const claude = status?.claude;
+  const codex = status?.codex;
+  const change = (agent: "claude" | "codex", on: boolean) => {
+    setBusy(true);
+    setError(null);
+    // Chosen here: the island no longer needs to offer it.
+    if (agent === "claude" && !settings.agents.claudeAsked) save((s) => ({ ...s, agents: { ...s.agents, claudeAsked: true } }));
+    connectAgent(agent, on)
+      .then(setStatus)
+      .catch((e) => setError(String(e)))
+      .finally(() => setBusy(false));
+  };
+  const unusable = (s: HookStatus | undefined) => !s || s === "missing" || s === "unreadable";
+  const claudeNote = claude === "missing" ? t.missing : claude === "unreadable" ? t.unreadable : claude === "on" ? t.restart : null;
+  const codexNote = codex === "missing" ? t.codexMissing : codex === "unreadable" ? t.unreadable : null;
+  const any = claude === "on" || codex === "on";
+  return (
+    <>
+      <Group>
+        <Row
+          title={t.claude}
+          description={
+            <>
+              {t.claudeHint}
+              {claudeNote && <span className="agents-note">{claudeNote}</span>}
+            </>
+          }
+          disabled={unusable(claude)}
+        >
+          <Toggle on={claude === "on"} onChange={(on) => change("claude", on)} label={t.claude} disabled={busy || unusable(claude)} />
+        </Row>
+        <Row
+          title={t.codex}
+          description={
+            <>
+              {t.codexHint}
+              {codexNote && <span className="agents-note">{codexNote}</span>}
+            </>
+          }
+          disabled={unusable(codex)}
+        >
+          <Toggle on={codex === "on"} onChange={(on) => change("codex", on)} label={t.codex} disabled={busy || unusable(codex)} />
+        </Row>
+        {error && <div className="agents-note agents-note--error agents-error">{t.failed(error)}</div>}
+      </Group>
+      <Group>
+        <Row title={t.approve} description={t.approveHint} disabled={!any}>
+          <Toggle
+            on={settings.agents.approve}
+            onChange={(approve) => save((s) => ({ ...s, agents: { ...s.agents, approve } }))}
+            label={t.approve}
+            disabled={!any}
+          />
+        </Row>
+        <Row title={t.sound} description={t.soundHint}>
+          <Toggle on={settings.agents.sound} onChange={(sound) => save((s) => ({ ...s, agents: { ...s.agents, sound } }))} label={t.sound} />
+        </Row>
+        <Row title={t.usage} description={t.usageHint}>
+          <Toggle on={settings.agents.usage} onChange={(usage) => save((s) => ({ ...s, agents: { ...s.agents, usage } }))} label={t.usage} />
+        </Row>
+      </Group>
+      <Group>
+        <Row title={t.phone} description={t.phoneHint} stacked disabled={!any}>
+          <PhonePairing disabled={!any} />
+        </Row>
+      </Group>
+      <Group>
+        <div className="cal-help">
+          <p>{t.open}</p>
+          <p>{t.launchHow}</p>
+          <p>{t.privacy}</p>
+        </div>
+      </Group>
+    </>
+  );
+}
+
+/** The QR code that links a phone to the agents' page, and a way to unlink it. */
+function PhonePairing({ disabled }: { disabled: boolean }) {
+  const t = useT().settings.agents;
+  const [link, setLink] = useState<PhoneLink | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const show = () => {
+    setError(null);
+    startAgentsPhone()
+      .then(setLink)
+      .catch((e) => setError(String(e)));
+  };
+  const stop = () => {
+    stopAgentsPhone().catch(ignore);
+    setLink(null);
+  };
+  if (!link)
+    return (
+      <div className="phone-pair">
+        <button className="button button--main" disabled={disabled} onClick={show}>
+          {t.phoneShow}
+        </button>
+        {error && <div className="agents-note agents-note--error">{error}</div>}
+      </div>
+    );
+  return (
+    <div className="phone-pair">
+      <svg className="phone-qr" viewBox={`-2 -2 ${link.qrSize + 4} ${link.qrSize + 4}`} role="img" aria-label="QR code">
+        <rect x="-2" y="-2" width={link.qrSize + 4} height={link.qrSize + 4} fill="#fff" />
+        <path d={link.qrPath} fill="#000" />
+      </svg>
+      <div className="phone-side">
+        <code className="phone-url">{link.url}</code>
+        <p>{t.phoneOpen}</p>
+        <button className="button" onClick={stop}>
+          {t.phoneStop}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function Launcher({ settings, save }: { settings: Settings; save: ReturnType<typeof useSave>["save"] }) {
   const messages = useT();
   const t = messages.settings.launcher;
@@ -691,6 +822,42 @@ function About({ settings, save }: { settings: Settings; save: ReturnType<typeof
 
 const isSection = (s: string): s is Section => SECTIONS.some((x) => x.id === s);
 
+/**
+ * The window's own title bar: drag it to move the window; minimize (to the
+ * taskbar) and close, nothing else.
+ */
+function TitleBar({ title }: { title: string }) {
+  const t = useT().settings;
+  const win = getCurrentWindow();
+  return (
+    <header className="titlebar" data-tauri-drag-region>
+      <span className="titlebar-logo" data-tauri-drag-region aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 64 64">
+          <g fill="#7136ff">
+            <circle cx="32.2" cy="26.9" r="16.6" />
+            <circle cx="17.7" cy="36.5" r="13.7" />
+            <circle cx="46.3" cy="36.5" r="13.7" />
+            <ellipse cx="32" cy="42" rx="17" ry="13.3" />
+          </g>
+        </svg>
+      </span>
+      <span className="titlebar-title" data-tauri-drag-region>
+        {title}
+      </span>
+      <button className="titlebar-button" aria-label={t.minimize} title={t.minimize} onClick={() => win.minimize().catch(ignore)}>
+        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+          <path d="M1 5h8" stroke="currentColor" strokeWidth="1.2" />
+        </svg>
+      </button>
+      <button className="titlebar-button titlebar-button--close" aria-label={t.close} title={t.close} onClick={() => win.close().catch(ignore)}>
+        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+          <path d="m1.5 1.5 7 7m0-7-7 7" stroke="currentColor" strokeWidth="1.2" />
+        </svg>
+      </button>
+    </header>
+  );
+}
+
 export function SettingsApp() {
   const settings = useSettings();
   const { save, error } = useSave();
@@ -712,7 +879,9 @@ export function SettingsApp() {
   }, [t.windowTitle]);
 
   return (
-    <div className="app">
+    <div className="window">
+      <TitleBar title="Quiera" />
+      <div className="app">
       <nav className="nav">
         <div className="nav-title">{t.windowTitle}</div>
         {SECTIONS.map((s) => (
@@ -730,6 +899,7 @@ export function SettingsApp() {
             {section === "general" && <General settings={settings} save={save} />}
             {section === "tabs" && <Tabs settings={settings} save={save} />}
             {section === "calendar" && <Calendar settings={settings} save={save} />}
+            {section === "agents" && <Agents settings={settings} save={save} />}
             {section === "launcher" && <Launcher settings={settings} save={save} />}
             {section === "media" && <Media settings={settings} save={save} />}
             {section === "notifications" && <Notifications settings={settings} save={save} />}
@@ -740,6 +910,7 @@ export function SettingsApp() {
         </AnimatePresence>
         {error && <div className="error">{t.saveError(error)}</div>}
       </main>
+      </div>
     </div>
   );
 }

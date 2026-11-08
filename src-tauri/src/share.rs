@@ -64,19 +64,7 @@ pub fn shelf_share_phone(ids: Vec<u32>) -> Result<PhoneLink, String> {
         )
         .into());
     }
-    let ip = local_ip().ok_or(tr(
-        "Pas de réseau local : connecte le PC au Wi-Fi ou à une box.",
-        "No local network: connect the PC to Wi-Fi or a router.",
-    ))?;
-    let port = server_port().map_err(|e| {
-        format!(
-            "{} {e}",
-            tr(
-                "Le partage n'a pas pu démarrer :",
-                "Sharing could not start:"
-            )
-        )
-    })?;
+    let (ip, port) = server_address()?;
     let token = new_token().map_err(|e| e.to_string())?;
     let url = format!("http://{ip}:{port}/s/{token}");
     let (qr_size, qr_path) = qr_code(&url)?;
@@ -144,7 +132,34 @@ pub fn pick_ip(route: Option<IpAddr>, lan: &[Ipv4Addr]) -> Option<IpAddr> {
     }
 }
 
-fn new_token() -> Result<String, getrandom::Error> {
+/// The address and port phones reach Quiera at, its server started if needed.
+pub fn server_address() -> Result<(IpAddr, u16), String> {
+    let ip = local_ip().ok_or(tr(
+        "Pas de réseau local : connecte le PC au Wi-Fi ou à une box.",
+        "No local network: connect the PC to Wi-Fi or a router.",
+    ))?;
+    let port = server_port().map_err(|e| {
+        format!(
+            "{} {e}",
+            tr(
+                "Le partage n'a pas pu démarrer :",
+                "Sharing could not start:"
+            )
+        )
+    })?;
+    Ok((ip, port))
+}
+
+/// Whether two tokens are the same, in a time that does not tell how much of one matched.
+pub fn same_token(a: &str, b: &str) -> bool {
+    a.len() == b.len()
+        && a.bytes()
+            .zip(b.bytes())
+            .fold(0u8, |acc, (x, y)| acc | (x ^ y))
+            == 0
+}
+
+pub fn new_token() -> Result<String, getrandom::Error> {
     let mut bytes = [0u8; 16];
     getrandom::fill(&mut bytes)?;
     Ok(bytes.iter().fold(String::with_capacity(32), |mut s, b| {
@@ -278,6 +293,28 @@ fn handle(stream: TcpStream) -> io::Result<()> {
     let mut words = request.split_whitespace();
     let (method, target) = (words.next().unwrap_or(""), words.next().unwrap_or(""));
     let mut out = stream;
+    // A phone answering an AI agent (see agents_phone).
+    if target.starts_with("/a/") {
+        return match crate::agents_phone::route(method, target, french) {
+            Some((status, kind, body)) => reply(&mut out, status, kind, body.as_bytes(), false),
+            None => reply(
+                &mut out,
+                "410 Gone",
+                "text/html; charset=utf-8",
+                message_page(
+                    french,
+                    pick(french, "Ce lien a expiré", "This link has expired"),
+                    pick(
+                        french,
+                        "Refais le QR code dans les réglages de Quiera (Agents IA).",
+                        "Make a new QR code in Quiera's settings (AI agents).",
+                    ),
+                )
+                .as_bytes(),
+                false,
+            ),
+        };
+    }
     if method != "GET" && method != "HEAD" {
         return reply(
             &mut out,

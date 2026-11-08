@@ -90,6 +90,7 @@ export function CalendarPanel({ events }: { events: readonly CalendarEvent[] }) 
   const locale = localeOf(useLang());
   const now = useCalendarNow();
   const days = byDay(agenda(events, now), now);
+  if (days.length === 0) return <div className="cal-empty">{t.empty}</div>;
   const dayName = (day: number, start: number) =>
     day === 0 ? t.today : day === 1 ? t.tomorrow : new Date(start).toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" });
   return (

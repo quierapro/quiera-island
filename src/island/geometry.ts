@@ -24,6 +24,13 @@ const EXPANDED_FILL = 1;
 
 export type Size = [width: number, height: number, radius: number];
 
+/**
+ * The tallest the island can be: its window is 380 high (tauri.conf.json),
+ * and a taller shape would be cut flat at the bottom. Panels that list
+ * things fit their rows to it; anything else is held to it here.
+ */
+export const MAX_ISLAND_HEIGHT = 372;
+
 const SIZES: Record<Exclude<Surface, "hidden">, Size> = {
   idle: [124, 34, 17],
   activity: [200, 34, 17],
@@ -41,7 +48,8 @@ export function targetFor(surface: Surface, hovered: boolean, size?: Size): Shel
     const [width, height, radius] = SIZES.idle;
     return { width, height, topRadius: 0, bottomRadius: radius, flares: 1, fill: COMPACT_FILL, y: -(height + 4) };
   }
-  const [width, height, radius] = size ?? SIZES[surface];
+  const [width, wanted, radius] = size ?? SIZES[surface];
+  const height = Math.min(wanted, MAX_ISLAND_HEIGHT);
   const grow = hovered && surface !== "expanded" && surface !== "launcher";
   return {
     width: width + (grow ? HOVER_GROWTH.width : 0),

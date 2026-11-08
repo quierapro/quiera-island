@@ -19,9 +19,64 @@ button {
   font: inherit;
 }
 
+/* ---- The window: its own title bar, then the settings ---- */
+
+.window {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.titlebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  height: 36px;
+  padding-left: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.titlebar-logo {
+  display: grid;
+}
+
+.titlebar-title {
+  flex: 1;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.titlebar-button {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 36px;
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  cursor: default;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.titlebar-button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-1);
+}
+
+.titlebar-button--close:hover {
+  background: #c42b1c;
+  color: #fff;
+}
+
 .app {
   display: flex;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 /* ---- Sidebar ---- */
@@ -614,4 +669,58 @@ button {
 .button:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+/* ---- AI agents ---- */
+
+.agents-note {
+  display: block;
+  margin-top: 6px;
+  color: var(--text-2, inherit);
+}
+
+.agents-note--error {
+  color: #ff6b5e;
+}
+
+.agents-error {
+  padding: 0 16px 12px;
+  font-size: 12px;
+}
+
+/* ---- A phone linked to the agents ---- */
+
+.phone-pair {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.phone-qr {
+  flex: none;
+  width: 150px;
+  height: 150px;
+  border-radius: 10px;
+}
+
+.phone-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.phone-side p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.phone-url {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: 11.5px;
+  color: var(--text-3);
+  user-select: text;
 }

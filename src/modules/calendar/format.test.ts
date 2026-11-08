@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CalendarEvent } from "../../ipc/calendar";
-import { agenda, byDay, daysFrom, minutesUntil, nextMeeting } from "./format";
+import { agenda, agendaSize, byDay, daysFrom, fitAgenda, minutesUntil, nextMeeting } from "./format";
 
 const MIN = 60_000;
 const NOW = new Date(2026, 10, 4, 9, 50).getTime();
@@ -51,5 +51,21 @@ describe("agenda", () => {
     expect(minutesUntil(NOW - MIN, NOW)).toBe(0);
     expect(daysFrom(new Date(2026, 10, 5, 0, 30).getTime(), NOW)).toBe(1);
     expect(daysFrom(new Date(2026, 10, 4, 23, 59).getTime(), NOW)).toBe(0);
+  });
+});
+
+describe("fitAgenda", () => {
+  it("keeps a busy agenda inside the island, dropping the latest events", () => {
+    // Six events over six days: taller than the island's window.
+    const busy = [0, 1, 2, 3, 4, 5].map((day) => event(`e${day}`, day * 24 * 60 + 30));
+    const fitted = fitAgenda(busy, NOW, 340);
+    expect(fitted.length).toBeLessThan(busy.length);
+    expect(agendaSize(byDay(fitted, NOW).length, fitted.length)[1]).toBeLessThanOrEqual(340);
+    expect(fitted.map((e) => e.id)).toEqual(busy.slice(0, fitted.length).map((e) => e.id));
+  });
+
+  it("leaves a short agenda as it is", () => {
+    const two = [event("a", 30), event("b", 90)];
+    expect(fitAgenda(two, NOW, 340)).toEqual(two);
   });
 });

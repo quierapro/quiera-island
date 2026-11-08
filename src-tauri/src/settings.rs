@@ -26,6 +26,7 @@ pub struct Settings {
     pub general: General,
     pub tabs: Tabs,
     pub calendar: Calendar,
+    pub agents: Agents,
     pub launcher: Launcher,
     pub media: Media,
     pub notifications: Notifications,
@@ -41,6 +42,7 @@ impl Default for Settings {
             general: General::default(),
             tabs: Tabs::default(),
             calendar: Calendar::default(),
+            agents: Agents::default(),
             launcher: Launcher::default(),
             media: Media::default(),
             notifications: Notifications::default(),
@@ -314,6 +316,30 @@ impl Default for Calendar {
     }
 }
 
+/// AI agents: whether the island may answer their permissions, and whether
+/// it already offered to listen to Claude Code (asked once, never again).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct Agents {
+    pub approve: bool,
+    pub claude_asked: bool,
+    /// Shows how much of each AI's usage limits is used.
+    pub usage: bool,
+    /// A sound when an agent has finished, or waits for its user.
+    pub sound: bool,
+}
+
+impl Default for Agents {
+    fn default() -> Self {
+        Self {
+            approve: true,
+            claude_asked: false,
+            usage: true,
+            sound: true,
+        }
+    }
+}
+
 impl Settings {
     /// Brings values read from an older file up to date and into range.
     pub fn migrate(mut self) -> Self {
@@ -395,6 +421,9 @@ pub fn open_window_at(app: &AppHandle, section: Option<&str>) {
         .inner_size(780.0, 560.0)
         .min_inner_size(680.0, 460.0)
         .theme(Some(tauri::Theme::Dark))
+        // Its own title bar (SettingsApp): minimize and close, nothing else.
+        .decorations(false)
+        .maximizable(false)
         .center()
         .build();
     if let Err(e) = built {

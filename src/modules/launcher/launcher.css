@@ -134,3 +134,8 @@
 .launch-row--on .launch-hint {
   color: var(--text-2);
 }
+
+/* An AI agent to start: its spark, in the agents colour. */
+.launch-icon--agent {
+  color: #bf5af2;
+}

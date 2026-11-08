@@ -9,8 +9,10 @@ import { TrayIcon } from "../modules/shelf/icons";
 import { TimerIcon } from "../modules/timer/TimerViews";
 import { CalendarIcon } from "../modules/calendar/CalendarViews";
 import { MirrorIcon } from "../modules/mirror/MirrorView";
+import { AgentsIcon } from "../modules/agents/AgentsViews";
 import { useT, type Messages } from "../i18n";
 import { orderTabs, tabShown } from "./tabs";
+import { openSettings } from "../ipc/settings";
 import "./tabs.css";
 
 /** Height the tab bar adds on top of the open panel. */
@@ -34,6 +36,8 @@ export function tabFace(id: Tab, labels: Messages["tabs"], hasMedia: boolean): {
       return { label: labels.timer, icon: <TimerIcon size={17} /> };
     case "calendar":
       return { label: labels.calendar, icon: <CalendarIcon size={17} /> };
+    case "agents":
+      return { label: labels.agents, icon: <AgentsIcon size={17} /> };
     case "controls":
       return { label: labels.controls, icon: <SlidersIcon size={17} /> };
     case "mirror":
@@ -52,6 +56,8 @@ interface TabBarProps {
   hasMedia: boolean;
   /** What each tab holds, shown as a badge. */
   counts: Partial<Record<Tab, number>>;
+  /** A badge other than the count, when they differ (agents: those waiting). */
+  badges?: Partial<Record<Tab, number>>;
   /** From the settings: the tabs' order and the hidden ones. */
   order: readonly string[];
   hidden: readonly string[];
@@ -59,7 +65,7 @@ interface TabBarProps {
 }
 
 /** Icon tabs above the open panel; the active one sits on a soft pill. */
-export function TabBar({ tab, hasMedia, counts, order, hidden, onSelect }: TabBarProps) {
+export function TabBar({ tab, hasMedia, counts, badges, order, hidden, onSelect }: TabBarProps) {
   const labels = useT().tabs;
   const tabs = orderTabs(order).filter((def) => tabShown(def, tab, counts[def.id] ?? 0, hidden));
   return (
@@ -67,7 +73,7 @@ export function TabBar({ tab, hasMedia, counts, order, hidden, onSelect }: TabBa
       {tabs.map(({ id }) => {
         const { label, icon } = tabFace(id, labels, hasMedia);
         // The agenda counts only to be shown, not as a badge.
-        const badge = id === "calendar" ? 0 : counts[id];
+        const badge = id === "calendar" ? 0 : (badges?.[id] ?? counts[id]);
         return (
           <button
             key={id}
@@ -89,6 +95,23 @@ export function TabBar({ tab, hasMedia, counts, order, hidden, onSelect }: TabBa
           </button>
         );
       })}
+      {/* Not a tab: the settings, in their own window. */}
+      <button
+        className="tab tab--settings"
+        aria-label={labels.settings}
+        title={labels.settings}
+        onClick={(e) => {
+          e.stopPropagation();
+          openSettings().catch(() => {});
+        }}
+      >
+        <span className="tab-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" />
+          </svg>
+        </span>
+      </button>
     </div>
   );
 }

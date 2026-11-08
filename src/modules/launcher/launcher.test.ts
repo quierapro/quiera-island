@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { calculate, formatNumber } from "./calc";
 import { launcherSize, normalize, rank, score } from "./search";
-import { asksForSettings, compose, MAX_ROWS } from "./results";
+import { agentRequest, asksForSettings, compose, MAX_ROWS } from "./results";
 
 const apps = ["Visual Studio Code", "Spotify", "Steam", "Discord", "Discord Canary", "Paramètres", "Microsoft Edge", "Bloc-notes"].map(
   (name) => ({ key: name, name, icon: "" }),
@@ -108,5 +108,18 @@ describe("asksForSettings", () => {
     expect(asksForSettings("re")).toBe(false);
     expect(asksForSettings("spotify")).toBe(false);
     expect(compose("reglages", apps, [], {})[0].kind).toBe("settings");
+  });
+});
+
+describe("agentRequest", () => {
+  it("reads a task for an agent", () => {
+    expect(agentRequest("claude fix the tests")).toEqual({ agent: "claude", task: "fix the tests" });
+    expect(agentRequest("Codex: write the docs")).toEqual({ agent: "codex", task: "write the docs" });
+  });
+
+  it("leaves other searches alone", () => {
+    expect(agentRequest("claude")).toBeNull();
+    expect(agentRequest("claudette recipe")).toBeNull();
+    expect(agentRequest("open claude fix")).toBeNull();
   });
 });

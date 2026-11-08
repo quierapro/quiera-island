@@ -40,6 +40,8 @@ export interface Settings {
   tabs: { order: string[]; hidden: string[] };
   /** iCal links (secret), and how long before a meeting the island says so. */
   calendar: { links: string[]; remindMinutes: number };
+  /** AI agents: answering their permissions from the island; Claude Code offered once. */
+  agents: { approve: boolean; claudeAsked: boolean; usage: boolean; sound: boolean };
   launcher: { enabled: boolean; shortcut: Shortcut; indexFiles: boolean };
   media: { lyrics: boolean; netease: boolean; lyricsOffsetMs: number };
   notifications: { enabled: boolean; peek: boolean };
@@ -62,6 +64,7 @@ export const DEFAULT_SETTINGS: Settings = {
   general: { startWithWindows: false, screen: null, hideInFullscreen: true, openOnHover: true, passThrough: true, islandShortcut: { ctrl: true, alt: true, shift: false, win: false, key: 0x49, label: "Ctrl+Alt+I", double: false }, motion: "system", checkUpdates: true, language: "system" },
   tabs: { order: [], hidden: [] },
   calendar: { links: [], remindMinutes: 10 },
+  agents: { approve: true, claudeAsked: false, usage: true, sound: true },
   launcher: { enabled: true, shortcut: "Alt+Espace", indexFiles: true },
   media: { lyrics: true, netease: false, lyricsOffsetMs: 0 },
   notifications: { enabled: true, peek: true },
