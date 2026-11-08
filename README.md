@@ -11,7 +11,7 @@
 
 # Quiera
 
-An island at the top of your screen for media, quick controls and live activities. Built for Windows 11 first.
+A Dynamic Island for Windows: an island at the top of your screen for music and synced lyrics, your meetings, a timer, a launcher, notifications, quick controls, a Shelf that sends files to your phone, and your AI coding agents (Claude Code, Codex). Built for Windows 11 first.
 
 <p align="center">
   <img src="docs/assets/demo.gif" alt="Quiera demo: idle clock, music with synced lyrics, launcher, notifications, controls and Shelf" width="720">
@@ -28,13 +28,21 @@ An island at the top of your screen for media, quick controls and live activitie
 - **Notifications**: shown on the island (quietly in Do not disturb). Links open and a click opens the app.
 
 **Tabs**
+- **Calendar**: paste a calendar's secret iCal link (Google, Outlook, iCloud); the island announces each meeting a few minutes before, with a **Join** button for Teams, Meet, Zoom or Webex.
+- **Timer**: "5 min", "1h30" or "pomodoro" in the launcher, or wheels in the tab; the countdown stays in the pill.
+- **Mirror**: your webcam, for a look before a call. Nothing is recorded.
 - **Shelf**: drop files on the island, drag them out again later, or send them to a phone: a QR code opens them on the local network (any phone, no app, link valid 10 minutes), or Windows' Share panel.
 - **Clipboard**: keeps what you copied during the session. Never written to disk, and copies marked private by password managers are skipped.
 - **Controls**: Wi-Fi, Bluetooth, audio output, master and per-app volume.
 
+**AI agents** (Claude Code, Codex)
+- See what each agent is doing, when it waits for you and when it's done, with a sound if you want.
+- Allow or deny its requests from the island, with the exact command or the changed code; answer its questions and approve its plans. Risky commands need a long press.
+- Its 5-hour and weekly usage in a ring; answers from your phone over Wi-Fi; one click back to its terminal or VS Code. Details in [docs/agents.md](docs/agents.md).
+
 **Launcher** (<kbd>Alt</kbd>+<kbd>Space</kbd>)
 - Finds apps and files on every drive, by name or by kind ("images", "videos").
-- Computes and searches the web.
+- Computes, starts timers, starts an agent ("claude fix the tests") and searches the web.
 
 **Behaves well**
 - Every setting applies at once: start with Windows, screen, hover, shortcut, lyrics, each module and peek.
@@ -77,7 +85,7 @@ The Windows installer is not signed with a code-signing certificate yet, so Smar
 - Committers and reviewers: [quierapro](https://github.com/quierapro); pull requests from other people are reviewed before they are merged.
 - Approvers: [quierapro](https://github.com/quierapro).
 
-Installers are built by GitHub Actions from the tagged commit of this repository. Details, and what Quiera sends over the network (lyrics lookup, update check), are in the [release and signing policy](https://quiera.eu/code-signing/) and the [privacy policy](https://quiera.eu/confidentialite/).
+Installers are built by GitHub Actions from the tagged commit of this repository. Details, and what Quiera sends over the network (lyrics lookup, update check, your calendar if you add it), are in the [release and signing policy](https://quiera.eu/code-signing/) and the [privacy policy](https://quiera.eu/en/privacy/).
 
 ## License
 
