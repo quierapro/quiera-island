@@ -5,6 +5,7 @@ import App from "./App";
 import type { Lang } from "./i18n";
 
 export { DOWNLOAD, REPO, faqs } from "./content";
+export { GUIDES, GUIDES_INDEX, GUIDE_CATEGORIES, FEATURED_GUIDES } from "./guides";
 
 /**
  * The whole page, the lazy demo included, as plain HTML. A first pass loads

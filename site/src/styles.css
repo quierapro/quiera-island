@@ -16,6 +16,10 @@
   --shadow: 0 18px 50px rgba(0, 0, 0, 0.12);
   --accent: #7136ff;
 
+  /* The site's own cursors (public/): the arrow everywhere, the hand on what can be clicked. */
+  --cursor: url("/cursor!.png") 2 1, default;
+  --cursor-pointer: url("/cursor2.png") 7 1, pointer;
+
   /* Served with the site (@fontsource), not from a font CDN: nothing blocks the first paint. */
   --font: "Inter Variable", "Segoe UI", system-ui, sans-serif;
   --font-display: "Urbanist Variable", "Inter Variable", "Segoe UI", system-ui, sans-serif;
@@ -68,6 +72,7 @@
 }
 
 html {
+  cursor: var(--cursor);
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
 }
@@ -87,6 +92,7 @@ body {
 a {
   color: inherit;
   text-decoration: none;
+  cursor: var(--cursor-pointer);
 }
 
 h1,
@@ -103,6 +109,7 @@ p {
 button {
   font: inherit;
   color: inherit;
+  cursor: var(--cursor-pointer);
 }
 
 :focus-visible {
@@ -143,7 +150,7 @@ button {
   font-size: 15px;
   font-weight: 600;
   white-space: nowrap;
-  cursor: pointer;
+  cursor: var(--cursor-pointer);
   transition:
     transform 0.18s ease,
     background-color 0.2s ease,
@@ -272,7 +279,7 @@ button {
   height: 42px;
   border-radius: 21px;
   list-style: none;
-  cursor: pointer;
+  cursor: var(--cursor-pointer);
 }
 
 .nav-menu summary::-webkit-details-marker {
@@ -370,7 +377,7 @@ button {
   color: var(--btn-dark-text);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   list-style: none;
-  cursor: pointer;
+  cursor: var(--cursor-pointer);
   transition: transform 0.18s ease;
 }
 
@@ -493,7 +500,7 @@ button {
 
 .download-option.is-soon {
   opacity: 0.55;
-  cursor: default;
+  cursor: var(--cursor);
 }
 
 /* ---------------------------------------------------------------- Demo */
@@ -622,7 +629,7 @@ button {
   color: var(--pill-text);
   font-size: 15px;
   font-weight: 600;
-  cursor: pointer;
+  cursor: var(--cursor-pointer);
   transition:
     background-color 0.25s ease,
     color 0.25s ease,
@@ -726,7 +733,7 @@ button {
   background: var(--surface);
   font-size: 13px;
   font-weight: 600;
-  cursor: pointer;
+  cursor: var(--cursor-pointer);
   transition:
     background-color 0.15s ease,
     transform 0.15s ease;
@@ -940,7 +947,7 @@ a.feat:focus-visible .feat-try {
   font-size: 16px;
   font-weight: 600;
   text-align: left;
-  cursor: pointer;
+  cursor: var(--cursor-pointer);
 }
 
 .faq-plus {
@@ -1061,7 +1068,7 @@ a.feat:focus-visible .feat-try {
 
 .footer-grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  grid-template-columns: 1.2fr 1fr 1fr 1.2fr 1fr;
   gap: 32px;
 }
 
@@ -1108,6 +1115,24 @@ a.feat:focus-visible .feat-try {
   font-weight: 600;
 }
 
+.footer-legal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  font-weight: 500;
+}
+
+.footer-legal a {
+  color: var(--text);
+  opacity: 0.7;
+}
+
+.footer-legal a:hover {
+  opacity: 1;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .theme-switch {
   display: flex;
   gap: 2px;
@@ -1125,7 +1150,7 @@ a.feat:focus-visible .feat-try {
   border-radius: 17px;
   background: transparent;
   color: var(--text-2);
-  cursor: pointer;
+  cursor: var(--cursor-pointer);
   transition:
     background-color 0.2s ease,
     color 0.2s ease;
@@ -1415,7 +1440,7 @@ a.feat:focus-visible .feat-try {
   background: #fff;
   color: #111;
   font: 600 13px var(--font-display);
-  cursor: pointer;
+  cursor: var(--cursor-pointer);
 }
 
 .winget-cmd button:disabled {

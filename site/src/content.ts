@@ -65,6 +65,13 @@ export function faqs(lang: Lang): { q: string; a: string }[] {
       ),
     },
     {
+      q: tr("Quiera marche-t-il avec Claude Code ?", "Does Quiera work with Claude Code?"),
+      a: tr(
+        "Oui. Dans Réglages › Agents IA, activez Claude Code (l'île le propose aussi la première fois qu'elle le voit tourner). L'île montre ce que fait chaque session, dans le terminal comme dans VS Code. Quand Claude demande une autorisation ou vous pose une question, l'île vous la pose, avec la commande exacte ou le code : Autoriser, Refuser, répondre, ou la renvoyer au terminal. Rien ne quitte votre PC : ni vos messages, ni le contenu de vos fichiers.",
+        "Yes. In Settings › AI agents, turn on Claude Code (the island also offers it the first time it sees it running). The island shows what each session is doing, in the terminal as in VS Code. When Claude asks for a permission or a question, the island asks you, with the exact command or the code: Allow, Deny, answer, or send it back to the terminal. Nothing leaves your PC: neither your messages nor your files' content.",
+      ),
+    },
+    {
       q: tr("Comment voir la batterie de mon casque, clavier ou souris ?", "How do I see my headphones', keyboard's or mouse's battery?"),
       a: tr(
         "Connectez l'appareil en Bluetooth : à sa connexion, l'île affiche son nom et sa batterie, et prévient quand elle passe sous 15 %. Cela marche avec les appareils qui donnent leur niveau à Windows (celui que montre Paramètres › Bluetooth).",

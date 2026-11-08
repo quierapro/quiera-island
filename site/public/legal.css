@@ -1,8 +1,10 @@
-/* The plain pages (code signing policy, privacy): the site's colours, no script. */
+/* The plain pages (legal notice, terms, privacy, code signing policy): the site's colours, no script. */
 :root {
   --bg: #212121;
+  --surface: #2a2a2a;
   --text: #f3f3f3;
   --text-2: #b4b4b8;
+  --text-3: #8a8a92;
   --line: rgba(255, 255, 255, 0.08);
   --link: #a98bff;
   color-scheme: dark;
@@ -11,12 +13,18 @@
 @media (prefers-color-scheme: light) {
   :root {
     --bg: #f6f6f4;
+    --surface: #ffffff;
     --text: #18181a;
     --text-2: #55555c;
+    --text-3: #6b6b73;
     --line: rgba(0, 0, 0, 0.09);
     --link: #5b2bd6;
     color-scheme: light;
   }
+}
+
+html {
+  cursor: url("/cursor!.png") 2 1, default;
 }
 
 body {
@@ -26,17 +34,58 @@ body {
   font: 16px/1.65 "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
+.top {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 20px 16px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 18px;
+  text-decoration: none;
+}
+
+.top nav {
+  display: flex;
+  gap: 16px;
+  margin-left: auto;
+  font-size: 14px;
+}
+
+.top nav a {
+  color: var(--text-2);
+  text-decoration: none;
+}
+
+.top nav a:hover {
+  color: var(--text);
+}
+
 main {
   max-width: 680px;
   margin: 0 auto;
-  padding: 48px 16px 80px;
+  padding: 24px 16px 72px;
 }
 
 h1 {
-  margin: 24px 0 8px;
+  margin: 24px 0 4px;
   font-size: clamp(30px, 6vw, 42px);
   letter-spacing: -0.03em;
   line-height: 1.1;
+}
+
+.updated {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--text-3);
 }
 
 h2 {
@@ -61,6 +110,7 @@ strong {
 
 a {
   color: var(--link);
+  cursor: url("/cursor2.png") 7 1, pointer;
 }
 
 code {
@@ -83,4 +133,27 @@ li + li {
   color: var(--text-2);
   font-weight: 600;
   text-decoration: none;
+}
+
+footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 24px;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+footer a {
+  color: var(--text-2);
+  text-decoration: none;
+}
+
+footer a:hover,
+footer a[aria-current="page"] {
+  color: var(--text);
 }

@@ -366,3 +366,135 @@ export function SourceDots({
     </div>
   );
 }
+
+/* ---------------------------------------------------------------- AI agents */
+
+export const AGENTS_ACTIVITY: Size = [320, 34, 17];
+export const AGENTS_PEEK: Size = [380, 52, 24];
+export const AGENTS_REQUEST: Size = [440, 122, 28];
+export const agentsPanelSize = (rows: number): Size => [420, 20 + Math.max(1, rows) * 50, 26];
+
+export type AgentState = "working" | "waiting" | "done";
+
+/** A demo session: what Claude does in which project. */
+export interface DemoAgent {
+  id: string;
+  project: string;
+  state: AgentState;
+  /** "Modifie auth.ts", or what it asks. */
+  doing: string;
+  minutes: number;
+}
+
+export function AgentsIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 3c.6 4.6 3.4 7.4 8 8-4.6.6-7.4 3.4-8 8-.6-4.6-3.4-7.4-8-8 4.6-.6 7.4-3.4 8-8Z" />
+    </svg>
+  );
+}
+
+const TerminalGlyph = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="m5 7 5 5-5 5M12 17h7" />
+  </svg>
+);
+
+const duration = (minutes: number) => (minutes < 1 ? "< 1 min" : `${minutes} min`);
+
+export function AgentsActivity({ agent }: { agent: DemoAgent }) {
+  const tr = useTr();
+  return (
+    <div className={`agent-activity agent--${agent.state}`}>
+      <span className="agent-icon">
+        <AgentsIcon size={15} />
+      </span>
+      <span className="agent-activity-text">{agent.state === "waiting" ? tr("Attend ton accord", "Needs your OK") : agent.doing}</span>
+      <span className="agent-activity-side">{agent.state === "waiting" ? agent.project : duration(agent.minutes)}</span>
+    </div>
+  );
+}
+
+/** A permission asked while its user was away: the command, and three answers. */
+export function AgentsRequest({ agent, command, onAnswer }: { agent: DemoAgent; command: string; onAnswer(answer: "allow" | "deny" | "terminal"): void }) {
+  const tr = useTr();
+  const answer = (a: "allow" | "deny" | "terminal") => (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onAnswer(a);
+  };
+  return (
+    <div className="agent-request agent--waiting">
+      <div className="agent-request-head">
+        <span className="agent-icon">
+          <AgentsIcon size={15} />
+        </span>
+        <span className="agent-request-who">Claude · {agent.project}</span>
+        <span className="agent-request-verb">{tr("Lancer", "Run")}</span>
+      </div>
+      <div className="agent-request-what">
+        <code>{command}</code>
+      </div>
+      <div className="agent-answers">
+        <button type="button" className="agent-button" onClick={answer("deny")}>
+          {tr("Refuser", "Deny")}
+        </button>
+        <button type="button" className="agent-button agent-button--quiet" onClick={answer("terminal")}>
+          <TerminalGlyph />
+          Terminal
+        </button>
+        <button type="button" className="agent-button agent-button--main" onClick={answer("allow")}>
+          {tr("Autoriser", "Allow")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function AgentsPeek({ agent, text }: { agent: DemoAgent; text: string }) {
+  return (
+    <div className={`agent-peek agent--${agent.state} agent-peek--link`}>
+      <span className="agent-peek-icon">
+        <AgentsIcon size={18} />
+      </span>
+      <span className="agent-peek-text">
+        <span className="agent-peek-title">Claude · {agent.project}</span>
+        <span className="agent-peek-state">{text}</span>
+      </span>
+      <span className="agent-peek-go" aria-hidden="true">
+        <TerminalGlyph />
+      </span>
+    </div>
+  );
+}
+
+export function AgentsPanel({ agents, onOpen }: { agents: DemoAgent[]; onOpen(agent: DemoAgent): void }) {
+  const tr = useTr();
+  const order = { waiting: 0, working: 1, done: 2 };
+  return (
+    <div className="agent-panel">
+      {[...agents]
+        .sort((a, b) => order[a.state] - order[b.state])
+        .map((a) => (
+          <div
+            key={a.id}
+            className={`agent-row agent-row--link agent--${a.state}`}
+            title={tr("Revenir au terminal", "Back to the terminal")}
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpen(a);
+            }}
+          >
+            <span className="agent-dot" />
+            <span className="agent-text">
+              <span className="agent-title">
+                {a.project}
+                <span className="agent-name">Claude</span>
+              </span>
+              <span className="agent-sub">{a.state === "waiting" ? tr("Attend ton accord", "Needs your OK") : a.state === "done" ? tr("Terminé", "Done") : a.doing}</span>
+            </span>
+            <span className="agent-time">{duration(a.minutes)}</span>
+          </div>
+        ))}
+    </div>
+  );
+}

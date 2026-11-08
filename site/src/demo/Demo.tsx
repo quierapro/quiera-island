@@ -27,6 +27,15 @@ import {
   TimerLive,
   TimerPicker,
   agendaSize,
+  AGENTS_ACTIVITY,
+  AGENTS_PEEK,
+  AGENTS_REQUEST,
+  AgentsActivity,
+  AgentsPanel,
+  AgentsPeek,
+  AgentsRequest,
+  agentsPanelSize,
+  type DemoAgent,
   timerPanelSize,
   type TimerPhase,
 } from "./extra";
@@ -62,7 +71,7 @@ import {
   type Tab,
 } from "./views";
 
-export type SceneId = "veille" | "musique" | "lanceur" | "agenda" | "minuteur" | "notifications" | "controles" | "shelf" | "jeux";
+export type SceneId = "veille" | "musique" | "lanceur" | "agenda" | "agents" | "minuteur" | "notifications" | "controles" | "shelf" | "jeux";
 
 interface Scene {
   id: SceneId;
@@ -114,6 +123,16 @@ export function scenes(tr: Tr): Scene[] {
         "Paste your Google, Outlook or iCloud calendar's iCal link: the island announces each meeting a few minutes before, with a Join button that opens Teams, Meet or Zoom. A look in the mirror before you go?",
       ),
       ms: 11000,
+    },
+    {
+      id: "agents",
+      label: tr("Agents IA", "AI agents"),
+      title: tr("Vos agents IA, sans quitter ce que vous faites.", "Your AI agents, without leaving what you're doing."),
+      desc: tr(
+        "Claude Code travaille dans un terminal ou dans VS Code ? L'île montre ce qu'il fait. Quand il demande une autorisation, l'île vous la pose, avec la commande ou le code : Autoriser, Refuser, ou la renvoyer au terminal. Quand il a fini, un clic vous ramène à sa fenêtre.",
+        "Claude Code at work in a terminal or in VS Code? The island shows what it's doing. When it asks for a permission, the island asks you, with the command or the code: Allow, Deny, or send it back to the terminal. When it's done, one click brings its window back.",
+      ),
+      ms: 12000,
     },
     {
       id: "minuteur",
@@ -171,7 +190,8 @@ export function scenes(tr: Tr): Scene[] {
 type Peek =
   | { key: number; system: SystemPeek }
   | { key: number; notification: DemoNotification }
-  | { key: number; meeting: DemoEvent };
+  | { key: number; meeting: DemoEvent }
+  | { key: number; agent: DemoAgent; text: string };
 
 interface DemoTimer {
   total: number;
@@ -230,7 +250,7 @@ export function Demo({ scene, onScene }: { scene: SceneId; onScene(id: SceneId):
   const [peek, setPeek] = useState<Peek | null>(null);
   const peekTimer = useRef<number | undefined>(undefined);
   const peekKey = useRef(0);
-  const showPeek = useCallback((content: { system: SystemPeek } | { notification: DemoNotification } | { meeting: DemoEvent }, ms: number) => {
+  const showPeek = useCallback((content: { system: SystemPeek } | { notification: DemoNotification } | { meeting: DemoEvent } | { agent: DemoAgent; text: string }, ms: number) => {
     clearTimeout(peekTimer.current);
     setPeek({ key: ++peekKey.current, ...content } as Peek);
     peekTimer.current = window.setTimeout(() => setPeek(null), ms);
@@ -319,6 +339,38 @@ export function Demo({ scene, onScene }: { scene: SceneId; onScene(id: SceneId):
   const join = (event: DemoEvent) =>
     showPeek({ system: { kind: "opened", title: event.service ?? "", letter: (event.service ?? "?")[0], color: event.service === "Teams" ? "#5b5fc7" : "#1fa463" } }, 1800);
 
+  // ---- AI agents: Claude at work in two projects; one asks before pushing.
+  const AGENT_COMMAND = "git push origin main";
+  const [agents, setAgents] = useState<DemoAgent[] | null>(null);
+  const [asking, setAsking] = useState(false);
+  const startAgents = () => {
+    setAgents([
+      { id: "web", project: tr("site-web", "website"), state: "working", doing: tr("Modifie auth.ts", "Editing auth.ts"), minutes: 4 },
+      { id: "api", project: "api", state: "working", doing: tr("Lance npm test", "Running npm test"), minutes: 12 },
+    ]);
+    setAsking(false);
+  };
+  const agentAsks = () => {
+    setOpen(false);
+    setAgents((list) => (list ?? []).map((a) => (a.id === "web" ? { ...a, state: "waiting" } : a)));
+    setAsking(true);
+  };
+  const answerAgent = (answer: "allow" | "deny" | "terminal") => {
+    setAsking(false);
+    if (answer === "terminal") {
+      showPeek({ system: { kind: "opened", title: "Windows Terminal", letter: ">", color: "#3a3a3c" } }, 1800);
+      return;
+    }
+    const doing = answer === "allow" ? tr("Lance git push", "Running git push") : tr("Cherche une autre solution", "Trying another way");
+    setAgents((list) => (list ?? []).map((a) => (a.id === "web" ? { ...a, state: "working", doing } : a)));
+    later(() => {
+      const web: DemoAgent = { id: "web", project: tr("site-web", "website"), state: "done", doing, minutes: 5 };
+      setAgents((list) => (list ?? []).map((a) => (a.id === "web" ? web : a)));
+      showPeek({ agent: web, text: tr("Terminé · clic pour revenir au terminal", "Done · click to go back to the terminal") }, 3600);
+    }, 2400);
+  };
+  const agentLead = agents?.find((a) => a.state === "waiting") ?? agents?.find((a) => a.state === "working") ?? null;
+
   // ---- Fullscreen game: the island hidden, shown by the shortcut.
   const [game, setGame] = useState(false);
   const [shownInGame, setShownInGame] = useState(false);
@@ -361,13 +413,17 @@ export function Demo({ scene, onScene }: { scene: SceneId; onScene(id: SceneId):
     setLauncherOpen(false);
     setQuery("");
     typedByUser.current = false;
-    setTab(PIN_TAB[scene] ?? (scene === "notifications" ? "notifications" : scene === "agenda" ? "calendar" : scene === "minuteur" ? "timer" : "home"));
+    setTab(PIN_TAB[scene] ?? (scene === "notifications" ? "notifications" : scene === "agenda" ? "calendar" : scene === "agents" ? "agents" : scene === "minuteur" ? "timer" : "home"));
     setPhone(false);
     setMediaOn(scene === "musique");
     setGame(scene === "jeux");
     setShownInGame(false);
     if (scene !== "agenda") setMeeting(null);
     if (scene !== "minuteur") setTimer(null);
+    if (scene !== "agents") {
+      setAgents(null);
+      setAsking(false);
+    }
 
     switch (scene) {
       case "veille":
@@ -400,6 +456,11 @@ export function Demo({ scene, onScene }: { scene: SceneId; onScene(id: SceneId):
       case "agenda":
         later(announceMeeting, 900);
         later(() => setOpen(true), 6200);
+        break;
+      case "agents":
+        later(startAgents, 600);
+        later(agentAsks, 3600);
+        later(() => answerAgent("allow"), 8200);
         break;
       case "minuteur": {
         later(() => setLauncherOpen(true), 600);
@@ -487,10 +548,11 @@ export function Demo({ scene, onScene }: { scene: SceneId; onScene(id: SceneId):
   }, []);
 
   // ---- Surface, size and view, as the app decides them. Of the live
-  // activities, the timer comes first, then a meeting, then the music.
+  // activities, a permission asked comes first, then the timer, a meeting,
+  // an agent at work, the music.
   const pinned = PIN_TAB[scene] !== undefined;
   const expanded = !launcherOpen && (open || pinned || dragOver);
-  const live = timer ? "timer" : meeting ? "meeting" : mediaOn ? "media" : null;
+  const live = asking ? "request" : timer ? "timer" : meeting ? "meeting" : agentLead ? "agents" : mediaOn ? "media" : null;
   const surface = launcherOpen ? "launcher" : expanded ? "expanded" : peek ? "peek" : live ? "activity" : "idle";
   const hidden = game && !shownInGame && !launcherOpen;
 
@@ -510,6 +572,8 @@ export function Demo({ scene, onScene }: { scene: SceneId; onScene(id: SceneId):
                 ? timerPanelSize(timer !== null)
                 : tab === "calendar"
                   ? agendaSize(2, EVENTS.length)
+                  : tab === "agents"
+                    ? agentsPanelSize(agents?.length ?? 0)
                   : tab === "mirror"
                     ? MIRROR_SIZE
                     : mediaOn
@@ -519,8 +583,18 @@ export function Demo({ scene, onScene }: { scene: SceneId; onScene(id: SceneId):
                       : SIZES.clock;
     size = [Math.max(w, 300), h + TAB_BAR_HEIGHT, r];
   } else if (surface === "peek" && peek)
-    size = "system" in peek ? systemPeekSize(peek.system) : "meeting" in peek ? CALENDAR_PEEK : SIZES.peek;
-  else if (surface === "activity") size = live === "timer" ? TIMER_ACTIVITY : live === "meeting" ? CALENDAR_ACTIVITY : SIZES.activity;
+    size = "system" in peek ? systemPeekSize(peek.system) : "meeting" in peek ? CALENDAR_PEEK : "agent" in peek ? AGENTS_PEEK : SIZES.peek;
+  else if (surface === "activity")
+    size =
+      live === "request"
+        ? AGENTS_REQUEST
+        : live === "timer"
+          ? TIMER_ACTIVITY
+          : live === "meeting"
+            ? CALENDAR_ACTIVITY
+            : live === "agents"
+              ? AGENTS_ACTIVITY
+              : SIZES.activity;
   else size = SIZES.idle;
 
   // The visitor takes over: the scene's script stops, so it never undoes what they just did.
@@ -534,7 +608,8 @@ export function Demo({ scene, onScene }: { scene: SceneId; onScene(id: SceneId):
     touch();
     setNear(true);
     clearTimeout(hoverTimer.current);
-    hoverTimer.current = window.setTimeout(() => setOpen(true), HOVER_OPEN_MS);
+    // Over a permission's buttons, hovering must not open the island under the pointer.
+    if (!asking) hoverTimer.current = window.setTimeout(() => setOpen(true), HOVER_OPEN_MS);
   };
   const leave = (e: React.PointerEvent) => {
     // A finger lifted is not the pointer leaving: a tap keeps the island open.
@@ -716,6 +791,8 @@ export function Demo({ scene, onScene }: { scene: SceneId; onScene(id: SceneId):
       );
     else if (tab === "calendar") content = <CalendarPanel events={EVENTS} locale={locale} live={null} onJoin={join} />;
     else if (tab === "mirror") content = <MirrorView />;
+    else if (tab === "agents" && agents)
+      content = <AgentsPanel agents={agents} onOpen={() => showPeek({ system: { kind: "opened", title: "Windows Terminal", letter: ">", color: "#3a3a3c" } }, 1800)} />;
     else if (mediaOn)
       content = (
         <Player
@@ -745,7 +822,7 @@ export function Demo({ scene, onScene }: { scene: SceneId; onScene(id: SceneId):
         <TabBar
           tab={tab}
           hasMedia={mediaOn}
-          counts={{ notifications: notifications.length, shelf: shelf.length, clipboard: clips.length, calendar: scene === "agenda" ? EVENTS.length : 0 }}
+          counts={{ notifications: notifications.length, shelf: shelf.length, clipboard: clips.length, calendar: scene === "agenda" ? EVENTS.length : 0, agents: agents?.length ?? 0, agentsWaiting: asking ? 1 : 0 }}
           onSelect={(t) => {
             touch();
             setTab(t);
@@ -763,13 +840,19 @@ export function Demo({ scene, onScene }: { scene: SceneId; onScene(id: SceneId):
         <SystemPeekView peek={peek.system} />
       ) : "meeting" in peek ? (
         <CalendarPeek event={peek.meeting} minutes={meetingIn} onJoin={() => join(peek.meeting)} />
+      ) : "agent" in peek ? (
+        <AgentsPeek agent={peek.agent} text={peek.text} />
       ) : (
         <NotificationPeek item={peek.notification} />
       );
   } else if (surface === "activity") {
     viewKey = `activity:${live}`;
     view =
-      live === "timer" && timer ? (
+      live === "request" && agentLead ? (
+        <AgentsRequest agent={agentLead} command={AGENT_COMMAND} onAnswer={(a) => (touch(), answerAgent(a))} />
+      ) : live === "agents" && agentLead ? (
+        <AgentsActivity agent={agentLead} />
+      ) : live === "timer" && timer ? (
         <TimerActivity left={timerLeft} total={timer.total} phase={timer.phase} />
       ) : live === "meeting" && meeting ? (
         <CalendarActivity event={meeting} minutes={meetingIn} />
@@ -832,6 +915,16 @@ export function Demo({ scene, onScene }: { scene: SceneId; onScene(id: SceneId):
           { label: tr("Se voir avant", "Check yourself first"), run: () => (setTab("mirror"), setOpen(true)) },
           { label: tr("Rejoindre", "Join"), run: () => (setOpen(false), join(EVENTS[0])) },
         ];
+      case "agents":
+        return asking
+          ? [
+              { label: tr("Autoriser", "Allow"), run: () => answerAgent("allow") },
+              { label: tr("Refuser", "Deny"), run: () => answerAgent("deny") },
+            ]
+          : [
+              { label: tr("Claude demande à pousser", "Claude asks to push"), run: () => (agents ? null : startAgents(), agentAsks()) },
+              { label: tr("Voir les sessions", "See the sessions"), run: () => (agents ? null : startAgents(), setTab("agents"), setOpen(true)) },
+            ];
       case "minuteur":
         return [
           { label: "5 min", run: () => openLauncher("5 min") },

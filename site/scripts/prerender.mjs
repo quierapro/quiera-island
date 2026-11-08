@@ -7,11 +7,12 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, rmSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, join } from "node:path";
+import { guidePages, pathOf } from "./guide-pages.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
 const server = join(root, "dist-ssr", "entry-server.js");
-const { render, faqs, REPO, DOWNLOAD } = await import(pathToFileURL(server).href);
+const { render, faqs, REPO, DOWNLOAD, GUIDES, GUIDES_INDEX, GUIDE_CATEGORIES, FEATURED_GUIDES } = await import(pathToFileURL(server).href);
 
 const site = (process.env.SITE_URL || "https://quiera.eu/").replace(/\/?$/, "/");
 const version = JSON.parse(readFileSync(join(root, "..", "src-tauri", "tauri.conf.json"), "utf8")).version;
@@ -192,17 +193,53 @@ writeFileSync(
 `,
 );
 
+/* ---------------------------------------------------------------- Guides */
+// Static pages from src/guides.ts (see scripts/guide-pages.mjs).
+
+const guides = guidePages({ GUIDES, GUIDES_INDEX, GUIDE_CATEGORIES, FEATURED_GUIDES, site, DOWNLOAD, REPO, englishImage: existsSync(join(dist, "og-image-en.png")) });
+for (const { path, html } of guides) {
+  mkdirSync(join(dist, path), { recursive: true });
+  writeFileSync(join(dist, path, "index.html"), html);
+}
+
 const robots = ["User-agent: *", "Allow: /", "", `Sitemap: ${site}sitemap.xml`].join("\n") + "\n";
 writeFileSync(join(dist, "robots.txt"), robots);
+
+/* ---------------------------------------------------------------- sitemap.xml */
+// Each page with the date it last changed, and its other language when it has one.
 const today = new Date().toISOString().slice(0, 10);
-// The two languages of the home page name each other, as in their heads.
-const alternates = ["fr", "en"].map((l) => `    <xhtml:link rel="alternate" hreflang="${l}" href="${LANGS[l].url}" />\n`).join("");
+const LEGAL_UPDATED = "2026-11-08";
+const pairs = [
+  { alternates: { fr: "", en: "en/" }, lastmod: today },
+  { alternates: { fr: "mentions-legales/", en: "en/legal-notice/" }, lastmod: LEGAL_UPDATED },
+  { alternates: { fr: "conditions-utilisation/", en: "en/terms/" }, lastmod: LEGAL_UPDATED },
+  { alternates: { fr: "confidentialite/", en: "en/privacy/" }, lastmod: LEGAL_UPDATED },
+];
+const entries = [
+  ...pairs.flatMap((p) => ["fr", "en"].map((lang) => ({ path: p.alternates[lang], ...p }))),
+  { path: "code-signing/", lastmod: LEGAL_UPDATED },
+  ...guides,
+];
+const hreflangs = (alternates) =>
+  [...["fr", "en"].map((l) => [l, alternates[l]]), ["x-default", alternates.fr]]
+    .map(([l, p]) => `    <xhtml:link rel="alternate" hreflang="${l}" href="${site}${p}" />\n`)
+    .join("");
+const url = ({ path, alternates, lastmod }) =>
+  `  <url>\n    <loc>${site}${path}</loc>\n${alternates ? hreflangs(alternates) : ""}    <lastmod>${lastmod}</lastmod>\n  </url>\n`;
 writeFileSync(
   join(dist, "sitemap.xml"),
-  `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${["", "en/", "confidentialite/", "code-signing/"]
-    .map((page) => `  <url>\n    <loc>${site}${page}</loc>\n${page === "" || page === "en/" ? alternates : ""}    <lastmod>${today}</lastmod>\n  </url>\n`)
-    .join("")}</urlset>\n`,
+  `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${entries.map(url).join("")}</urlset>\n`,
 );
 
+/* ---------------------------------------------------------------- llms.txt */
+// public/llms.txt, then every guide by family, for AI assistants that read it.
+const family = (c) =>
+  `### ${c.fr.name} / ${c.en.name}\n\n` +
+  GUIDES.filter((g) => g.category === c.id)
+    .map((g) => `- [${g.fr.title}](${site}${pathOf("fr", g)}): ${g.fr.description} English: [${g.en.title}](${site}${pathOf("en", g)})`)
+    .join("\n");
+const llms = `${readFileSync(join(dist, "llms.txt"), "utf8").trimEnd()}\n\n## Guides\n\n${GUIDE_CATEGORIES.map(family).join("\n\n")}\n`;
+writeFileSync(join(dist, "llms.txt"), llms);
+
 rmSync(join(root, "dist-ssr"), { recursive: true, force: true });
-console.log(`prerendered ${sizes.join(", ")} for ${site}`);
+console.log(`prerendered ${sizes.join(", ")}, and ${GUIDES.length * 2} guides, for ${site}`);

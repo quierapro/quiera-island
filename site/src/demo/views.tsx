@@ -34,7 +34,7 @@ import {
 } from "./icons";
 import type { LaunchRow } from "./launcher";
 import { localeOf, useLang, useTr, type Tr } from "../i18n";
-import { CalendarIcon, MirrorIcon, SourceDots, TimerIcon } from "./extra";
+import { AgentsIcon, CalendarIcon, MirrorIcon, SourceDots, TimerIcon } from "./extra";
 
 export type Size = [width: number, height: number, radius: number];
 
@@ -86,7 +86,7 @@ export function Shell({ size, grow, viewKey, children, ...handlers }: ShellProps
 
 /* ---------------------------------------------------------------- Tabs */
 
-export type Tab = "home" | "timer" | "calendar" | "controls" | "mirror" | "notifications" | "shelf" | "clipboard";
+export type Tab = "home" | "timer" | "calendar" | "agents" | "controls" | "mirror" | "notifications" | "shelf" | "clipboard";
 
 export function TabBar({
   tab,
@@ -96,7 +96,7 @@ export function TabBar({
 }: {
   tab: Tab;
   hasMedia: boolean;
-  counts: { notifications: number; shelf: number; clipboard: number; calendar: number };
+  counts: { notifications: number; shelf: number; clipboard: number; calendar: number; agents: number; agentsWaiting: number };
   onSelect(tab: Tab): void;
 }) {
   const tr = useTr();
@@ -107,6 +107,7 @@ export function TabBar({
     { id: "home", label: hasMedia ? tr("Lecture", "Playing") : tr("Heure", "Clock"), icon: hasMedia ? <NoteIcon size={17} /> : <ClockIcon /> },
     { id: "timer", label: tr("Minuteur", "Timer"), icon: <TimerIcon size={17} /> },
     { id: "calendar", label: tr("Agenda", "Calendar"), icon: <CalendarIcon size={17} />, count: counts.calendar },
+    { id: "agents", label: tr("Agents", "Agents"), icon: <AgentsIcon size={17} />, count: counts.agents, badge: counts.agentsWaiting },
     { id: "controls", label: tr("Contrôles", "Controls"), icon: <SlidersIcon size={17} /> },
     { id: "mirror", label: tr("Miroir", "Mirror"), icon: <MirrorIcon size={17} /> },
     { id: "notifications", label: "Notifications", icon: <BellIcon size={17} />, badge: counts.notifications },

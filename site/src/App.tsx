@@ -104,6 +104,7 @@ const nav = (tr: Tr) => [
   { label: tr("Aperçu", "Preview"), href: "#demo" },
   { label: tr("Fonctionnalités", "Features"), href: "#features" },
   { label: "FAQ", href: "#faq" },
+  { label: "Guides", href: "./guides/" },
   { label: tr("Téléchargement", "Download"), href: "#download" },
 ];
 
@@ -342,6 +343,15 @@ function features(tr: Tr): { title: string; desc: string; icon: ReactNode; scene
         </>,
       ),
       scene: "agenda",
+    },
+    {
+      title: tr("Agents IA", "AI agents"),
+      desc: tr(
+        "Claude Code au travail, dans la pilule. Quand il demande une autorisation ou vous pose une question, vous répondez depuis l'île. Un clic ramène à son terminal.",
+        "Claude Code at work, in the pill. When it asks for a permission or a question, you answer from the island. One click brings its terminal back.",
+      ),
+      icon: icon(<path d="M12 3c.6 4.6 3.4 7.4 8 8-4.6.6-7.4 3.4-8 8-.6-4.6-3.4-7.4-8-8 4.6-.6 7.4-3.4 8-8Z" />),
+      scene: "agents",
     },
     {
       title: tr("Minuteur", "Timer"),
@@ -678,6 +688,15 @@ function ThemeSwitch({ theme, onTheme }: { theme: Theme; onTheme(t: Theme): void
   );
 }
 
+/** The most searched guides, linked from every page's footer: [French slug, English slug, French label, English label]. */
+const popularGuides: [string, string, string, string][] = [
+  ["meilleures-dynamic-island-windows", "best-dynamic-island-windows", "Meilleures Dynamic Island pour Windows", "Best Dynamic Island apps for Windows"],
+  ["paroles-spotify-pc", "spotify-lyrics-pc", "Paroles Spotify sur PC", "Spotify lyrics on PC"],
+  ["envoyer-fichier-pc-iphone", "send-file-pc-to-iphone", "Envoyer un fichier du PC à l'iPhone", "Send a file from PC to iPhone"],
+  ["spotlight-windows", "spotlight-for-windows", "Spotlight pour Windows", "Spotlight for Windows"],
+  ["notifications-claude-code", "claude-code-notifications", "Notifications Claude Code", "Claude Code notifications"],
+];
+
 function Footer({ theme, onTheme, onScene }: { theme: Theme; onTheme(t: Theme): void; onScene(id: SceneId): void }) {
   const lang = useLang();
   const tr = useTr();
@@ -689,6 +708,7 @@ function Footer({ theme, onTheme, onScene }: { theme: Theme; onTheme(t: Theme): 
   const product: [SceneId, string][] = [
     ["musique", tr("Musique et paroles", "Music and lyrics")],
     ["agenda", tr("Agenda et miroir", "Calendar and mirror")],
+    ["agents", tr("Agents IA", "AI agents")],
     ["minuteur", tr("Minuteur", "Timer")],
     ["lanceur", tr("Lanceur", "Launcher")],
     ["notifications", "Notifications"],
@@ -726,12 +746,22 @@ function Footer({ theme, onTheme, onScene }: { theme: Theme; onTheme(t: Theme): 
             </nav>
           </div>
           <div>
+            <h3>Guides</h3>
+            <nav className="footer-links" aria-label="Guides">
+              {popularGuides.map(([fr, en, frLabel, enLabel]) => (
+                <a key={en} href={`./guides/${lang === "fr" ? fr : en}/`}>
+                  {tr(frLabel, enLabel)}
+                </a>
+              ))}
+              <a href="./guides/">{tr("Tous les guides", "All guides")}</a>
+            </nav>
+          </div>
+          <div>
             <h3>{tr("Projet", "Project")}</h3>
             <nav className="footer-links" aria-label={tr("Projet", "Project")}>
               <a href={REPO}>GitHub</a>
               <a href={`${REPO}/issues`}>{tr("Signaler un problème", "Report a problem")}</a>
               <a href={`${REPO}/blob/main/LICENSE`}>{tr("Licence GPL-3.0", "GPL-3.0 licence")}</a>
-              <a href={`${root}confidentialite/${lang === "en" ? "#english" : ""}`}>{tr("Confidentialité", "Privacy")}</a>
               <a href={`${root}code-signing/`}>{tr("Compilation des versions", "How releases are built")}</a>
               <a href="#faq" onClick={(e) => scrollToId(e, "#faq")}>
                 {tr("Questions fréquentes", "FAQ")}
@@ -741,6 +771,11 @@ function Footer({ theme, onTheme, onScene }: { theme: Theme; onTheme(t: Theme): 
         </div>
         <div className="footer-bottom">
           <span>{tr("© 2026 Quiera · logiciel libre sous licence GPL-3.0", "© 2026 Quiera · free software under the GPL-3.0 licence")}</span>
+          <nav className="footer-legal" aria-label={tr("Informations légales", "Legal")}>
+            <a href={lang === "fr" ? "./mentions-legales/" : "./legal-notice/"}>{tr("Mentions légales", "Legal notice")}</a>
+            <a href={lang === "fr" ? "./conditions-utilisation/" : "./terms/"}>{tr("Conditions d'utilisation", "Terms of use")}</a>
+            <a href={lang === "fr" ? "./confidentialite/" : "./privacy/"}>{tr("Confidentialité", "Privacy")}</a>
+          </nav>
           <div className="footer-tools">
             <LangSwitch />
             <ThemeSwitch theme={theme} onTheme={onTheme} />

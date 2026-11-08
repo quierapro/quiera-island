@@ -4,17 +4,27 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Confidentialité · Quiera</title>
-    <meta name="description" content="Ce que Quiera garde sur votre PC, et les seules choses qui passent par Internet : la recherche de paroles et la vérification des mises à jour." />
+    <meta name="description" content="Ce que Quiera garde sur votre PC, les seules choses qui passent par Internet, et ce que font ses fonctions pour les agents IA." />
     <link rel="canonical" href="https://quiera.eu/confidentialite/" />
+    <link rel="alternate" hreflang="fr" href="https://quiera.eu/confidentialite/" />
+    <link rel="alternate" hreflang="en" href="https://quiera.eu/en/privacy/" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/legal.css" />
     <script defer src="/_vercel/insights/script.js"></script>
   </head>
   <body>
+    <header class="top">
+      <a class="brand" href="/"><svg width="26" height="26" viewBox="0 0 64 64" aria-hidden="true"><g fill="#7136ff"><circle cx="32.2" cy="26.9" r="16.6"/><circle cx="17.7" cy="36.5" r="13.7"/><circle cx="46.3" cy="36.5" r="13.7"/><ellipse cx="32" cy="42" rx="17" ry="13.3"/></g><g fill="#fff"><rect x="21.9" y="26.8" width="7.8" height="14" rx="3.9" transform="rotate(-9 25.8 33.8)"/><rect x="34.6" y="23.7" width="7.8" height="14" rx="3.9" transform="rotate(-9 38.5 30.7)"/></g></svg><span>quiera</span></a>
+      <nav>
+        <a href="/guides/">Guides</a>
+        <a href="/en/privacy/" hreflang="en" lang="en">English</a>
+      </nav>
+    </header>
     <main>
-      <a class="back" href="/">← Quiera</a>
       <h1>Confidentialité</h1>
-      <p class="lead">Quiera fonctionne sur votre PC. Pas de compte, pas de publicité, pas de télémétrie : aucune statistique d'utilisation n'est envoyée.</p>
+      <p class="updated">Mise à jour : 8 novembre 2026</p>
+
+      <p class="lead">Quiera fonctionne sur votre PC. Pas de compte, pas de publicité, pas de télémétrie : aucune statistique d'utilisation n'est envoyée, et rien ne passe par un serveur de Quiera.</p>
 
       <h2>Ce qui passe par Internet</h2>
       <ul>
@@ -33,12 +43,11 @@
         <li>
           <strong>Votre agenda, si vous l'ajoutez.</strong> Quand vous collez le lien iCal d'un agenda (Google, Outlook, iCloud…), Quiera
           le télécharge directement à cette adresse, puis tous les quarts d'heure. Le lien reste sur votre PC, dans les réglages, et
-          n'est jamais écrit dans le journal ; les événements sont gardés en mémoire. Rien ne passe par un serveur de Quiera. Pour
-          couper : Réglages › Agenda, retirez le lien.
+          n'est jamais écrit dans le journal ; les événements sont gardés en mémoire. Pour couper : Réglages › Agenda, retirez le lien.
         </li>
         <li>
           <strong>Ce que vous demandez.</strong> Une recherche web lancée depuis le lanceur s'ouvre dans votre navigateur ; un lien d'une
-          notification aussi.
+          notification ou d'un agent aussi.
         </li>
       </ul>
 
@@ -47,15 +56,39 @@
         <li>Les notifications et l'historique du presse-papiers : gardés en mémoire seulement, effacés à la fermeture de Quiera.</li>
         <li>Le Shelf : les chemins de vos fichiers (jamais copiés), enregistrés seulement si vous gardez le Shelf entre deux sessions.</li>
         <li>L'index des fichiers du lanceur : les noms des fichiers, en mémoire.</li>
-        <li>
-          Le miroir : l'image de la webcam s'affiche dans l'île seulement pendant que l'onglet est ouvert. Elle n'est ni enregistrée ni
-          envoyée.
-        </li>
+        <li>Le miroir : l'image de la webcam s'affiche dans l'île seulement pendant que l'onglet est ouvert. Elle n'est ni enregistrée ni envoyée.</li>
         <li>Les batteries des appareils Bluetooth : lues auprès de Windows, affichées, jamais envoyées.</li>
         <li>Les réglages, dans le dossier de Quiera (<code>%APPDATA%\app.quiera</code>).</li>
         <li>
           Le journal (<code>%LOCALAPPDATA%\app.quiera\logs</code>) : des événements techniques, jamais le titre d'un morceau, le contenu
-          d'une notification ou de ce que vous copiez.
+          d'une notification, de ce que vous copiez ou de ce que font vos agents IA.
+        </li>
+      </ul>
+
+      <h2>Les agents IA (Claude Code, Codex)</h2>
+      <p>Ces fonctions sont désactivées tant que vous ne les activez pas dans Réglages › Agents IA.</p>
+      <ul>
+        <li>
+          <strong>Configuration.</strong> Quiera ajoute des « hooks » à <code>~/.claude/settings.json</code> ou
+          <code>~/.codex/hooks.json</code>, après une copie de sauvegarde (<code>.quiera-backup</code>), et une ligne d'état à Claude Code
+          si vous n'en avez pas. Les désactiver retire ces ajouts sans toucher à vos réglages.
+        </li>
+        <li>
+          <strong>Ce que l'île reçoit.</strong> À chaque étape, l'agent transmet à Quiera, sur votre PC seulement : le dossier du projet,
+          l'outil utilisé, le fichier, la page ou la commande concernés, et, pour une demande, le code modifié, le plan ou la question.
+          Jamais vos messages à l'agent. Ces informations restent en mémoire, s'affichent dans l'île et disparaissent à la fermeture.
+        </li>
+        <li>
+          <strong>Quotas.</strong> Les pourcentages d'utilisation sont lus dans la ligne d'état de Claude Code et dans les fichiers de
+          session de Codex (<code>~/.codex/sessions</code>), dont Quiera ne garde que les chiffres. Les derniers sont enregistrés dans
+          <code>agents-usage.json</code>, dans le dossier de Quiera.
+        </li>
+        <li>
+          <strong>Le téléphone.</strong> Si vous affichez le QR code, une page est servie par votre PC sur votre réseau local, à une adresse
+          secrète valable 8 heures : elle montre les demandes en cours. Rien ne passe par Internet. « Délier le téléphone » la coupe.
+        </li>
+        <li>
+          Claude Code et Codex échangent eux-mêmes avec Anthropic et OpenAI, selon leurs propres règles ; Quiera n'y ajoute rien.
         </li>
       </ul>
 
@@ -67,25 +100,21 @@
 
       <h2>Le site quiera.eu</h2>
       <p>
-        Les visites du site sont comptées par <a href="https://vercel.com/docs/analytics/privacy-policy">Vercel Web Analytics</a>, sans
-        cookie : seules des statistiques globales (pages vues, pays, navigateur) sont gardées, sans rien qui permette de vous reconnaître
-        d'un jour à l'autre. L'application Quiera n'envoie, elle, aucune statistique.
+        Le site est hébergé par Vercel, qui traite les adresses IP des visiteurs pour servir les pages et les protéger. Les visites sont
+        comptées par <a href="https://vercel.com/docs/analytics/privacy-policy">Vercel Web Analytics</a>, sans cookie : seules des
+        statistiques globales (pages vues, pays, navigateur) sont gardées, sans rien qui permette de vous reconnaître d'un jour à l'autre.
+        Le site ne dépose aucun cookie ; seul votre choix de thème est retenu, dans votre navigateur.
       </p>
 
-      <h2 id="english">In English</h2>
+      <h2>Vos droits</h2>
       <p>
-        Quiera runs on your PC, with no account, no advertising and no telemetry. Only three things go over the Internet: to find the lyrics of
-        the playing track, its title, artist, album and duration are sent to <a href="https://lrclib.net">LRCLIB</a> (and to NetEase only if
-        that option, off by default, is turned on); Quiera reads the list of releases on GitHub at start and every six hours, sending no
-        personal data; and, only if you paste a calendar's iCal link, Quiera downloads that calendar from its address every 15 minutes,
-        keeping the link on your PC and never writing it in its logs. Each can be turned off in the settings or in the welcome shown on first launch, and the installer shows this notice.
-        Notifications and the clipboard history stay in memory only; Shelf files are kept by path; the webcam mirror records and sends nothing; sending files to a phone goes over the
-        local network only, when you ask. Visits to the quiera.eu website are counted by Vercel Web Analytics, without cookies; the app
-        itself sends no statistics.
+        L'éditeur ne détient aucune donnée personnelle vous concernant. Pour une question, <a href="https://github.com/quierapro/quiera-island/issues">ouvrez une issue sur
+        GitHub</a>. Vous pouvez aussi adresser une réclamation à la <a href="https://www.cnil.fr">CNIL</a>.
       </p>
-
-      <h2>Contact</h2>
-      <p>Une question : <a href="https://github.com/quierapro/quiera-island/issues">ouvrez une issue sur GitHub</a>.</p>
     </main>
+    <footer>
+      <nav><a href="/mentions-legales/">Mentions légales</a> · <a href="/conditions-utilisation/">Conditions d'utilisation</a> · <a href="/confidentialite/" aria-current="page">Confidentialité</a> · <a href="/code-signing/">Compilation des versions</a></nav>
+      <span>© 2026 Quiera · <a href="https://github.com/quierapro/quiera-island">GitHub</a></span>
+    </footer>
   </body>
 </html>

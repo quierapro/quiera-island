@@ -8,6 +8,7 @@
 - Paroles synchronisées mot à mot, depuis LRCLIB.
 - Plusieurs sources audio à la fois : des points sous le lecteur passent de l'une à l'autre.
 - Agenda : lien iCal (Google, Outlook, iCloud), réunion annoncée quelques minutes avant, bouton Rejoindre pour Teams, Meet, Zoom ou Webex.
+- Agents IA : Claude Code et Codex dans la pilule (ce qu'ils font, quand ils attendent, quand ils ont fini) ; autoriser ou refuser leurs demandes depuis l'île, avec la commande ou le code modifié ; répondre à leurs questions ; quota de 5 h et de la semaine ; son ; réponses depuis le téléphone sur le Wi-Fi ; un clic ramène au terminal ou à VS Code ; « claude … » ou « codex … » dans le lanceur démarre un agent.
 - Minuteur : « 5 min », « 1h30 » ou « pomodoro » dans le lanceur, ou des roues ; compte à rebours dans la pilule.
 - Miroir : un aperçu de la webcam avant une visio, rien n'est enregistré.
 - Lanceur façon Spotlight (Alt+Espace, modifiable) : applis, fichiers de tous les disques, calculs, minuteurs, recherche web ; « images », « vidéos », « musique », « documents » filtrent par type.
@@ -27,5 +28,7 @@
 ## Liens
 
 - Site : https://quiera.eu/ (English: https://quiera.eu/en/)
+- Guides (Dynamic Island, musique, fichiers, agenda, son, agents IA) : https://quiera.eu/guides/ (English: https://quiera.eu/en/guides/)
+- Mentions légales : https://quiera.eu/mentions-legales/ · Confidentialité : https://quiera.eu/confidentialite/ (English: https://quiera.eu/en/privacy/)
 - Code source : https://github.com/quierapro/quiera-island
 - Téléchargement : https://github.com/quierapro/quiera-island/releases/latest
